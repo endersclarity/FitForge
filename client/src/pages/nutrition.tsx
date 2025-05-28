@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserStats } from "@shared/schema";
 import { 
   Apple, 
@@ -16,10 +16,19 @@ import {
   Search
 } from "lucide-react";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 export default function Nutrition() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchFood, setSearchFood] = useState("");
+  const [showAddFoodDialog, setShowAddFoodDialog] = useState(false);
+  const [selectedMealType, setSelectedMealType] = useState("snack");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const { data: userStats } = useQuery<UserStats>({
     queryKey: ["/api/user-stats/latest"],
@@ -80,6 +89,107 @@ export default function Nutrition() {
     },
   ];
 
+  // Food logging mutation
+  const logFoodMutation = useMutation({
+    mutationFn: async (foodData: any) => {
+      const response = await fetch('/api/nutrition/log', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(foodData),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to log food');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/nutrition/daily-intake'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/user-stats/latest'] });
+      setShowAddFoodDialog(false);
+      setSearchFood('');
+      setSearchResults([]);
+      toast({
+        title: "Food Logged!",
+        description: "Successfully added to your nutrition log.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to log food. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Handle food search with debouncing
+  const handleFoodSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchFood(query);
+    
+    if (query.length > 2) {
+      try {
+        const response = await fetch(`/api/nutrition/foods/search?q=${encodeURIComponent(query)}`);
+        if (response.ok) {
+          const results = await response.json();
+          setSearchResults(results);
+        }
+      } catch (error) {
+        console.error('Food search error:', error);
+      }
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  // Handle adding food from search results
+  const handleAddFood = (food: any) => {
+    if (!user) {
+      toast({
+        title: "Please Sign In",
+        description: "You need to be signed in to log food.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    logFoodMutation.mutate({
+      foodId: food.id,
+      foodName: food.name,
+      calories: food.calories,
+      protein: food.protein,
+      carbs: food.carbs,
+      fat: food.fat,
+      serving: food.serving,
+      mealType: selectedMealType
+    });
+  };
+
+  // Handle quick add foods
+  const handleQuickAddFood = (food: any) => {
+    if (!user) {
+      toast({
+        title: "Please Sign In",
+        description: "You need to be signed in to log food.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    logFoodMutation.mutate({
+      foodId: null,
+      foodName: food.name,
+      calories: food.calories,
+      protein: food.protein,
+      carbs: food.carbs || 0,
+      fat: food.fat || 0,
+      serving: "1 serving",
+      mealType: "snack"
+    });
+  };
+
   const quickAddFoods = [
     { name: "Banana", calories: 105, protein: 1 },
     { name: "Chicken Breast (4oz)", calories: 185, protein: 35 },
@@ -101,10 +211,67 @@ export default function Nutrition() {
                 Fuel your fitness journey with smart nutrition
               </p>
             </div>
-            <Button className="gradient-bg">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Food
-            </Button>
+            <Dialog open={showAddFoodDialog} onOpenChange={setShowAddFoodDialog}>
+              <DialogTrigger asChild>
+                <Button className="gradient-bg">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Food
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add Food to Log</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="meal-type">Meal Type</Label>
+                    <Select value={selectedMealType} onValueChange={setSelectedMealType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select meal type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="breakfast">Breakfast</SelectItem>
+                        <SelectItem value="lunch">Lunch</SelectItem>
+                        <SelectItem value="dinner">Dinner</SelectItem>
+                        <SelectItem value="snack">Snack</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="food-search">Search Food</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                      <Input 
+                        id="food-search"
+                        placeholder="Search for food..."
+                        value={searchFood}
+                        onChange={handleFoodSearch}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  {searchResults.length > 0 && (
+                    <div className="max-h-40 overflow-y-auto space-y-2">
+                      {searchResults.map((food) => (
+                        <Button
+                          key={food.id}
+                          variant="outline"
+                          className="w-full justify-start text-left p-3 h-auto"
+                          onClick={() => handleAddFood(food)}
+                        >
+                          <div>
+                            <div className="font-medium">{food.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {food.calories} cal, {food.protein}g protein ({food.serving})
+                            </div>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Daily Overview */}
@@ -203,6 +370,7 @@ export default function Nutrition() {
                         variant="outline" 
                         size="sm"
                         className="text-left justify-start p-3 h-auto"
+                        onClick={() => handleQuickAddFood(food)}
                       >
                         <div>
                           <div className="font-medium text-sm">{food.name}</div>

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserStats } from "@shared/schema";
 import { 
   User, 
@@ -16,10 +16,25 @@ import {
   Edit
 } from "lucide-react";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Profile() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    height: '',
+    weight: ''
+  });
+  const [goalsForm, setGoalsForm] = useState({
+    weeklyWorkouts: 4,
+    targetWeight: 180,
+    dailyCalories: 2200
+  });
 
   const { data: userStats } = useQuery<UserStats>({
     queryKey: ["/api/user-stats/latest"],
@@ -29,6 +44,112 @@ export default function Profile() {
     weeklyWorkouts: 4,
     targetWeight: userStats?.weight || 180,
     dailyCalories: 2200,
+  };
+
+  // Profile update mutations
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch('/api/auth/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      setIsEditing(false);
+      toast({
+        title: "Profile Updated!",
+        description: "Your profile has been successfully updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateGoalsMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch('/api/auth/goals', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update goals');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      setIsEditing(false);
+      toast({
+        title: "Goals Updated!",
+        description: "Your fitness goals have been successfully updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update goals. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Handle form submissions
+  const handleEditToggle = () => {
+    if (!isEditing) {
+      // Initialize forms with current values when starting to edit
+      setProfileForm({
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        email: user?.email || '',
+        height: '170',
+        weight: userStats?.weight?.toString() || ''
+      });
+      setGoalsForm({
+        weeklyWorkouts: fitnessGoals.weeklyWorkouts,
+        targetWeight: fitnessGoals.targetWeight,
+        dailyCalories: fitnessGoals.dailyCalories
+      });
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleSaveProfile = () => {
+    if (!user) {
+      toast({
+        title: "Please Sign In",
+        description: "You need to be signed in to update your profile.",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateProfileMutation.mutate(profileForm);
+  };
+
+  const handleUpdateGoals = () => {
+    if (!user) {
+      toast({
+        title: "Please Sign In",
+        description: "You need to be signed in to update your goals.",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateGoalsMutation.mutate(goalsForm);
   };
 
   const preferences = {
@@ -60,7 +181,7 @@ export default function Profile() {
               </div>
             </div>
             <Button 
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={handleEditToggle}
               variant={isEditing ? "outline" : "default"}
               className={!isEditing ? "gradient-bg" : ""}
             >
@@ -87,16 +208,18 @@ export default function Profile() {
                   <Label htmlFor="firstName">First Name</Label>
                   <Input 
                     id="firstName" 
-                    value={user?.firstName || ''} 
+                    value={isEditing ? profileForm.firstName : (user?.firstName || '')} 
                     disabled={!isEditing}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
                   />
                 </div>
                 <div>
                   <Label htmlFor="lastName">Last Name</Label>
                   <Input 
                     id="lastName" 
-                    value={user?.lastName || ''} 
+                    value={isEditing ? profileForm.lastName : (user?.lastName || '')} 
                     disabled={!isEditing}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
                   />
                 </div>
               </div>
@@ -104,9 +227,10 @@ export default function Profile() {
                 <Label htmlFor="email">Email</Label>
                 <Input 
                   id="email" 
-                  value={user?.email || ''} 
+                  value={isEditing ? profileForm.email : (user?.email || '')} 
                   disabled={!isEditing}
                   type="email"
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -114,24 +238,30 @@ export default function Profile() {
                   <Label htmlFor="height">Height (cm)</Label>
                   <Input 
                     id="height" 
-                    value={'170'} 
+                    value={isEditing ? profileForm.height : '170'} 
                     disabled={!isEditing}
                     type="number"
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, height: e.target.value }))}
                   />
                 </div>
                 <div>
                   <Label htmlFor="weight">Current Weight (lbs)</Label>
                   <Input 
                     id="weight" 
-                    value={userStats?.weight || ''} 
+                    value={isEditing ? profileForm.weight : (userStats?.weight || '')} 
                     disabled={!isEditing}
                     type="number"
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, weight: e.target.value }))}
                   />
                 </div>
               </div>
               {isEditing && (
-                <Button className="w-full gradient-bg">
-                  Save Changes
+                <Button 
+                  className="w-full gradient-bg"
+                  onClick={handleSaveProfile}
+                  disabled={updateProfileMutation.isPending}
+                >
+                  {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
                 </Button>
               )}
             </CardContent>
@@ -150,32 +280,39 @@ export default function Profile() {
                 <Label htmlFor="weeklyWorkouts">Weekly Workout Goal</Label>
                 <Input 
                   id="weeklyWorkouts" 
-                  value={fitnessGoals.weeklyWorkouts} 
+                  value={isEditing ? goalsForm.weeklyWorkouts : fitnessGoals.weeklyWorkouts} 
                   disabled={!isEditing}
                   type="number"
+                  onChange={(e) => setGoalsForm(prev => ({ ...prev, weeklyWorkouts: Number(e.target.value) }))}
                 />
               </div>
               <div>
                 <Label htmlFor="targetWeight">Target Weight (lbs)</Label>
                 <Input 
                   id="targetWeight" 
-                  value={fitnessGoals.targetWeight} 
+                  value={isEditing ? goalsForm.targetWeight : fitnessGoals.targetWeight} 
                   disabled={!isEditing}
                   type="number"
+                  onChange={(e) => setGoalsForm(prev => ({ ...prev, targetWeight: Number(e.target.value) }))}
                 />
               </div>
               <div>
                 <Label htmlFor="dailyCalories">Daily Calorie Goal</Label>
                 <Input 
                   id="dailyCalories" 
-                  value={fitnessGoals.dailyCalories} 
+                  value={isEditing ? goalsForm.dailyCalories : fitnessGoals.dailyCalories} 
                   disabled={!isEditing}
                   type="number"
+                  onChange={(e) => setGoalsForm(prev => ({ ...prev, dailyCalories: Number(e.target.value) }))}
                 />
               </div>
               {isEditing && (
-                <Button className="w-full gradient-bg">
-                  Update Goals
+                <Button 
+                  className="w-full gradient-bg"
+                  onClick={handleUpdateGoals}
+                  disabled={updateGoalsMutation.isPending}
+                >
+                  {updateGoalsMutation.isPending ? 'Updating...' : 'Update Goals'}
                 </Button>
               )}
             </CardContent>

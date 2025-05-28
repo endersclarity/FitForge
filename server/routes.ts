@@ -106,10 +106,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        profileImage: user.profileImage
+        profileImage: user.profileImage,
+        createdAt: user.createdAt
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Profile update routes
+  app.patch("/api/auth/profile", authenticateToken, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const updates = req.body;
+      
+      // Only allow certain fields to be updated
+      const allowedFields = ['firstName', 'lastName', 'email', 'height', 'weight'];
+      const filteredUpdates = Object.keys(updates)
+        .filter(key => allowedFields.includes(key))
+        .reduce((obj, key) => {
+          obj[key] = updates[key];
+          return obj;
+        }, {} as any);
+
+      if (Object.keys(filteredUpdates).length === 0) {
+        return res.status(400).json({ message: "No valid fields to update" });
+      }
+
+      // For this demo, we'll simulate a successful update
+      // In a real app, this would update the database
+      const updatedUser = {
+        id: userId,
+        ...filteredUpdates,
+        updatedAt: new Date().toISOString()
+      };
+      
+      res.json({
+        message: "Profile updated successfully",
+        user: updatedUser
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/auth/goals", authenticateToken, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const { weeklyWorkouts, targetWeight, dailyCalories } = req.body;
+      
+      // In a real app, this would save to a user_goals table
+      const goals = {
+        userId,
+        weeklyWorkouts: Number(weeklyWorkouts),
+        targetWeight: Number(targetWeight),
+        dailyCalories: Number(dailyCalories),
+        updatedAt: new Date().toISOString()
+      };
+      
+      res.json({
+        message: "Goals updated successfully",
+        goals
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
     }
   });
 
@@ -390,6 +450,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Post not found" });
       }
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Nutrition routes
+  app.get("/api/nutrition/foods/search", async (req, res) => {
+    try {
+      const { q } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ message: "Search query required" });
+      }
+      
+      // Mock food database - in a real app this would be a proper food API
+      const mockFoods = [
+        { id: 1, name: "Banana", calories: 105, protein: 1.3, carbs: 27, fat: 0.3, serving: "1 medium" },
+        { id: 2, name: "Chicken Breast", calories: 231, protein: 43.5, carbs: 0, fat: 5, serving: "4 oz" },
+        { id: 3, name: "Brown Rice", calories: 216, protein: 5, carbs: 45, fat: 1.8, serving: "1 cup cooked" },
+        { id: 4, name: "Eggs", calories: 140, protein: 12, carbs: 1, fat: 10, serving: "2 large" },
+        { id: 5, name: "Almonds", calories: 164, protein: 6, carbs: 6, fat: 14, serving: "1 oz" },
+        { id: 6, name: "Avocado", calories: 160, protein: 2, carbs: 9, fat: 15, serving: "1/2 medium" },
+        { id: 7, name: "Greek Yogurt", calories: 100, protein: 17, carbs: 6, fat: 0, serving: "6 oz" },
+        { id: 8, name: "Oatmeal", calories: 150, protein: 5, carbs: 27, fat: 3, serving: "1/2 cup dry" },
+        { id: 9, name: "Salmon", calories: 208, protein: 28, carbs: 0, fat: 10, serving: "4 oz" },
+        { id: 10, name: "Quinoa", calories: 222, protein: 8, carbs: 39, fat: 4, serving: "1 cup cooked" }
+      ];
+      
+      const results = mockFoods.filter(food => 
+        food.name.toLowerCase().includes(q.toLowerCase())
+      );
+      
+      res.json(results);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/nutrition/log", authenticateToken, async (req: any, res) => {
+    try {
+      const { foodId, foodName, calories, protein, carbs, fat, serving, mealType } = req.body;
+      
+      // In a real app, this would save to a nutrition_logs table
+      // For now, just return success with the logged food data
+      const logEntry = {
+        id: Date.now(), // Mock ID
+        userId: req.userId,
+        foodId,
+        foodName,
+        calories: Number(calories),
+        protein: Number(protein),
+        carbs: Number(carbs),
+        fat: Number(fat),
+        serving,
+        mealType: mealType || 'snack',
+        loggedAt: new Date().toISOString()
+      };
+      
+      res.json(logEntry);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/nutrition/daily-intake", authenticateToken, async (req: any, res) => {
+    try {
+      const { date } = req.query;
+      const targetDate = date ? new Date(date as string) : new Date();
+      
+      // Mock daily intake data - in a real app this would aggregate from nutrition_logs
+      const dailyIntake = {
+        date: targetDate.toISOString().split('T')[0],
+        calories: 1650,
+        protein: 98,
+        carbs: 180,
+        fat: 45,
+        meals: [
+          {
+            type: 'breakfast',
+            foods: [
+              { name: 'Oatmeal with berries', calories: 320, protein: 12 }
+            ]
+          },
+          {
+            type: 'lunch', 
+            foods: [
+              { name: 'Chicken salad bowl', calories: 450, protein: 35 }
+            ]
+          },
+          {
+            type: 'snack',
+            foods: [
+              { name: 'Greek yogurt', calories: 150, protein: 15 }
+            ]
+          },
+          {
+            type: 'dinner',
+            foods: [
+              { name: 'Salmon with quinoa', calories: 520, protein: 36 }
+            ]
+          }
+        ]
+      };
+      
+      res.json(dailyIntake);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

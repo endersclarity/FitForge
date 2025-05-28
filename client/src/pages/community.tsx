@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Challenge, SocialPost } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 import {
   Users,
   Trophy,
@@ -23,6 +25,10 @@ import {
 
 export default function Community() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [showCreateChallengeDialog, setShowCreateChallengeDialog] = useState(false);
+  const [showShareProgressDialog, setShowShareProgressDialog] = useState(false);
 
   const { data: challenges = [] } = useQuery<Challenge[]>({
     queryKey: ["/api/challenges"],
@@ -48,6 +54,111 @@ export default function Community() {
   ];
 
   const featuredChallenges = challenges.filter(c => c.isActive).slice(0, 3);
+
+  // Join Challenge Mutation
+  const joinChallengeMutation = useMutation({
+    mutationFn: async (challengeId: number) => {
+      const response = await fetch(`/api/challenges/${challengeId}/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to join challenge');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/challenges'] });
+      toast({
+        title: "Challenge Joined!",
+        description: "You've successfully joined the challenge. Good luck!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to join challenge. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Create Social Post Mutation
+  const createPostMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const response = await fetch('/api/social/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to create post');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/social/posts'] });
+      setShowShareProgressDialog(false);
+      toast({
+        title: "Posted!",
+        description: "Your progress has been shared with the community.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to share progress. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Button Handlers
+  const handleJoinChallenge = (challengeId: number, challengeName: string) => {
+    if (!user) {
+      toast({
+        title: "Please Sign In",
+        description: "You need to be signed in to join challenges.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    joinChallengeMutation.mutate(challengeId);
+  };
+
+  const handleViewFullLeaderboard = () => {
+    toast({
+      title: "Coming Soon!",
+      description: "Full leaderboard view is being developed.",
+    });
+  };
+
+  const handleViewFullFeed = () => {
+    toast({
+      title: "Coming Soon!",
+      description: "Full activity feed view is being developed.",
+    });
+  };
+
+  const handleShareProgress = () => {
+    if (!user) {
+      toast({
+        title: "Please Sign In",
+        description: "You need to be signed in to share progress.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Example progress post - in a real app, this would come from user's actual data
+    const progressMessage = "Just completed an amazing workout! 💪 Feeling stronger every day. #FitForge #Progress";
+    createPostMutation.mutate(progressMessage);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -108,7 +219,10 @@ export default function Community() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold">Featured Challenges</h2>
-            <Button className="gradient-bg">
+            <Button 
+              className="gradient-bg"
+              onClick={() => setShowCreateChallengeDialog(true)}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Create Challenge
             </Button>
@@ -140,7 +254,10 @@ export default function Community() {
                       </span>
                     </div>
                   </div>
-                  <Button className="w-full btn-secondary">
+                  <Button 
+                    className="w-full btn-secondary"
+                    onClick={() => handleJoinChallenge(challenge.id, challenge.name)}
+                  >
                     Join Challenge
                   </Button>
                 </CardContent>
@@ -186,7 +303,11 @@ export default function Community() {
                     </div>
                   ))}
                 </div>
-                <Button variant="outline" className="w-full mt-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-4"
+                  onClick={handleViewFullLeaderboard}
+                >
                   View Full Leaderboard
                 </Button>
               </CardContent>
@@ -238,12 +359,19 @@ export default function Community() {
                   <div className="text-center py-8">
                     <MessageCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                     <p className="text-muted-foreground">No activity yet</p>
-                    <Button className="mt-4 gradient-bg">
+                    <Button 
+                      className="mt-4 gradient-bg"
+                      onClick={handleShareProgress}
+                    >
                       Share Your Progress
                     </Button>
                   </div>
                 )}
-                <Button variant="outline" className="w-full mt-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-4"
+                  onClick={handleViewFullFeed}
+                >
                   View Full Feed
                 </Button>
               </CardContent>
