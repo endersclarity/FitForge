@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Workout, WorkoutSession } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import { Link } from "wouter";
 import { 
   Plus, 
   Play, 
@@ -73,10 +74,12 @@ export default function Workouts() {
                 AI-powered training tailored to your goals
               </p>
             </div>
-            <Button className="gradient-bg">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Workout
-            </Button>
+            <Link href="/start-workout">
+              <Button className="gradient-bg">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Workout
+              </Button>
+            </Link>
           </div>
 
           {/* Workout Stats */}
@@ -145,7 +148,9 @@ export default function Workouts() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-bold">Recent Sessions</h2>
-              <Button variant="outline">View All</Button>
+              <Link href="/progress">
+                <Button variant="outline">View All</Button>
+              </Link>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {recentSessions.slice(0, 6).map((session) => (

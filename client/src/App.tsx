@@ -16,6 +16,8 @@ import Dashboard from "@/pages/dashboard";
 import Workouts from "@/pages/workouts";
 import Progress from "@/pages/progress";
 import Community from "@/pages/community";
+import Profile from "@/pages/profile";
+import Nutrition from "@/pages/nutrition";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -72,6 +74,16 @@ function Router() {
         <Route path="/start-workout">
           <ProtectedRoute>
             <FreeformWorkoutLogger />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/profile">
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/nutrition">
+          <ProtectedRoute>
+            <Nutrition />
           </ProtectedRoute>
         </Route>
         <Route component={NotFound} />
