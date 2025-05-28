@@ -70,7 +70,7 @@ export function WorkoutLibrary() {
   const convertWorkoutToExercises = (workout: Workout): WorkoutExercise[] => {
     console.log("🔄 CONVERTING WORKOUT:", workout);
     
-    if (!workout.exercises || workout.exercises.length === 0) {
+    if (!workout.exercises || !Array.isArray(workout.exercises) || workout.exercises.length === 0) {
       console.error("❌ NO EXERCISES TO CONVERT");
       return [];
     }
@@ -135,7 +135,7 @@ export function WorkoutLibrary() {
     console.log("🔥 startWorkout function exists:", typeof startWorkout);
     console.log("🔥 setLocation function exists:", typeof setLocation);
     
-    if (!workout.exercises || workout.exercises.length === 0) {
+    if (!workout.exercises || !Array.isArray(workout.exercises) || workout.exercises.length === 0) {
       console.error("❌ NO EXERCISES IN WORKOUT!");
       toast({
         title: "Error",
@@ -325,9 +325,9 @@ export function WorkoutLibrary() {
                 
                 {/* SHOW ALL EXERCISES IN WORKOUT */}
                 <div className="mb-4">
-                  <h4 className="font-semibold mb-2 text-sm">Exercises ({workout.exercises?.length || 0}):</h4>
+                  <h4 className="font-semibold mb-2 text-sm">Exercises ({Array.isArray(workout.exercises) ? workout.exercises.length : 0}):</h4>
                   <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {workout.exercises?.map((exercise: any, idx: number) => (
+                    {Array.isArray(workout.exercises) && workout.exercises.map((exercise: any, idx: number) => (
                       <div key={idx} className="text-xs text-muted-foreground flex justify-between items-center py-1 px-2 bg-muted/20 rounded">
                         <span className="font-medium">{exercise.name}</span>
                         <div className="flex gap-2 text-xs">
@@ -374,7 +374,7 @@ export function WorkoutLibrary() {
                     className="w-full gradient-bg mb-2"
                   >
                     <Play className="w-4 h-4 mr-2" />
-                    Start Full Workout ({workout.exercises?.length || 0} exercises)
+                    Start Full Workout ({Array.isArray(workout.exercises) ? workout.exercises.length : 0} exercises)
                   </Button>
                   <Button 
                     onClick={(e) => {

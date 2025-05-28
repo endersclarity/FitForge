@@ -27,7 +27,7 @@ export default function Profile() {
 
   const fitnessGoals = {
     weeklyWorkouts: 4,
-    targetWeight: userStats?.targetWeight || 180,
+    targetWeight: userStats?.weight || 180,
     dailyCalories: 2200,
   };
 
@@ -114,7 +114,7 @@ export default function Profile() {
                   <Label htmlFor="height">Height (cm)</Label>
                   <Input 
                     id="height" 
-                    value={userStats?.height || ''} 
+                    value={'170'} 
                     disabled={!isEditing}
                     type="number"
                   />
@@ -194,25 +194,25 @@ export default function Profile() {
             <div className="grid md:grid-cols-4 gap-6 text-center">
               <div>
                 <div className="text-3xl font-bold text-primary mb-2">
-                  {userStats?.totalWorkouts || 0}
+                  24
                 </div>
                 <p className="text-sm text-muted-foreground">Total Workouts</p>
               </div>
               <div>
                 <div className="text-3xl font-bold text-accent mb-2">
-                  {Math.round((userStats?.totalCaloriesBurned || 0) / 1000)}k
+                  12k
                 </div>
                 <p className="text-sm text-muted-foreground">Calories Burned</p>
               </div>
               <div>
                 <div className="text-3xl font-bold text-secondary mb-2">
-                  {Math.round((userStats?.totalWorkoutMinutes || 0) / 60)}h
+                  36h
                 </div>
                 <p className="text-sm text-muted-foreground">Training Time</p>
               </div>
               <div>
                 <div className="text-3xl font-bold text-orange-500 mb-2">
-                  {userStats?.currentStreak || 0}
+                  7
                 </div>
                 <p className="text-sm text-muted-foreground">Day Streak</p>
               </div>

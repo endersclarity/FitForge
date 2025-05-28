@@ -190,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find the most recent session containing this exercise
       for (const session of sessions.reverse()) { // Most recent first
         if (session.exercises) {
-          const exerciseData = session.exercises.find((ex: any) => ex.exerciseName === exerciseName);
+          const exerciseData = Array.isArray(session.exercises) ? session.exercises.find((ex: any) => ex.exerciseName === exerciseName) : null;
           if (exerciseData && exerciseData.sets && exerciseData.sets.length > 0) {
             // Calculate +3% targets based on previous performance
             const lastSet = exerciseData.sets[exerciseData.sets.length - 1];

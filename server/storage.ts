@@ -382,7 +382,8 @@ export class MemStorage implements IStorage {
         workoutId: 1, // Use first workout template as fallback
         totalDuration: session.duration,
         formScore: session.exercises.reduce((avg, ex) => 
-          avg + ex.sets.reduce((setAvg, set) => setAvg + set.formScore, 0) / ex.sets.length, 0) / session.exercises.length
+          avg + ex.sets.reduce((setAvg, set) => setAvg + set.formScore, 0) / ex.sets.length, 0) / session.exercises.length,
+        notes: (session as any).notes || null
       });
     });
   }

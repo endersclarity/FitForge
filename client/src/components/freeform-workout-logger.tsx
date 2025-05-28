@@ -215,10 +215,10 @@ export function FreeformWorkoutLogger() {
   });
 
   // Get unique values for filter dropdowns
-  const availableWorkoutTypes = [...new Set(exercises.map(ex => ex.workoutType))];
-  const availableEquipmentTypes = [...new Set(exercises.map(ex => ex.equipmentType))];
-  const availableDifficulties = [...new Set(exercises.map(ex => ex.difficulty))];
-  const availableCategories = [...new Set(exercises.map(ex => ex.category))];
+  const availableWorkoutTypes = Array.from(new Set(exercises.map(ex => ex.workoutType)));
+  const availableEquipmentTypes = Array.from(new Set(exercises.map(ex => ex.equipmentType)));
+  const availableDifficulties = Array.from(new Set(exercises.map(ex => ex.difficulty)));
+  const availableCategories = Array.from(new Set(exercises.map(ex => ex.category)));
 
   // Session management functions
   const createWorkoutSession = async (): Promise<number | null> => {
@@ -460,7 +460,7 @@ export function FreeformWorkoutLogger() {
   };
 
   const totalVolume = loggedSets.reduce((sum, set) => sum + set.volume, 0);
-  const uniqueExercises = [...new Set(loggedSets.map(set => set.exerciseName))].length;
+  const uniqueExercises = Array.from(new Set(loggedSets.map(set => set.exerciseName))).length;
   const averageFormScore = loggedSets.filter(s => s.formScore).length > 0 
     ? loggedSets.filter(s => s.formScore).reduce((sum, s) => sum + (s.formScore || 0), 0) / loggedSets.filter(s => s.formScore).length
     : 0;
