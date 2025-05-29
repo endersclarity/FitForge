@@ -8,7 +8,6 @@ import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { WorkoutSessionProvider } from "@/hooks/use-workout-session";
 import { Navigation } from "@/components/navigation";
 import { LiveWorkoutSession } from "@/components/live-workout-session";
-import { FreeformWorkoutLogger } from "@/components/freeform-workout-logger";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Auth from "@/pages/auth";
@@ -69,11 +68,6 @@ function Router() {
         <Route path="/workout-session">
           <ProtectedRoute>
             <LiveWorkoutSession />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/start-workout">
-          <ProtectedRoute>
-            <FreeformWorkoutLogger />
           </ProtectedRoute>
         </Route>
         <Route path="/profile">
