@@ -1,0 +1,72 @@
+{
+  "name": "FitForge",
+  "description": "AI-Powered Fitness Ecosystem with workout tracking, progress analytics, and community features",
+  "version": "1.0.0",
+  "commands": {
+    "dev": "npm run dev",
+    "build": "npm run build", 
+    "start": "npm run start",
+    "check": "npm run check",
+    "db:push": "npm run db:push",
+    "audit": "grep -r 'onClick.*undefined\\|onClick.*{' client/src/ || echo 'No missing onClick handlers found'",
+    "test-server": "curl -s http://$(ip addr show eth0 | grep 'inet ' | awk '{print $2}' | cut -d/ -f1):5000 | head -10"
+  },
+  "paths": {
+    "frontend": "client/src",
+    "backend": "server", 
+    "components": "client/src/components",
+    "pages": "client/src/pages",
+    "hooks": "client/src/hooks",
+    "schemas": "shared",
+    "scripts": "scripts",
+    "docs": "docs",
+    "memory": "memory-bank"
+  },
+  "workflows": {
+    "button-fix": [
+      "Read memory-bank/task_button_audit.md",
+      "Grep for missing onClick handlers in components",
+      "Edit components to add event handlers",
+      "Test navigation functionality"
+    ],
+    "feature-dev": [
+      "Review activeContext.md for current focus",
+      "Check memory-bank/ for implementation plans",
+      "Create or update relevant module documentation",
+      "Implement feature with tests"
+    ],
+    "debug-session": [
+      "Start dev server with npm run dev", 
+      "Get WSL IP with test-server command",
+      "Use Interactive Web Debugging Extension",
+      "Document findings in activeContext.md"
+    ]
+  },
+  "context_files": [
+    "activeContext.md",
+    "BRANCH_README.md", 
+    "memory-bank/system_manifest.md",
+    "memory-bank/implementation_plan_button_functionality.md",
+    "memory-bank/project_roadmap.md"
+  ],
+  "architecture": {
+    "frontend": "React + TypeScript + Tailwind + Radix UI",
+    "backend": "Express + TypeScript + Drizzle ORM",
+    "database": "PostgreSQL with enhanced schema",
+    "auth": "Passport.js with session management",
+    "routing": "Wouter for client-side navigation", 
+    "state": "React Query + custom hooks",
+    "styling": "Tailwind CSS with theme provider"
+  },
+  "current_focus": {
+    "phase": "Phase 4: Button Functionality Fixes",
+    "branch": "feature/phase-4-button-functionality-fixes",
+    "priority": "Transform non-functional UI into operational application",
+    "next_tasks": [
+      "Complete button audit",
+      "Implement navigation event handlers", 
+      "Connect workout components to backend APIs",
+      "Add proper loading states and error handling"
+    ]
+  }
+}

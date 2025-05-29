@@ -43,19 +43,27 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, onClick, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     
-    // Fix for onClick not working with asChild
+    // Enhanced click handler with debugging
     const handleClick = React.useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+      console.log("[Button] Click event triggered", { 
+        asChild, 
+        hasOnClick: !!onClick,
+        target: event.currentTarget,
+        props 
+      });
+      
       if (onClick) {
         onClick(event);
       }
-    }, [onClick]);
+    }, [onClick, asChild, props]);
     
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
-        onClick={handleClick}
+        onClick={asChild ? undefined : handleClick}
         {...props}
+        {...(asChild && onClick ? { onClick: handleClick } : {})}
       />
     )
   }
