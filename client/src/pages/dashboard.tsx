@@ -204,10 +204,17 @@ export default function Dashboard() {
             {/* Recent Workouts */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Activity className="w-5 h-5 mr-2 text-primary" />
-                  Recent Workouts
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center">
+                    <Activity className="w-5 h-5 mr-2 text-primary" />
+                    Recent Workouts
+                  </CardTitle>
+                  <Link href="/progress">
+                    <Button variant="outline" size="sm">
+                      See All
+                    </Button>
+                  </Link>
+                </div>
               </CardHeader>
               <CardContent>
                 {recentSessions.length > 0 ? (
@@ -246,10 +253,22 @@ export default function Dashboard() {
             {/* Recent Achievements */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Trophy className="w-5 h-5 mr-2 text-accent" />
-                  Recent Achievements
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center">
+                    <Trophy className="w-5 h-5 mr-2 text-accent" />
+                    Recent Achievements
+                  </CardTitle>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      // TODO: Create achievements page
+                      alert("Achievements page coming soon! Track your progress in the meantime.");
+                    }}
+                  >
+                    See All
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {achievements.length > 0 ? (

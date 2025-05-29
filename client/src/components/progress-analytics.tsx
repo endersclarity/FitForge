@@ -1,9 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Flame, Medal, TrendingUp } from "lucide-react";
+import { Trophy, Flame, Medal, TrendingUp, Download } from "lucide-react";
+import { useState } from "react";
 
 export function ProgressAnalytics() {
+  const [timePeriod, setTimePeriod] = useState("1M");
+  
   // Mock data - in real app this would come from API
   const progressData = [
     { month: "Jan", muscle: 15, fat: 20 },
@@ -13,6 +16,21 @@ export function ProgressAnalytics() {
     { month: "May", muscle: 28, fat: 12 },
     { month: "Jun", muscle: 30, fat: 10 },
   ];
+
+  const handleExportData = () => {
+    // TODO: Implement data export functionality
+    const csvData = progressData.map(item => 
+      `${item.month},${item.muscle},${item.fat}`
+    ).join('\n');
+    
+    const blob = new Blob([`Month,Muscle,Fat\n${csvData}`], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'fitness-progress.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
 
   const achievements = [
     {
@@ -60,9 +78,20 @@ export function ProgressAnalytics() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-2xl">Body Composition Trends</CardTitle>
               <div className="flex space-x-2">
-                <Button size="sm" className="bg-primary text-white">1M</Button>
-                <Button size="sm" variant="outline">3M</Button>
-                <Button size="sm" variant="outline">1Y</Button>
+                {["1M", "3M", "1Y"].map((period) => (
+                  <Button 
+                    key={period}
+                    size="sm" 
+                    variant={timePeriod === period ? "default" : "outline"}
+                    onClick={() => setTimePeriod(period)}
+                  >
+                    {period}
+                  </Button>
+                ))}
+                <Button size="sm" variant="outline" onClick={handleExportData}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
