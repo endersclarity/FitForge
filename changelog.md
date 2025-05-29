@@ -76,7 +76,7 @@ Phase 5 development ready with these potential directions:
 
 ### 🚀 Deployment Status
 - **Application**: Fully functional fitness MVP
-- **Access URL**: http://172.22.206.209:5000
+- **Access URL**: <http://172.22.206.209:5000>
 - **Branch**: fix/critical-ui-event-handlers
 - **Pull Request**: #1 (awaiting review)
 

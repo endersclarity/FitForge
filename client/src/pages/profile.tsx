@@ -36,7 +36,7 @@ export default function Profile() {
     dailyCalories: 2200
   });
 
-  const { data: userStats } = useQuery<UserStats>({
+  const { data: userStats, isLoading: statsLoading, error: statsError } = useQuery<UserStats>({
     queryKey: ["/api/user-stats/latest"],
   });
 
@@ -152,11 +152,6 @@ export default function Profile() {
     updateGoalsMutation.mutate(goalsForm);
   };
 
-  const preferences = {
-    workoutReminders: true,
-    nutritionTracking: true,
-    socialSharing: false,
-  };
 
   return (
     <div className="min-h-screen bg-background">

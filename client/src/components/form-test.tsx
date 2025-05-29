@@ -16,9 +16,9 @@ export function FormTest() {
   const handleNativeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
+    const nativeFormData = new FormData(form);
     console.log("[FormTest] Native form submitted");
-    const data = Object.fromEntries(formData.entries());
+    const data = Object.fromEntries(nativeFormData.entries());
     setSubmitResult(`Native form submitted! ${JSON.stringify(data)}`);
   };
 

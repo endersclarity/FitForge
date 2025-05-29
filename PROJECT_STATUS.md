@@ -60,7 +60,7 @@
 ## 🚀 DEPLOYMENT STATUS
 
 - **Application:** Fully functional fitness MVP
-- **Access URL:** http://172.22.206.209:5000
+- **Access URL:** <http://172.22.206.209:5000>
 - **Branch:** feature/phase-4-comprehensive-implementation
 - **Status:** Ready for production deployment
 
