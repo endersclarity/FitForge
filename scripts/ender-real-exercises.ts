@@ -827,6 +827,6 @@ console.log("Ender's Exercise Database Summary:");
 console.log(`Total exercises: ${enderExerciseDatabase.length}`);
 console.log("Workout types:", Object.keys(enderWorkoutRoutines));
 Object.keys(enderWorkoutRoutines).forEach(type => {
-  const routine = enderWorkoutRoutines[type];
+  const routine = enderWorkoutRoutines[type as keyof typeof enderWorkoutRoutines];
   console.log(`${type}: ${routine.exercises.length} exercises, ${routine.duration}min`);
 });

@@ -18,6 +18,7 @@ export function Navigation() {
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const navItems = [
     { path: "/dashboard", label: "Dashboard" },
@@ -73,8 +74,14 @@ export function Navigation() {
             {user && (
               <>
                 {/* Notifications */}
-                <Button variant="ghost" size="icon" className="hidden md:flex">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="hidden md:flex relative"
+                  onClick={() => setShowNotifications(!showNotifications)}
+                >
                   <Bell className="h-5 w-5" />
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
                 </Button>
 
                 {/* Mobile menu */}

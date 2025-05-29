@@ -18,6 +18,9 @@ import {
   Play
 } from "lucide-react";
 import { Link } from "wouter";
+import { ButtonTest } from "@/components/button-test";
+import { NavigationTest } from "@/components/navigation-test";
+import { FormTest } from "@/components/form-test";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -76,6 +79,30 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Button Test Section - TEMPORARY */}
+      <section className="py-6 bg-yellow-100 dark:bg-yellow-900/20 border-2 border-yellow-500">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-xl font-bold mb-4 text-yellow-800 dark:text-yellow-200">🔧 Debug: Button Click Test</h2>
+          <ButtonTest />
+        </div>
+      </section>
+
+      {/* Navigation Test Section - TEMPORARY */}
+      <section className="py-6 bg-orange-100 dark:bg-orange-900/20 border-2 border-orange-500">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-xl font-bold mb-4 text-orange-800 dark:text-orange-200">🧭 Debug: Navigation Test</h2>
+          <NavigationTest />
+        </div>
+      </section>
+
+      {/* Form Test Section - TEMPORARY */}
+      <section className="py-6 bg-purple-100 dark:bg-purple-900/20 border-2 border-purple-500">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-xl font-bold mb-4 text-purple-800 dark:text-purple-200">📝 Debug: Form Submission Test</h2>
+          <FormTest />
+        </div>
+      </section>
+
       {/* Welcome Section */}
       <section className="bg-gradient-to-r from-primary/10 via-accent/5 to-secondary/10 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -177,10 +204,17 @@ export default function Dashboard() {
             {/* Recent Workouts */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Activity className="w-5 h-5 mr-2 text-primary" />
-                  Recent Workouts
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center">
+                    <Activity className="w-5 h-5 mr-2 text-primary" />
+                    Recent Workouts
+                  </CardTitle>
+                  <Link href="/progress">
+                    <Button variant="outline" size="sm">
+                      See All
+                    </Button>
+                  </Link>
+                </div>
               </CardHeader>
               <CardContent>
                 {recentSessions.length > 0 ? (
@@ -219,10 +253,22 @@ export default function Dashboard() {
             {/* Recent Achievements */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Trophy className="w-5 h-5 mr-2 text-accent" />
-                  Recent Achievements
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center">
+                    <Trophy className="w-5 h-5 mr-2 text-accent" />
+                    Recent Achievements
+                  </CardTitle>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      // TODO: Create achievements page
+                      alert("Achievements page coming soon! Track your progress in the meantime.");
+                    }}
+                  >
+                    See All
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {achievements.length > 0 ? (
