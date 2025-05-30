@@ -12,6 +12,7 @@ import {
 import workoutRoutes from "./workoutRoutes";
 import bodyStatsRoutes from "./bodyStatsRoutes";
 import progressRoutes from "./progressRoutes";
+import userPreferencesRoutes from "./userPreferencesRoutes";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fitforge-secret-key";
 
@@ -583,7 +584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           date: new Date(session.startTime).toISOString().split('T')[0],
           type: 'workout',
           sessionId: session.id,
-          workoutType: session.workoutType || 'Mixed',
+          workoutType: 'Mixed', // workoutType not available in schema
           duration: session.totalDuration || 0,
           calories: session.caloriesBurned || 0,
           formScore: session.formScore || 0,
@@ -601,7 +602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bodyFat: stat.bodyFat || '',
           muscleMass: stat.muscleMass || '',
           energyLevel: stat.energyLevel || '',
-          restingHeartRate: stat.restingHeartRate || '',
+          stressLevel: stat.stressLevel || '', // restingHeartRate not available in schema
           sleepHours: stat.sleepHours || ''
         });
       }
@@ -614,7 +615,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const headers = [
           'Date', 'Type', 'Workout_Type', 'Duration_Min', 'Calories_Burned', 
           'Form_Score', 'Exercise_Count', 'Weight_kg', 'Body_Fat_%', 
-          'Muscle_Mass_kg', 'Energy_Level', 'Resting_HR', 'Sleep_Hours', 'Notes'
+          'Muscle_Mass_kg', 'Energy_Level', 'Stress_Level', 'Sleep_Hours', 'Notes'
         ];
         
         const csvRows = exportData.map(row => [
@@ -629,7 +630,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           row.bodyFat || '',
           row.muscleMass || '',
           row.energyLevel || '',
-          row.restingHeartRate || '',
+          row.stressLevel || '',
           row.sleepHours || '',
           (row.notes || '').replace(/,/g, ';') // Escape commas in notes
         ]);
@@ -661,6 +662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/workouts", workoutRoutes);
   app.use("/api/body-stats", bodyStatsRoutes);
   app.use("/api/progress", progressRoutes);
+  app.use("/api/users", userPreferencesRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

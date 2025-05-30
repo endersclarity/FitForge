@@ -37,10 +37,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: 1,
           username: "ender",
           email: "endersclarity@gmail.com",
+          password: "dev-password",
           firstName: "Ender",
           lastName: "Developer",
           profileImage: null,
-          createdAt: new Date().toISOString()
+          createdAt: new Date()
         });
         setToken("dev-fallback-token");
       }
@@ -51,10 +52,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: 1,
         username: "ender",
         email: "endersclarity@gmail.com",
+        password: "dev-password",
         firstName: "Ender",
         lastName: "Developer",
         profileImage: null,
-        createdAt: new Date().toISOString()
+        createdAt: new Date()
       });
       setToken("dev-fallback-token");
     } finally {

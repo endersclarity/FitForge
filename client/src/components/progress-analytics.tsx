@@ -105,7 +105,7 @@ export function ProgressAnalytics() {
     } catch (error) {
       console.error('Export failed:', error);
       // Fallback to mock data if API fails
-      const csvData = progressData.map(item => 
+      const csvData = progressData.map((item: any) => 
         `${item.month},${item.muscle},${item.fat}`
       ).join('\n');
       

@@ -1,6 +1,7 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { UserPreferences, Achievement, CORE_ACHIEVEMENTS } from '../shared/user-profile';
 
 export interface WorkoutSession {
   id: string;
@@ -498,6 +499,156 @@ export class FileStorage {
         totalWorkouts
       }
     };
+  }
+
+  // User preferences and guided experience methods
+  async getUserPreferences(userId: string): Promise<UserPreferences | null> {
+    const preferencesPath = path.join(this.dataDir, 'users', userId, 'preferences.json');
+    return await this.readJsonFile<UserPreferences | null>(preferencesPath, null);
+  }
+
+  async saveUserPreferences(userId: string, preferences: UserPreferences): Promise<void> {
+    const preferencesPath = path.join(this.dataDir, 'users', userId, 'preferences.json');
+    await this.writeJsonFile(preferencesPath, preferences);
+    await this.createBackup(userId, 'preferences', preferences);
+  }
+
+  async getUserAchievements(userId: string): Promise<Achievement[]> {
+    const achievementsPath = path.join(this.dataDir, 'users', userId, 'achievements.json');
+    return await this.readJsonFile<Achievement[]>(achievementsPath, []);
+  }
+
+  async saveUserAchievements(userId: string, achievements: Achievement[]): Promise<void> {
+    const achievementsPath = path.join(this.dataDir, 'users', userId, 'achievements.json');
+    await this.writeJsonFile(achievementsPath, achievements);
+    await this.createBackup(userId, 'achievements', achievements);
+  }
+
+  async initializeUserAchievements(userId: string): Promise<void> {
+    const achievements: Achievement[] = CORE_ACHIEVEMENTS.map(achievement => ({
+      ...achievement,
+      progress: 0,
+      unlockedAt: undefined
+    }));
+    await this.saveUserAchievements(userId, achievements);
+  }
+
+  async checkAndUpdateAchievements(userId: string, workoutSession: WorkoutSession): Promise<Achievement[]> {
+    const achievements = await this.getUserAchievements(userId);
+    const workouts = await this.getWorkoutSessions(userId);
+    const newlyUnlocked: Achievement[] = [];
+
+    for (const achievement of achievements) {
+      if (achievement.unlockedAt) continue; // Already unlocked
+
+      let progress = achievement.progress;
+      let unlocked = false;
+
+      switch (achievement.id) {
+        case 'first_workout':
+          if (workoutSession.status === 'completed') {
+            progress = 1;
+            unlocked = true;
+          }
+          break;
+        
+        case 'workout_streak_3':
+        case 'workout_streak_7':
+          const targetStreak = achievement.id === 'workout_streak_3' ? 3 : 7;
+          progress = this.calculateCurrentStreak(workouts);
+          unlocked = progress >= targetStreak;
+          break;
+
+        case 'first_pr':
+          // Check if this workout had any personal records
+          const hasNewPR = workoutSession.exercises.some(exercise => 
+            exercise.sets.some(set => set.weight > 0) // Simplified PR check
+          );
+          if (hasNewPR) {
+            progress = 1;
+            unlocked = true;
+          }
+          break;
+
+        case 'volume_1000':
+          if (workoutSession.totalVolume >= 1000) {
+            progress = workoutSession.totalVolume;
+            unlocked = true;
+          }
+          break;
+
+        case 'month_consistent':
+          progress = this.calculateMonthlyConsistency(workouts);
+          unlocked = progress >= 12;
+          break;
+      }
+
+      achievement.progress = progress;
+      if (unlocked && !achievement.unlockedAt) {
+        achievement.unlockedAt = new Date().toISOString();
+        newlyUnlocked.push(achievement);
+      }
+    }
+
+    await this.saveUserAchievements(userId, achievements);
+    return newlyUnlocked;
+  }
+
+  private calculateCurrentStreak(workouts: WorkoutSession[]): number {
+    if (workouts.length === 0) return 0;
+    
+    const sortedWorkouts = workouts
+      .filter(w => w.status === 'completed')
+      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+    
+    let streak = 0;
+    let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    
+    for (const workout of sortedWorkouts) {
+      const workoutDate = new Date(workout.startTime);
+      workoutDate.setHours(0, 0, 0, 0);
+      
+      const daysDiff = Math.floor((currentDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff <= 2) { // Allow for 1 rest day
+        streak++;
+        currentDate = workoutDate;
+      } else {
+        break;
+      }
+    }
+    
+    return streak;
+  }
+
+  private calculateMonthlyConsistency(workouts: WorkoutSession[]): number {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+    
+    const recentWorkouts = workouts.filter(w => 
+      w.status === 'completed' && 
+      new Date(w.startTime) >= thirtyDaysAgo
+    );
+    
+    return recentWorkouts.length;
+  }
+
+  async getUserWorkouts(userId: string): Promise<WorkoutSession[]> {
+    return this.getWorkoutSessions(userId);
+  }
+
+  async trackRecommendationUsage(userId: string, recommendationId: string, used: boolean): Promise<void> {
+    const trackingPath = path.join(this.dataDir, 'users', userId, 'recommendation_tracking.json');
+    const tracking = await this.readJsonFile<any[]>(trackingPath, []);
+    
+    tracking.push({
+      recommendationId,
+      used,
+      timestamp: new Date().toISOString()
+    });
+    
+    await this.writeJsonFile(trackingPath, tracking);
   }
 }
 

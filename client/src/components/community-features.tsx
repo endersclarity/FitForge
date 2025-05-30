@@ -118,7 +118,7 @@ export function CommunityFeatures() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-6">
-            {challenges.map((challenge) => (
+            {challenges.map((challenge: any) => (
               <Card key={challenge.id} className="border hover:shadow-md transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -177,7 +177,7 @@ export function CommunityFeatures() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-6">
-            {socialPosts.map((post) => (
+            {socialPosts.map((post: any) => (
               <div key={post.id} className="border-b border-border pb-6 last:border-b-0">
                 <div className="flex items-center mb-4">
                   <Avatar className="mr-3">

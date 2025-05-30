@@ -98,7 +98,7 @@ export class ProgressiveOverloadService {
         break;
 
       case 'deload_protocol':
-        suggestedWeight = lastWeight * 0.9; // 10% deload
+        suggestedWeight = Math.round(lastWeight * 0.9 * 4) / 4; // 10% deload, rounded to 0.25kg
         reasoning = `High RPE (${metrics.averageRPE.toFixed(1)}) detected. Deload recommended for recovery.`;
         confidenceLevel = 'high';
         break;
@@ -123,6 +123,13 @@ export class ProgressiveOverloadService {
         confidenceLevel = 'low';
     }
 
+    // Handle zero weight edge case
+    if (lastWeight === 0 && suggestedWeight === 0) {
+      suggestedWeight = this.getBaseIncrement(exerciseHistory.exerciseType);
+      reasoning = 'Starting weight set to base increment for exercise type.';
+      confidenceLevel = 'medium';
+    }
+
     // Safety checks
     const weeklyIncrease = this.calculateWeeklyIncrease(exerciseHistory);
     if (weeklyIncrease > this.config.maxWeeklyIncrease) {
@@ -142,7 +149,7 @@ export class ProgressiveOverloadService {
       confidenceLevel,
       reasoning,
       increaseAmount: suggestedWeight - lastWeight,
-      alternativeWeights: this.generateAlternativeWeights(suggestedWeight, baseIncrement),
+      alternativeWeights: this.generateAlternativeWeights(suggestedWeight, baseIncrement, lastWeight),
       lastSessionSummary: {
         weight: lastWeight,
         totalReps: lastSession.sets.reduce((sum, set) => sum + set.reps, 0),
@@ -176,7 +183,8 @@ export class ProgressiveOverloadService {
     const readyForProgression = 
       completionRate >= this.config.minCompletionRate &&
       averageRPE < this.config.progressionRPEThreshold &&
-      lastSession.sets.every(set => set.completed);
+      lastSession.sets.every(set => set.completed) &&
+      lastSession.sets.every(set => set.reps >= lastSession.targetReps); // All target reps achieved
 
     // Calculate trends
     const weights = recentSessions.map(s => s.sets[0]?.weight || 0);
@@ -212,18 +220,19 @@ export class ProgressiveOverloadService {
       return 'deload_protocol';
     }
 
-    // Auto-regulation for experienced users with RPE data
-    const hasReliableRPE = exerciseHistory.sessions
-      .slice(0, 3)
-      .every(session => session.sets.some(set => set.rpe !== undefined));
-    
-    if (hasReliableRPE && exerciseHistory.exerciseType === 'compound') {
-      return 'auto_regulation';
-    }
-
     // Double progression for isolation exercises
     if (exerciseHistory.exerciseType === 'isolation') {
       return 'double_progression';
+    }
+
+    // Auto-regulation for experienced users with RPE data (only if we have multiple sessions)
+    const hasReliableRPE = exerciseHistory.sessions.length >= 3 &&
+      exerciseHistory.sessions
+        .slice(0, 3)
+        .every(session => session.sets.some(set => set.rpe !== undefined));
+    
+    if (hasReliableRPE && exerciseHistory.exerciseType === 'compound') {
+      return 'auto_regulation';
     }
 
     // Default to linear progression
@@ -242,8 +251,9 @@ export class ProgressiveOverloadService {
   private calculateTrend(values: number[]): 'increasing' | 'stable' | 'decreasing' {
     if (values.length < 2) return 'stable';
     
+    // Calculate slope: positive slope means increasing over time (newest to oldest)
     const slope = (values[0] - values[values.length - 1]) / (values.length - 1);
-    const threshold = values[0] * 0.05; // 5% threshold
+    const threshold = Math.max(values[0] * 0.02, 1); // 2% threshold with minimum 1kg
     
     if (slope > threshold) return 'increasing';
     if (slope < -threshold) return 'decreasing';
@@ -319,13 +329,25 @@ export class ProgressiveOverloadService {
     return Math.max(...weights) - Math.min(...weights);
   }
 
-  private generateAlternativeWeights(suggestedWeight: number, baseIncrement: number): number[] {
-    return [
+  private generateAlternativeWeights(suggestedWeight: number, baseIncrement: number, currentWeight?: number): number[] {
+    const alternatives = [
       suggestedWeight - baseIncrement,
       suggestedWeight - (baseIncrement * 0.5),
       suggestedWeight + (baseIncrement * 0.5),
       suggestedWeight + baseIncrement
-    ].map(w => Math.round(w * 4) / 4); // Round to nearest 0.25kg
+    ];
+    
+    // Always include current weight if provided and not already in alternatives
+    if (currentWeight !== undefined) {
+      const rounded = Math.round(currentWeight * 4) / 4;
+      if (!alternatives.some(w => Math.abs(w - rounded) < 0.01)) {
+        alternatives.push(rounded);
+      }
+    }
+    
+    return alternatives
+      .map(w => Math.round(w * 4) / 4) // Round to nearest 0.25kg
+      .sort((a, b) => a - b); // Sort ascending
   }
 
   private createInitialRecommendation(exerciseHistory: ExerciseHistory): ProgressionRecommendation {

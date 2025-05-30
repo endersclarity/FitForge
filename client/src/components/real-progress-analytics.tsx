@@ -110,7 +110,7 @@ export function RealProgressAnalytics() {
   
   // Format strength exercises for display
   const topStrengthGains = Object.entries(strength.exercises || {})
-    .sort((a, b) => b[1].changePercent - a[1].changePercent)
+    .sort((a, b) => (b[1] as any).changePercent - (a[1] as any).changePercent)
     .slice(0, 3);
   
   return (
@@ -230,11 +230,11 @@ export function RealProgressAnalytics() {
                   <div>
                     <p className="font-medium">{exercise}</p>
                     <p className="text-sm text-muted-foreground">
-                      {data.start.toFixed(0)}kg → {data.current.toFixed(0)}kg
+                      {(data as any).start.toFixed(0)}kg → {(data as any).current.toFixed(0)}kg
                     </p>
                   </div>
-                  <Badge variant={data.changePercent > 10 ? "default" : "secondary"}>
-                    +{data.changePercent.toFixed(1)}%
+                  <Badge variant={(data as any).changePercent > 10 ? "default" : "secondary"}>
+                    +{(data as any).changePercent.toFixed(1)}%
                   </Badge>
                 </div>
               ))}

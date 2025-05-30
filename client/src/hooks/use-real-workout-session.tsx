@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 
@@ -68,28 +68,30 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       if (!response.ok) throw new Error('Failed to fetch active workout');
       return response.json();
     },
-    onSuccess: (data) => {
-      if (data) {
-        // Restore active workout session
-        setSession({
-          sessionId: data.id,
-          startTime: new Date(data.startTime),
-          workoutType: data.workoutType,
-          exercises: data.exercises.map((ex: any) => ({
-            exerciseId: ex.exerciseId,
-            exerciseName: ex.exerciseName,
-            sets: ex.sets,
-            currentSet: ex.sets.length + 1,
-            targetSets: 3, // Default
-            restTimeRemaining: 0,
-          })),
-          currentExerciseIndex: 0,
-          status: 'in_progress',
-          totalVolume: data.totalVolume,
-        });
-      }
-    },
   });
+
+  // Handle active workout restoration
+  useEffect(() => {
+    if (activeWorkout) {
+      // Restore active workout session
+      setSession({
+        sessionId: activeWorkout.id,
+        startTime: new Date(activeWorkout.startTime),
+        workoutType: activeWorkout.workoutType,
+        exercises: activeWorkout.exercises.map((ex: any) => ({
+          exerciseId: ex.exerciseId,
+          exerciseName: ex.exerciseName,
+          sets: ex.sets,
+          currentSet: ex.sets.length + 1,
+          targetSets: 3, // Default
+          restTimeRemaining: 0,
+        })),
+        currentExerciseIndex: 0,
+        status: 'in_progress',
+        totalVolume: activeWorkout.totalVolume,
+      });
+    }
+  }, [activeWorkout]);
 
   // Start workout mutation
   const startWorkoutMutation = useMutation({
@@ -217,8 +219,8 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       });
       
       // Invalidate queries
-      queryClient.invalidateQueries(['workoutHistory']);
-      queryClient.invalidateQueries(['progressMetrics']);
+      queryClient.invalidateQueries({ queryKey: ['workoutHistory'] });
+      queryClient.invalidateQueries({ queryKey: ['progressMetrics'] });
     },
     onError: (error: Error) => {
       toast({
@@ -370,10 +372,10 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isLoading = 
-    startWorkoutMutation.isLoading || 
-    logSetMutation.isLoading || 
-    completeWorkoutMutation.isLoading ||
-    abandonWorkoutMutation.isLoading;
+    startWorkoutMutation.isPending || 
+    logSetMutation.isPending || 
+    completeWorkoutMutation.isPending ||
+    abandonWorkoutMutation.isPending;
 
   return (
     <WorkoutSessionContext.Provider
