@@ -4,3 +4,8 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# User data files (should not be in version control)
+data/users/
+data/backup/
+server.log

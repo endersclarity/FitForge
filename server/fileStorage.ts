@@ -251,10 +251,66 @@ export class FileStorage {
   }
 
   async getActiveWorkoutSession(userId: string): Promise<WorkoutSession | null> {
+    // First cleanup old sessions
+    await this.cleanupOldSessions(userId);
+    
     const workoutsPath = path.join(this.dataDir, 'users', userId, 'workouts.json');
     const workouts = await this.readJsonFile<WorkoutSession[]>(workoutsPath, []);
     
     return workouts.find(w => w.status === "in_progress") || null;
+  }
+
+  async cleanupOldSessions(userId: string, maxAgeHours: number = 24): Promise<number> {
+    const workoutsPath = path.join(this.dataDir, 'users', userId, 'workouts.json');
+    const workouts = await this.readJsonFile<WorkoutSession[]>(workoutsPath, []);
+    
+    const cutoffTime = new Date(Date.now() - (maxAgeHours * 60 * 60 * 1000));
+    let cleanedCount = 0;
+    
+    for (const workout of workouts) {
+      if (workout.status === "in_progress" && new Date(workout.startTime) < cutoffTime) {
+        workout.status = "abandoned";
+        workout.endTime = new Date().toISOString();
+        workout.notes = (workout.notes || "") + " [Auto-abandoned due to age]";
+        cleanedCount++;
+      }
+    }
+    
+    if (cleanedCount > 0) {
+      await this.writeJsonFile(workoutsPath, workouts);
+      console.log(`Cleaned up ${cleanedCount} old sessions for user ${userId}`);
+    }
+    
+    return cleanedCount;
+  }
+
+  async forceAbandonSession(userId: string, sessionId: string): Promise<void> {
+    const workoutsPath = path.join(this.dataDir, 'users', userId, 'workouts.json');
+    const workouts = await this.readJsonFile<WorkoutSession[]>(workoutsPath, []);
+    
+    const sessionIndex = workouts.findIndex(w => w.id === sessionId);
+    if (sessionIndex === -1) {
+      throw new Error('Session not found');
+    }
+    
+    const session = workouts[sessionIndex];
+    if (session.status !== "in_progress") {
+      throw new Error('Session is not active');
+    }
+    
+    session.status = "abandoned";
+    session.endTime = new Date().toISOString();
+    session.notes = (session.notes || "") + " [Force abandoned by user]";
+    
+    await this.writeJsonFile(workoutsPath, workouts);
+    console.log(`Force abandoned session ${sessionId} for user ${userId}`);
+  }
+
+  async getAllActiveSessions(userId: string): Promise<WorkoutSession[]> {
+    const workoutsPath = path.join(this.dataDir, 'users', userId, 'workouts.json');
+    const workouts = await this.readJsonFile<WorkoutSession[]>(workoutsPath, []);
+    
+    return workouts.filter(w => w.status === "in_progress");
   }
 
   // Body Stats Methods

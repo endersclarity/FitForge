@@ -6,7 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Play, ArrowLeft, Dumbbell, Clock, Target, Plus, Minus } from "lucide-react";
-import { useWorkoutSession, WorkoutExercise } from "@/hooks/use-workout-session";
+import { useWorkoutSession, WorkoutExercise, SessionConflictError, SessionConflictData } from "@/hooks/use-workout-session";
+import { SessionConflictDialog } from "@/components/SessionConflictDialog";
 
 interface Exercise {
   exerciseName: string;
@@ -31,10 +32,12 @@ interface ExerciseWithWeight extends Exercise {
 
 export default function StartWorkout() {
   const [, setLocation] = useLocation();
-  const { startWorkout } = useWorkoutSession();
+  const { startWorkout, abandonActiveSession, resumeActiveSession } = useWorkoutSession();
   const [selectedVariation, setSelectedVariation] = useState<string>("A");
   const [selectedExercises, setSelectedExercises] = useState<ExerciseWithWeight[]>([]);
   const [showAllSelected, setShowAllSelected] = useState<boolean>(false);
+  const [sessionConflict, setSessionConflict] = useState<SessionConflictData | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
 
   // Get workout type from URL params
   const urlParams = new URLSearchParams(window.location.search);
@@ -100,31 +103,82 @@ export default function StartWorkout() {
     );
   };
 
-  const handleStartWorkout = () => {
+  const handleStartWorkout = async () => {
     if (selectedExercises.length === 0) {
       alert("Please select at least one exercise to start your workout.");
       return;
     }
     
-    // Convert selected exercises to WorkoutExercise format
-    const workoutExercises: WorkoutExercise[] = selectedExercises.map((exercise, index) => ({
-      id: index + 1,
-      name: exercise.exerciseName,
-      primaryMuscles: exercise.primaryMuscles.map(m => m.muscle),
-      secondaryMuscles: exercise.secondaryMuscles.map(m => m.muscle),
-      equipment: exercise.equipment,
-      restTime: exercise.restTime ? parseRestTimeToSeconds(exercise.restTime) : 60,
-      difficulty: exercise.difficulty,
-      workoutType: exercise.workoutType
-    }));
+    setIsStarting(true);
+    
+    try {
+      // Convert selected exercises to WorkoutExercise format
+      const workoutExercises: WorkoutExercise[] = selectedExercises.map((exercise, index) => ({
+        id: index + 1,
+        name: exercise.exerciseName,
+        primaryMuscles: exercise.primaryMuscles.map(m => m.muscle),
+        secondaryMuscles: exercise.secondaryMuscles.map(m => m.muscle),
+        equipment: exercise.equipment,
+        restTime: exercise.restTime ? parseRestTimeToSeconds(exercise.restTime) : 60,
+        difficulty: exercise.difficulty,
+        workoutType: exercise.workoutType
+      }));
 
-    console.log("🏋️ Starting workout with exercises:", workoutExercises);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log("🏋️ Starting workout with exercises:", workoutExercises);
+      }
+      
+      // Start the workout session
+      await startWorkout(workoutName, workoutExercises);
+      
+      // Navigate to live workout session
+      setLocation('/workout-session');
+    } catch (error) {
+      if (error instanceof SessionConflictError) {
+        // Show session conflict dialog
+        setSessionConflict(error.conflictData);
+      } else {
+        console.error('Error starting workout:', error);
+        alert('Failed to start workout. Please try again.');
+      }
+    } finally {
+      setIsStarting(false);
+    }
+  };
+  
+  const handleAbandonAndStart = async () => {
+    if (!sessionConflict) return;
     
-    // Start the workout session
-    startWorkout(workoutName, workoutExercises);
-    
-    // Navigate to live workout session
-    setLocation('/workout-session');
+    setIsStarting(true);
+    try {
+      await abandonActiveSession();
+      setSessionConflict(null);
+      // Retry starting workout
+      await handleStartWorkout();
+    } catch (error) {
+      console.error('Error abandoning session:', error);
+      alert('Failed to abandon previous session. Please try again.');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+  
+  const handleResumeExisting = async () => {
+    setIsStarting(true);
+    try {
+      await resumeActiveSession();
+      setSessionConflict(null);
+      setLocation('/workout-session');
+    } catch (error) {
+      console.error('Error resuming session:', error);
+      alert('Failed to resume previous session. Please try again.');
+      setIsStarting(false);
+    }
+  };
+  
+  const handleCancelConflict = () => {
+    setSessionConflict(null);
+    setIsStarting(false);
   };
 
   const parseRestTimeToSeconds = (restTime: string): number => {
@@ -232,12 +286,12 @@ export default function StartWorkout() {
                 )}
                 <Button 
                   onClick={handleStartWorkout}
-                  disabled={selectedExercises.length === 0}
+                  disabled={selectedExercises.length === 0 || isStarting}
                   size="lg"
                   className="bg-primary hover:bg-primary/90"
                 >
                   <Play className="w-4 h-4 mr-2" />
-                  Start Workout ({selectedExercises.length})
+                  {isStarting ? 'Starting...' : `Start Workout (${selectedExercises.length})`}
                 </Button>
               </div>
             </div>
@@ -433,6 +487,18 @@ export default function StartWorkout() {
           </div>
         )}
       </div>
+      
+      {/* Session Conflict Dialog */}
+      {sessionConflict && (
+        <SessionConflictDialog
+          open={!!sessionConflict}
+          conflictData={sessionConflict}
+          onAbandonAndStart={handleAbandonAndStart}
+          onResumeExisting={handleResumeExisting}
+          onCancel={handleCancelConflict}
+          loading={isStarting}
+        />
+      )}
     </div>
   );
 }

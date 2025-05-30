@@ -27,11 +27,20 @@
 - **Progressive Overload**: Reference `services/progressive-overload.ts` for AI recommendation patterns
 
 ## Testing Workflow
-- Run TypeScript validation before commits: `npm run check`
-- Execute progressive overload tests: `npm test`
-- Manual testing on WSL IP: Use `ip addr show eth0 | grep "inet " | awk '{print $2}' | cut -d/ -f1`:5000
-- Validate all workout flows end-to-end with real user data
-- Test desktop app functionality with `npm run electron-dev`
+- **Primary Browser Testing**: Use MCP BrowserMCP for all user flow testing and debugging
+- **Code Validation**: Run TypeScript validation before commits: `npm run check`
+- **Unit Testing**: Execute progressive overload tests: `npm test`
+- **Manual Testing**: WSL IP access at `ip addr show eth0 | grep "inet " | awk '{print $2}' | cut -d/ -f1`:5000
+- **End-to-End Flows**: Use MCP BrowserMCP to validate complete workout workflows
+- **Desktop Testing**: Test desktop app functionality with `npm run electron-dev`
+
+## Debugging Methodology 
+- **Step 1: MCP BrowserMCP** - Test actual user flows to identify real UX issues
+- **Step 2: Server Logs** - Monitor `server.log` for API call patterns and errors
+- **Step 3: Code Analysis** - Review specific components/routes identified by browser testing
+- **Step 4: Console Logs** - Use `mcp__browsermcp__browser_get_console_logs` for frontend errors
+- **Proven Approach**: Browser testing reveals real issues; code analysis often finds theoretical problems
+- **Avoid**: Custom browser automation scripts - MCP BrowserMCP is more reliable
 
 ## Repository Notes
 - **Real Data Architecture**: Complete JSON file storage with user-specific directories
@@ -46,7 +55,7 @@
 3. **Reference `ARCHITECTURE.md`** for component patterns and development conventions
 4. **Run `/quality`** before commits to ensure tests pass and code quality
 5. **Use `/process`** to enforce proper git workflow and GitHub integration
-6. **Validate on WSL IP** for Windows browser compatibility testing
+6. **Use MCP BrowserMCP** for comprehensive browser testing and user flow validation
 
 ## Key Architectural Insights
 - **Modular API Design**: Separate route files by feature domain for maintainability
