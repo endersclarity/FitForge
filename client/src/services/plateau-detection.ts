@@ -96,7 +96,7 @@ export class PlateauDetectionService {
     const nextEvaluationDate = this.calculateNextEvaluation();
 
     return {
-      exerciseId: exerciseHistory.exerciseId,
+      exerciseId: exerciseHistory.exerciseId.toString(),
       plateauConfidence,
       activeIndicators,
       indicators,
@@ -363,7 +363,7 @@ export class PlateauDetectionService {
 
   private createInsufficientDataResult(exerciseHistory: ExerciseHistory): EvidenceBasedPlateauDetection {
     return {
-      exerciseId: exerciseHistory.exerciseId,
+      exerciseId: exerciseHistory.exerciseId.toString(),
       plateauConfidence: 0,
       activeIndicators: {
         weightStagnation: false,
