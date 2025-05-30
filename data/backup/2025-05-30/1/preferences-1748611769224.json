@@ -1,0 +1,14 @@
+{
+  "goals": [
+    "general_fitness"
+  ],
+  "experienceLevel": "beginner",
+  "availableEquipment": [
+    "bodyweight"
+  ],
+  "workoutFrequency": 3,
+  "sessionDuration": 45,
+  "onboardingCompleted": false,
+  "coachingEnabled": true,
+  "achievementNotifications": true
+}

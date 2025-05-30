@@ -9,226 +9,41 @@ Abs: 4 exercises, 30min
 BackBiceps: 13 exercises, 60min
 ChestTriceps: 14 exercises, 75min
 Legs: 7 exercises, 50min
-Generated 96 realistic workout sessions over 6 months
+Generated 97 realistic workout sessions over 6 months
 [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
-6:50:39 PM [express] serving on port 5000
-6:50:42 PM [express] GET /api/workout-sessions 200 in 4ms :: [{"userId":1,"workoutTemplateId":null,"…
-6:50:42 PM [express] GET /api/auth/me 200 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:50:45 PM [express] GET /api/exercises 304 in 3ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:50:57 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:50:57 PM [express] GET /api/exercises 304 in 2ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:50:58 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:50:58 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:50:58 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:50:58 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:50:58 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:50:58 PM [express] GET /api/exercises 304 in 2ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:50:59 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:50:59 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:50:59 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:50:59 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:50:59 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:50:59 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:50:59 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:50:59 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:50:59 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:50:59 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:50:59 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:50:59 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:51:00 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:51:00 PM [express] GET /api/exercises 304 in 2ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:51:08 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-6:51:08 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:51:11 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:51:16 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-6:51:16 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:51:18 PM [express] GET /api/user-stats/latest 200 in 0ms
-6:51:18 PM [express] GET /api/achievements 304 in 1ms :: []
-6:51:18 PM [express] GET /api/challenges 304 in 1ms :: []
-6:51:19 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:51:23 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:51:23 PM [express] GET /api/workout-sessions 304 in 3ms :: [{"userId":1,"workoutTemplateId":null,"…
-6:51:23 PM [express] GET /api/user-stats/latest 200 in 1ms
-6:51:23 PM [express] GET /api/achievements 304 in 0ms :: []
-6:51:23 PM [express] GET /api/challenges 304 in 1ms :: []
-6:51:24 PM [express] GET /api/user-stats/latest 200 in 0ms
-6:51:25 PM [express] GET /api/user-stats/latest 200 in 0ms
-6:51:27 PM [express] GET /api/user-stats 304 in 1ms :: []
-6:51:31 PM [express] GET /api/user-stats/latest 200 in 1ms
-7:27:31 PM [vite] hmr update /src/components/progress-analytics.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-7:27:32 PM [express] GET /api/progress/chart-data 200 in 2ms :: []
-7:27:32 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-7:27:32 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:27:32 PM [express] GET /api/progress/chart-data 304 in 2ms :: []
-7:27:40 PM [vite] hmr update /src/components/dashboard-overview.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-7:27:51 PM [vite] hmr update /src/components/community-features.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-7:27:52 PM [express] GET /api/challenges 304 in 1ms :: []
-7:27:52 PM [express] GET /api/challenges 304 in 0ms :: []
-7:28:05 PM [vite] hmr update /src/components/community-features.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-7:28:06 PM [express] GET /api/community/posts 404 in 2ms
-7:28:06 PM [express] GET /api/community/posts 404 in 0ms
-7:31:05 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-7:31:05 PM [express] GET /api/challenges 304 in 1ms :: []
-7:31:05 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:31:05 PM [express] GET /api/progress/chart-data 304 in 2ms :: []
-7:31:05 PM [express] GET /api/community/posts 404 in 2ms
-7:31:07 PM [express] GET /api/user-stats/latest 200 in 0ms
-7:31:07 PM [express] GET /api/achievements 304 in 0ms :: []
-7:31:09 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-7:31:12 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:31:12 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-7:31:12 PM [express] GET /api/user-stats/latest 200 in 0ms
-7:31:12 PM [express] GET /api/achievements 304 in 0ms :: []
-7:31:12 PM [express] GET /api/challenges 304 in 0ms :: []
-7:31:14 PM [express] GET /api/exercises 304 in 2ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-7:31:15 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:31:15 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-7:31:20 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-7:31:20 PM [express] GET /api/challenges 304 in 1ms :: []
-7:31:20 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:31:20 PM [express] GET /api/progress/chart-data 304 in 3ms :: []
-7:31:20 PM [express] GET /api/community/posts 404 in 2ms
-7:31:20 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-7:31:20 PM [express] GET /api/challenges 304 in 1ms :: []
-7:31:20 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:31:20 PM [express] GET /api/progress/chart-data 304 in 3ms :: []
-7:31:20 PM [express] GET /api/community/posts 404 in 3ms
-7:31:21 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-7:31:21 PM [express] GET /api/challenges 304 in 0ms :: []
-7:31:21 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:31:21 PM [express] GET /api/progress/chart-data 304 in 6ms :: []
-7:31:21 PM [express] GET /api/community/posts 404 in 5ms
-7:31:21 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-7:31:21 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:31:21 PM [express] GET /api/challenges 304 in 0ms :: []
-7:31:21 PM [express] GET /api/progress/chart-data 304 in 2ms :: []
-7:31:21 PM [express] GET /api/community/posts 404 in 2ms
-7:31:21 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-7:31:21 PM [express] GET /api/challenges 304 in 0ms :: []
-7:31:21 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:31:21 PM [express] GET /api/progress/chart-data 304 in 4ms :: []
-7:31:21 PM [express] GET /api/community/posts 404 in 4ms
-7:31:22 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-7:31:22 PM [express] GET /api/challenges 304 in 0ms :: []
-7:31:22 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:31:22 PM [express] GET /api/progress/chart-data 304 in 2ms :: []
-7:31:22 PM [express] GET /api/community/posts 404 in 2ms
-7:31:56 PM [express] GET /api/workout-sessions 200 in 1ms :: [{"userId":1,"workoutTemplateId":null,"…
-7:32:03 PM [express] GET /api/progress/export 200 in 1ms
-7:34:00 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-7:34:00 PM [express] GET /api/challenges 304 in 0ms :: []
-7:34:00 PM [express] GET /api/progress/chart-data 304 in 2ms :: []
-7:34:00 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:34:00 PM [express] GET /api/community/posts 404 in 2ms
-7:34:21 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:34:21 PM [express] GET /api/exercises 304 in 3ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-7:36:37 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:36:37 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-7:36:37 PM [express] GET /api/user-stats/latest 200 in 0ms
-7:36:37 PM [express] GET /api/achievements 304 in 0ms :: []
-7:36:37 PM [express] GET /api/challenges 304 in 1ms :: []
-7:36:41 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:36:41 PM [express] GET /api/workout-sessions 304 in 5ms :: [{"userId":1,"workoutTemplateId":null,"…
-7:36:41 PM [express] GET /api/user-stats 304 in 0ms :: []
-7:36:41 PM [express] GET /api/achievements 304 in 1ms :: []
-7:36:41 PM [express] GET /api/progress/chart-data 304 in 2ms :: []
-7:37:01 PM [express] GET /api/progress/export 200 in 1ms
-7:37:56 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:37:56 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-7:38:01 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:38:01 PM [express] GET /api/exercises 304 in 2ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-7:50:31 PM [vite] hmr update /src/pages/workouts.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-7:50:32 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:52:09 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:54:39 PM [express] GET /api/exercises 200 in 3ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-7:55:58 PM [vite] hmr update /src/App.tsx?v=N6SlFowPbFkVaoSRTdADv, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-7:56:03 PM [vite] hmr update /src/App.tsx?v=N6SlFowPbFkVaoSRTdADv, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-7:56:40 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:56:45 PM [express] GET /api/exercises 304 in 2ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-7:58:22 PM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-7:58:28 PM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-7:58:38 PM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-7:58:46 PM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-7:59:28 PM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:01:21 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:01:25 PM [express] GET /api/exercises 304 in 6ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-8:02:58 PM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:03:05 PM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:03:16 PM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:05:33 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:05:35 PM [express] GET /api/exercises 304 in 2ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-8:06:13 PM [express] GET /api/workout-sessions 304 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-8:06:13 PM [express] GET /api/progress/chart-data 304 in 1ms :: []
-8:06:13 PM [express] GET /api/user-stats 304 in 1ms :: []
-8:06:13 PM [express] GET /api/achievements 304 in 0ms :: []
-8:09:08 PM [vite] hmr update /src/components/live-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:09:16 PM [vite] hmr update /src/components/live-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:09:31 PM [vite] hmr update /src/components/live-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:09:32 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:09:32 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:09:32 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:09:47 PM [vite] hmr update /src/components/live-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:09:48 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:09:48 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:09:48 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:11:13 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:11:22 PM [express] GET /api/exercises 304 in 3ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-8:14:23 PM [express] GET /api/exercises 200 in 2ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-8:14:28 PM [express] GET /api/exercises 200 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-8:15:22 PM [vite] hmr update /src/components/live-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:15:29 PM [vite] hmr update /src/components/live-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:15:46 PM [vite] hmr update /src/components/live-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:15:57 PM [vite] hmr update /src/components/live-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:16:02 PM [vite] hmr update /src/components/live-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:16:08 PM [vite] hmr update /src/components/live-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:16:33 PM [vite] hmr update /src/hooks/use-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:16:33 PM [vite] hmr invalidate /src/hooks/use-workout-session.tsx Could not Fast Refresh ("useWorkoutSession" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
-8:16:33 PM [vite] hmr update /src/App.tsx?v=N6SlFowPbFkVaoSRTdADv, /src/index.css?v=N6SlFowPbFkVaoSRTdADv, /src/components/live-workout-session.tsx, /src/pages/start-workout.tsx
-8:16:58 PM [vite] hmr update /src/hooks/use-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:16:59 PM [vite] hmr invalidate /src/hooks/use-workout-session.tsx Could not Fast Refresh ("useWorkoutSession" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
-8:16:59 PM [vite] hmr update /src/App.tsx?v=N6SlFowPbFkVaoSRTdADv, /src/index.css?v=N6SlFowPbFkVaoSRTdADv, /src/components/live-workout-session.tsx, /src/pages/start-workout.tsx
-8:17:16 PM [vite] hmr update /src/hooks/use-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:17:16 PM [vite] hmr invalidate /src/hooks/use-workout-session.tsx Could not Fast Refresh ("useWorkoutSession" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
-8:17:16 PM [vite] hmr update /src/App.tsx?v=N6SlFowPbFkVaoSRTdADv, /src/index.css?v=N6SlFowPbFkVaoSRTdADv, /src/components/live-workout-session.tsx, /src/pages/start-workout.tsx
-8:17:25 PM [vite] hmr update /src/hooks/use-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:17:25 PM [vite] hmr invalidate /src/hooks/use-workout-session.tsx Could not Fast Refresh ("useWorkoutSession" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
-8:17:25 PM [vite] hmr update /src/App.tsx?v=N6SlFowPbFkVaoSRTdADv, /src/index.css?v=N6SlFowPbFkVaoSRTdADv, /src/components/live-workout-session.tsx, /src/pages/start-workout.tsx
-8:22:31 PM [vite] hmr update /src/components/live-workout-session.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:30:25 PM [vite] page reload src/components/workout/RealSetLogger.tsx
-8:30:26 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:26 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:26 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:26 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:26 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:35 PM [vite] page reload src/components/workout/RealSetLogger.tsx
-8:30:36 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:36 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:36 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:36 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:36 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:45 PM [vite] page reload src/components/workout/RealSetLogger.tsx
-8:30:46 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:46 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:46 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:46 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:30:46 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:38:47 PM [vite] page reload src/hooks/use-progressive-overload.tsx
-8:38:48 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:38:48 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:38:48 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:38:48 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:38:48 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:44:25 PM [express] GET /api/auth/me 200 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:44:39 PM [vite] hmr update /src/hooks/use-auth.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:44:40 PM [vite] hmr invalidate /src/hooks/use-auth.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
-8:44:40 PM [vite] hmr update /src/App.tsx?v=N6SlFowPbFkVaoSRTdADv, /src/index.css?v=N6SlFowPbFkVaoSRTdADv, /src/pages/progress.tsx, /src/pages/profile.tsx, /src/pages/nutrition.tsx, /src/pages/community.tsx, /src/pages/dashboard.tsx, /src/pages/auth.tsx, /src/components/navigation.tsx, /src/components/hero-section.tsx
-8:44:41 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:44:41 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:44:41 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:44:41 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:44:41 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-8:45:00 PM [vite] hmr update /src/App.tsx?v=N6SlFowPbFkVaoSRTdADv, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:50:10 PM [vite] hmr update /src/pages/workouts.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:50:18 PM [vite] hmr update /src/pages/workouts.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
-8:56:15 PM [express] GET /api/exercises 200 in 3ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-8:57:11 PM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
+6:27:03 AM [express] serving on port 5000
+6:27:33 AM [express] GET /api/exercises 200 in 4ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
+6:27:37 AM [express] GET /api/workout-sessions 200 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
+6:27:42 AM [express] GET /api/auth/me 200 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
+6:28:02 AM [express] GET /api/workout-sessions 200 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
+6:28:02 AM [express] GET /api/challenges 200 in 0ms :: []
+6:28:03 AM [express] GET /api/auth/me 200 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
+6:28:03 AM [express] GET /api/progress/chart-data 200 in 6ms :: []
+6:28:03 AM [express] GET /api/community/posts 404 in 5ms
+6:28:05 AM [express] GET /api/user-preferences 404 in 1ms
+6:28:12 AM [express] GET /api/progress/metrics 200 in 1ms :: {"muscle":{"start":0,"current":0,"chang…
+6:28:15 AM [express] GET /api/progress/export 200 in 2ms
+6:28:26 AM [express] GET /api/user-stats/latest 200 in 1ms
+6:28:26 AM [express] GET /api/achievements 200 in 1ms :: []
+6:28:51 AM [express] GET /api/users/preferences 404 in 2ms
+Error fetching user preferences: [Error: ENOENT: no such file or directory, open '/home/ender/.claude/projects/ai-tools-workflow-integration/FitForge/data/users/1/preferences.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/ender/.claude/projects/ai-tools-workflow-integration/FitForge/data/users/1/preferences.json'
+}
+6:29:04 AM [express] GET /api/users/preferences/1 500 in 4ms :: {"error":"Failed to fetch user prefe…
+6:29:29 AM [express] GET /api/users/preferences/1 200 in 3ms :: {"goals":["general_fitness"],"experi…
+6:29:38 AM [express] GET /api/exercises 200 in 2ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
+6:30:06 AM [express] POST /api/workouts/start 200 in 3ms :: {"sessionId":"a5a318c9-4d36-4b7e-b29c-55…
+6:30:13 AM [express] POST /api/workouts/start 400 in 1ms :: {"message":"You already have an active w…
+Error logging set: Error: Workout session not found
+    at FileStorage.logSet (/home/ender/.claude/projects/ai-tools-workflow-integration/FitForge/server/fileStorage.ts:2:2441)
+    at async /home/ender/.claude/projects/ai-tools-workflow-integration/FitForge/server/workoutRoutes.ts:2:2895
+6:31:11 AM [express] POST /api/workouts/local_session_1748611813368/sets 500 in 3ms :: {"message":"W…
+Error completing workout: Error: Workout session not found
+    at FileStorage.completeWorkout (/home/ender/.claude/projects/ai-tools-workflow-integration/FitForge/server/fileStorage.ts:2:3382)
+    at async /home/ender/.claude/projects/ai-tools-workflow-integration/FitForge/server/workoutRoutes.ts:2:3760
+6:31:58 AM [express] PUT /api/workouts/local_session_1748611813368/complete 500 in 2ms :: {"message"…
+6:32:11 AM [express] GET /api/user-stats 200 in 0ms :: []
+6:32:35 AM [express] GET /api/social/posts 200 in 0ms :: []
