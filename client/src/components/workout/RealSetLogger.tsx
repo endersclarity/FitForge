@@ -8,6 +8,8 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useRealWorkoutSession } from "@/hooks/use-real-workout-session";
+import { useProgressiveOverloadEnabled } from "@/hooks/use-progressive-overload";
+import { ProgressiveOverloadSuggestion } from "./ProgressiveOverloadSuggestion";
 import { 
   Plus, 
   Minus, 
@@ -21,6 +23,7 @@ import {
 
 export function RealSetLogger() {
   const { session, logSet, completeExercise, goToNextExercise, goToPreviousExercise, isLoading } = useRealWorkoutSession();
+  const { enabled: progressiveOverloadEnabled } = useProgressiveOverloadEnabled();
   
   // Form state
   const [weight, setWeight] = useState<string>('');
@@ -129,6 +132,16 @@ export function RealSetLogger() {
             <p className="font-medium mb-1">Previous Set:</p>
             <p>{previousSet.weight}kg × {previousSet.reps} reps = {(previousSet.weight * previousSet.reps).toFixed(0)}kg volume</p>
           </div>
+        )}
+        
+        {/* Progressive Overload Suggestion */}
+        {progressiveOverloadEnabled && currentExercise.currentSet === 1 && (
+          <ProgressiveOverloadSuggestion
+            exerciseId={currentExercise.exerciseId}
+            exerciseName={currentExercise.exerciseName}
+            currentWeight={weight}
+            onWeightSuggestionAccepted={(suggestedWeight) => setWeight(suggestedWeight.toString())}
+          />
         )}
         
         {/* Weight input */}
