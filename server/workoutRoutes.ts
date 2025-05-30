@@ -39,7 +39,7 @@ router.post("/start", authenticateToken, async (req: any, res) => {
     // Check if there's already an active session
     const activeSession = await fileStorage.getActiveWorkoutSession(userId);
     if (activeSession) {
-      return res.status(400).json({ 
+      return res.status(409).json({ 
         message: "You already have an active workout session. Please complete or abandon it first.",
         sessionId: activeSession.id,
         sessionStartTime: activeSession.startTime,

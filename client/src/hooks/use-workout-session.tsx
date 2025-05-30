@@ -87,10 +87,12 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<WorkoutSessionState | null>(null);
 
   const startWorkout = useCallback(async (workoutType: string, exercises: WorkoutExercise[]) => {
-    console.log("💪💪💪 startWorkout CALLED!");
-    console.log("💪 workoutType:", workoutType);
-    console.log("💪 exercises:", exercises);
-    console.log("💪 exercises length:", exercises.length);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log("💪💪💪 startWorkout CALLED!");
+      console.log("💪 workoutType:", workoutType);
+      console.log("💪 exercises:", exercises);
+      console.log("💪 exercises length:", exercises.length);
+    }
     
     try {
       // Start workout session on backend
@@ -126,21 +128,33 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
           workoutType
         };
         
-        console.log("💪 NEW SESSION CREATED:", newSession);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log("💪 NEW SESSION CREATED:", newSession);
+        }
         setSession(newSession);
-        console.log("💪 SESSION STATE UPDATED");
+        if (process.env.NODE_ENV !== 'production') {
+          console.log("💪 SESSION STATE UPDATED");
+        }
         
         // Persist to localStorage for recovery
         localStorage.setItem('activeWorkoutSession', JSON.stringify(newSession));
-        console.log("💪 SESSION SAVED TO LOCALSTORAGE");
-        console.log("💪 startWorkout COMPLETED SUCCESSFULLY");
-      } else if (response.status === 400) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log("💪 SESSION SAVED TO LOCALSTORAGE");
+          console.log("💪 startWorkout COMPLETED SUCCESSFULLY");
+        }
+      } else if (response.status === 409 /* Conflict */) {
         // Session conflict - get details and throw for UI to handle
-        const conflictData = await response.json();
-        console.log("Session conflict detected:", conflictData);
-        throw new SessionConflictError(conflictData);
+        try {
+          const conflictData = await response.json();
+          console.log("Session conflict detected:", conflictData);
+          throw new SessionConflictError(conflictData);
+        } catch (jsonError) {
+          console.error("Failed to parse conflict response:", jsonError);
+          throw new Error('Session conflict detected but could not parse details');
+        }
       } else {
-        console.error("Failed to start workout on backend:", await response.text());
+        const errorText = await response.text();
+        console.error("Failed to start workout on backend:", response.status, errorText);
         throw new Error('Failed to start workout session');
       }
     } catch (error) {

@@ -25,3 +25,16 @@ Generated 93 realistic workout sessions over 6 months
 9:00:02 AM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
 9:00:02 AM [express] GET /api/exercises 200 in 4ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
 9:00:56 AM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
+9:18:16 AM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=3Yv7Bf27qq-nebYC1c1ms
+9:18:28 AM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=3Yv7Bf27qq-nebYC1c1ms
+9:18:39 AM [vite] hmr update /src/hooks/use-workout-session.tsx, /src/index.css?v=3Yv7Bf27qq-nebYC1c1ms
+9:18:40 AM [vite] hmr invalidate /src/hooks/use-workout-session.tsx Could not Fast Refresh ("SessionConflictError" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+9:18:40 AM [vite] hmr update /src/App.tsx?v=3Yv7Bf27qq-nebYC1c1ms, /src/index.css?v=3Yv7Bf27qq-nebYC1c1ms, /src/components/live-workout-session.tsx, /src/pages/start-workout.tsx
+9:19:08 AM [vite] hmr update /src/hooks/use-workout-session.tsx, /src/index.css?v=3Yv7Bf27qq-nebYC1c1ms
+9:19:08 AM [vite] hmr invalidate /src/hooks/use-workout-session.tsx Could not Fast Refresh ("SessionConflictError" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+9:19:08 AM [vite] hmr update /src/App.tsx?v=3Yv7Bf27qq-nebYC1c1ms, /src/index.css?v=3Yv7Bf27qq-nebYC1c1ms, /src/components/live-workout-session.tsx, /src/pages/start-workout.tsx
+9:19:17 AM [vite] hmr update /src/hooks/use-workout-session.tsx, /src/index.css?v=3Yv7Bf27qq-nebYC1c1ms
+9:19:17 AM [vite] hmr invalidate /src/hooks/use-workout-session.tsx Could not Fast Refresh ("SessionConflictError" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+9:19:17 AM [vite] hmr update /src/App.tsx?v=3Yv7Bf27qq-nebYC1c1ms, /src/index.css?v=3Yv7Bf27qq-nebYC1c1ms, /src/components/live-workout-session.tsx, /src/pages/start-workout.tsx
+9:20:11 AM [vite] hmr update /src/components/SessionConflictDialog.tsx, /src/index.css?v=3Yv7Bf27qq-nebYC1c1ms
+9:20:22 AM [vite] hmr update /src/components/SessionConflictDialog.tsx, /src/index.css?v=3Yv7Bf27qq-nebYC1c1ms

@@ -29,9 +29,15 @@ export function SessionConflictDialog({
   loading = false
 }: SessionConflictDialogProps) {
   const sessionStartTime = new Date(conflictData.sessionStartTime);
-  const timeAgo = Math.round((Date.now() - sessionStartTime.getTime()) / 1000 / 60);
+  const now = Date.now();
+  const startTime = sessionStartTime.getTime();
+  
+  // Handle invalid dates or future timestamps
+  const timeAgo = isNaN(startTime) || startTime > now ? 0 : Math.round((now - startTime) / 1000 / 60);
   
   const formatTimeAgo = (minutes: number) => {
+    if (isNaN(startTime) || startTime > now) return "Recently";
+    if (minutes < 1) return "Just now";
     if (minutes < 60) return `${minutes} minutes ago`;
     const hours = Math.round(minutes / 60);
     if (hours < 24) return `${hours} hours ago`;

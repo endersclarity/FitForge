@@ -124,7 +124,9 @@ export default function StartWorkout() {
         workoutType: exercise.workoutType
       }));
 
-      console.log("🏋️ Starting workout with exercises:", workoutExercises);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log("🏋️ Starting workout with exercises:", workoutExercises);
+      }
       
       // Start the workout session
       await startWorkout(workoutName, workoutExercises);
@@ -156,6 +158,7 @@ export default function StartWorkout() {
     } catch (error) {
       console.error('Error abandoning session:', error);
       alert('Failed to abandon previous session. Please try again.');
+    } finally {
       setIsStarting(false);
     }
   };

@@ -51,7 +51,7 @@ claude mcp add-json servername '{"command":"path","env":{"KEY":"value"}}'
 
 ## API Key Configuration
 
-### Environment Variables Needed:
+### Environment Variables Needed
 ```bash
 # GitHub Integration
 GITHUB_PERSONAL_ACCESS_TOKEN="your_token_here"
@@ -70,7 +70,7 @@ NOTION_API_KEY="secret_your_key"
 EXA_API_KEY="your_exa_key"
 ```
 
-### Already Configured:
+### Already Configured
 - **BRAVE_API_KEY**: `BSAKL***` (configured in MCP)
 - **FIRECRAWL_API_KEY**: `fc-***` (configured in MCP)
 - **FIGMA_ACCESS_TOKEN**: `figd_***` (configured in MCP)
@@ -80,12 +80,12 @@ EXA_API_KEY="your_exa_key"
 
 ## Troubleshooting
 
-### Common Issues:
+### Common Issues
 1. **Server Failed**: Check if binary exists at path
 2. **Connection Timeout**: Try removing and re-adding with absolute path
 3. **Auth Errors**: Verify API keys in environment configuration
 
-### Debug Commands:
+### Debug Commands
 ```bash
 # Check binary exists
 ls -la /home/ender/.npm-global/bin/servername
