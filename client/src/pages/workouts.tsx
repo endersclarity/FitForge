@@ -61,7 +61,6 @@ const workoutTypes = [
 
 export default function Workouts() {
   const [, setLocation] = useLocation();
-  const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
 
   const handleStartWorkout = (workoutId: string) => {
     // Navigate to workout session with the selected workout type
@@ -90,7 +89,7 @@ export default function Workouts() {
               <Card 
                 key={workout.id}
                 className={`transition-all duration-200 cursor-pointer ${workout.color}`}
-                onClick={() => setSelectedWorkout(workout.id)}
+                onClick={() => handleStartWorkout(workout.id)}
               >
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
