@@ -49,8 +49,7 @@ export default function StartWorkout() {
   const filteredExercises = exercises.filter(exercise => {
     const matchesType = exercise.workoutType.toLowerCase() === workoutType.toLowerCase();
     const matchesVariation = exercise.variation === selectedVariation || 
-                            exercise.variation === `${selectedVariation}/B` || 
-                            exercise.variation === `A/${selectedVariation}`;
+                            exercise.variation === "A/B";  // A/B exercises work for both variations
     return matchesType && matchesVariation;
   });
 

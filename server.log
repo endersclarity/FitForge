@@ -230,3 +230,5 @@ Generated 96 realistic workout sessions over 6 months
 8:45:00 PM [vite] hmr update /src/App.tsx?v=N6SlFowPbFkVaoSRTdADv, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
 8:50:10 PM [vite] hmr update /src/pages/workouts.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
 8:50:18 PM [vite] hmr update /src/pages/workouts.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
+8:56:15 PM [express] GET /api/exercises 200 in 3ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
+8:57:11 PM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=N6SlFowPbFkVaoSRTdADv
