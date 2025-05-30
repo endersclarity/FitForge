@@ -1,6 +1,6 @@
 
-> rest-express@1.0.0 start
-> NODE_ENV=production node dist/index.js
+> fitforge-desktop@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
 
 Ender's Exercise Database Summary:
 Total exercises: 38
@@ -9,100 +9,20 @@ Abs: 4 exercises, 30min
 BackBiceps: 13 exercises, 60min
 ChestTriceps: 14 exercises, 75min
 Legs: 7 exercises, 50min
-5:23:59 PM [express] serving on port 5000
-5:24:13 PM [express] GET /api/auth/me 304 in 2ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:13 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:13 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:15 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:16 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:17 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:17 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:17 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:17 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:17 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:18 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:18 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:18 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:18 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:19 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:19 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:19 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:19 PM [express] GET /api/auth/me 304 in 2ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:19 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:19 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:20 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:20 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:20 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:20 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:20 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:21 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:21 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:21 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:21 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:21 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:21 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:22 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:22 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:22 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:22 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:22 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:22 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:23 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:23 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:23 PM [express] GET /api/auth/me 304 in 2ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:23 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:23 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:23 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:24 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:24 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:24 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:24 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:24 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:28 PM [express] GET /api/workouts 200 in 1ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-5:24:28 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:24:31 PM [express] GET /api/workout-sessions 200 in 1ms :: [{"userId":1,"workoutTemplateId":null,"…
-5:26:13 PM [express] GET /api/user-stats 200 in 0ms :: []
-5:26:13 PM [express] GET /api/achievements 200 in 0ms :: []
-5:26:33 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:26:33 PM [express] GET /api/workouts 304 in 1ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-5:26:33 PM [express] GET /api/workout-sessions 304 in 1ms :: [{"userId":1,"workoutTemplateId":null,"…
-5:26:36 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:26:37 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:26:37 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:26:37 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:26:37 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:26:38 PM [express] GET /api/auth/me 304 in 2ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:26:38 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:26:38 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-5:33:35 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:50:11 PM [express] GET /api/workouts 304 in 1ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-6:50:11 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:50:18 PM [express] GET /api/user-stats/latest 200 in 0ms
-6:50:18 PM [express] GET /api/workout-sessions 304 in 0ms :: [{"userId":1,"workoutTemplateId":null,"…
-6:50:18 PM [express] GET /api/challenges 304 in 0ms :: []
-6:50:18 PM [express] GET /api/achievements 304 in 1ms :: []
-6:50:40 PM [express] GET /api/user-stats/latest 200 in 0ms
-6:51:14 PM [express] GET /api/workouts 304 in 0ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-6:51:14 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:51:19 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:51:20 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:51:20 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:52:50 PM [express] GET /api/workouts 200 in 1ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-6:52:53 PM [express] GET /api/workouts 200 in 2ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-6:57:17 PM [express] GET /api/workouts 304 in 1ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-6:57:17 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:01:33 PM [express] GET /api/workouts 304 in 1ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-7:01:33 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:01:47 PM [express] GET /api/workouts 304 in 1ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-7:01:47 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:09:48 PM [express] GET /api/workouts 200 in 1ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-7:09:48 PM [express] GET /api/workouts 200 in 1ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-7:10:16 PM [express] GET /api/auth/me 200 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:10:16 PM [express] GET /api/auth/me 200 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:11:35 PM [express] GET /api/workouts 304 in 1ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-7:11:35 PM [express] GET /api/auth/me 304 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-7:36:39 PM [express] GET /api/health 200 in 1ms
-7:36:44 PM [express] GET /api/workouts 200 in 1ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-7:36:44 PM [express] GET /api/workouts 200 in 3ms :: [{"userId":1,"name":"Ender's Push Day","descrip…
-7:36:45 PM [express] GET /api/exercises 200 in 2ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-Killed
+Generated 96 realistic workout sessions over 6 months
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+5:12:30 PM [express] serving on port 5000
+5:12:42 PM [express] GET /api/auth/me 200 in 2ms :: {"id":1,"username":"ender","email":"ender@test.c…
+5:12:51 PM [express] GET /api/auth/me 304 in 2ms :: {"id":1,"username":"ender","email":"ender@test.c…
+5:12:51 PM [express] GET /api/user-stats/latest 200 in 1ms
+5:12:51 PM [express] GET /api/achievements 304 in 0ms :: []
+5:12:51 PM [express] GET /api/challenges 304 in 1ms :: []
+5:12:51 PM [express] GET /api/workout-sessions 200 in 5ms :: [{"userId":1,"workoutTemplateId":null,"…
+5:13:18 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
+5:13:18 PM [express] GET /api/exercises 304 in 2ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
+5:13:30 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
+5:13:30 PM [express] GET /api/user-stats 304 in 1ms :: []
+5:13:30 PM [express] GET /api/achievements 304 in 0ms :: []
+5:13:30 PM [express] GET /api/workout-sessions 304 in 1ms :: [{"userId":1,"workoutTemplateId":null,"…
+5:14:04 PM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
+5:14:04 PM [express] GET /api/exercises 304 in 1ms :: [{"exerciseName":"Planks","equipmentType":"Bod…

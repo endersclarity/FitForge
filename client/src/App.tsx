@@ -55,6 +55,11 @@ function Router() {
             <Workouts />
           </ProtectedRoute>
         </Route>
+        <Route path="/start-workout">
+          <ProtectedRoute>
+            <Workouts />
+          </ProtectedRoute>
+        </Route>
         <Route path="/progress">
           <ProtectedRoute>
             <Progress />
