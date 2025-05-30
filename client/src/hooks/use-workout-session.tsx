@@ -65,37 +65,98 @@ const WorkoutSessionContext = createContext<WorkoutSessionContextType | undefine
 export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<WorkoutSessionState | null>(null);
 
-  const startWorkout = useCallback((workoutType: string, exercises: WorkoutExercise[]) => {
+  const startWorkout = useCallback(async (workoutType: string, exercises: WorkoutExercise[]) => {
     console.log("💪💪💪 startWorkout CALLED!");
     console.log("💪 workoutType:", workoutType);
     console.log("💪 exercises:", exercises);
     console.log("💪 exercises length:", exercises.length);
     
-    const newSession: WorkoutSessionState = {
-      sessionId: `session_${Date.now()}`,
-      startTime: new Date(),
-      currentExerciseIndex: 0,
-      exercises: exercises.map(ex => ({
-        exerciseId: ex.id,
-        exerciseName: ex.name,
-        sets: [],
-        completed: false,
-        restTimeRemaining: ex.restTime
-      })),
-      status: "in_progress",
-      totalVolume: 0,
-      estimatedCalories: 0,
-      workoutType
-    };
-    
-    console.log("💪 NEW SESSION CREATED:", newSession);
-    setSession(newSession);
-    console.log("💪 SESSION STATE UPDATED");
-    
-    // Persist to localStorage for recovery
-    localStorage.setItem('activeWorkoutSession', JSON.stringify(newSession));
-    console.log("💪 SESSION SAVED TO LOCALSTORAGE");
-    console.log("💪 startWorkout COMPLETED SUCCESSFULLY");
+    try {
+      // Start workout session on backend
+      const response = await fetch('/api/workouts/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workoutType,
+          plannedExercises: exercises.map(ex => ex.name)
+        }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Backend session started:", result);
+        
+        const newSession: WorkoutSessionState = {
+          sessionId: result.sessionId,
+          startTime: new Date(result.startTime),
+          currentExerciseIndex: 0,
+          exercises: exercises.map(ex => ({
+            exerciseId: ex.id,
+            exerciseName: ex.name,
+            sets: [],
+            completed: false,
+            restTimeRemaining: ex.restTime
+          })),
+          status: "in_progress",
+          totalVolume: 0,
+          estimatedCalories: 0,
+          workoutType
+        };
+        
+        console.log("💪 NEW SESSION CREATED:", newSession);
+        setSession(newSession);
+        console.log("💪 SESSION STATE UPDATED");
+        
+        // Persist to localStorage for recovery
+        localStorage.setItem('activeWorkoutSession', JSON.stringify(newSession));
+        console.log("💪 SESSION SAVED TO LOCALSTORAGE");
+        console.log("💪 startWorkout COMPLETED SUCCESSFULLY");
+      } else {
+        console.error("Failed to start workout on backend:", await response.text());
+        // Fall back to local-only session
+        const fallbackSession: WorkoutSessionState = {
+          sessionId: `local_session_${Date.now()}`,
+          startTime: new Date(),
+          currentExerciseIndex: 0,
+          exercises: exercises.map(ex => ({
+            exerciseId: ex.id,
+            exerciseName: ex.name,
+            sets: [],
+            completed: false,
+            restTimeRemaining: ex.restTime
+          })),
+          status: "in_progress",
+          totalVolume: 0,
+          estimatedCalories: 0,
+          workoutType
+        };
+        setSession(fallbackSession);
+        localStorage.setItem('activeWorkoutSession', JSON.stringify(fallbackSession));
+      }
+    } catch (error) {
+      console.error("Error starting workout:", error);
+      // Fall back to local-only session
+      const fallbackSession: WorkoutSessionState = {
+        sessionId: `local_session_${Date.now()}`,
+        startTime: new Date(),
+        currentExerciseIndex: 0,
+        exercises: exercises.map(ex => ({
+          exerciseId: ex.id,
+          exerciseName: ex.name,
+          sets: [],
+          completed: false,
+          restTimeRemaining: ex.restTime
+        })),
+        status: "in_progress",
+        totalVolume: 0,
+        estimatedCalories: 0,
+        workoutType
+      };
+      setSession(fallbackSession);
+      localStorage.setItem('activeWorkoutSession', JSON.stringify(fallbackSession));
+    }
   }, []);
 
   const pauseWorkout = useCallback(() => {
@@ -114,7 +175,7 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
     }
   }, [session]);
 
-  const endWorkout = useCallback(() => {
+  const endWorkout = useCallback(async () => {
     if (session) {
       const updatedSession = { 
         ...session, 
@@ -123,15 +184,36 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       };
       setSession(updatedSession);
       
-      // TODO: Save to database via API call
-      console.log("Saving workout session:", updatedSession);
+      try {
+        // Complete workout on backend
+        const response = await fetch(`/api/workouts/${session.sessionId}/complete`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            rating: 5, // Default good rating
+            notes: `Workout completed via FitForge app. ${session.exercises.length} exercises, ${session.totalVolume} lbs total volume, ${session.estimatedCalories} calories burned.`
+          }),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log("Workout saved successfully:", result);
+        } else {
+          console.error("Failed to save workout:", await response.text());
+        }
+      } catch (error) {
+        console.error("Error saving workout:", error);
+        // Continue anyway - we don't want to block the UI
+      }
       
       // Clear localStorage
       localStorage.removeItem('activeWorkoutSession');
     }
   }, [session]);
 
-  const logSet = useCallback((weight: number, reps: number, equipment: string) => {
+  const logSet = useCallback(async (weight: number, reps: number, equipment: string) => {
     if (!session) return;
 
     const currentExercise = session.exercises[session.currentExerciseIndex];
@@ -155,6 +237,36 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
 
     setSession(updatedSession);
     localStorage.setItem('activeWorkoutSession', JSON.stringify(updatedSession));
+
+    // Log set to backend API
+    try {
+      const response = await fetch(`/api/workouts/${session.sessionId}/sets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          exerciseId: currentExercise.exerciseId,
+          exerciseName: currentExercise.exerciseName,
+          setNumber: newSet.setNumber,
+          weight: weight,
+          reps: reps,
+          equipment: equipment,
+          formScore: 8, // Default good form score
+          notes: ""
+        }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Set logged to backend:", result);
+      } else {
+        console.error("Failed to log set to backend:", await response.text());
+      }
+    } catch (error) {
+      console.error("Error logging set:", error);
+      // Continue anyway - we don't want to block the UI
+    }
   }, [session]);
 
   const completeExercise = useCallback(() => {

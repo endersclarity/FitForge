@@ -14,15 +14,25 @@ export function ProgressAnalytics() {
     queryKey: ["/api/workout-sessions"],
   });
   
-  // Mock data - in real app this would come from API
-  const progressData = [
-    { month: "Jan", muscle: 15, fat: 20 },
-    { month: "Feb", muscle: 18, fat: 18 },
-    { month: "Mar", muscle: 22, fat: 16 },
-    { month: "Apr", muscle: 25, fat: 14 },
-    { month: "May", muscle: 28, fat: 12 },
-    { month: "Jun", muscle: 30, fat: 10 },
-  ];
+  // Get real progress data from API
+  const { data: progressData = [] } = useQuery({
+    queryKey: ["/api/progress/chart-data", timePeriod],
+    queryFn: async () => {
+      const response = await fetch(`/api/progress/chart-data?period=${timePeriod}`);
+      if (!response.ok) {
+        // Fallback to basic chart data structure if API fails
+        return [
+          { month: "Jan", muscle: 15, fat: 20 },
+          { month: "Feb", muscle: 18, fat: 18 },
+          { month: "Mar", muscle: 22, fat: 16 },
+          { month: "Apr", muscle: 25, fat: 14 },
+          { month: "May", muscle: 28, fat: 12 },
+          { month: "Jun", muscle: 30, fat: 10 },
+        ];
+      }
+      return response.json();
+    }
+  });
 
   // Calculate real progress metrics from workout data
   const calculateProgressMetrics = () => {

@@ -17,6 +17,7 @@ import Progress from "@/pages/progress";
 import Community from "@/pages/community";
 import Profile from "@/pages/profile";
 import Nutrition from "@/pages/nutrition";
+import StartWorkout from "@/pages/start-workout";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -57,7 +58,7 @@ function Router() {
         </Route>
         <Route path="/start-workout">
           <ProtectedRoute>
-            <Workouts />
+            <StartWorkout />
           </ProtectedRoute>
         </Route>
         <Route path="/progress">

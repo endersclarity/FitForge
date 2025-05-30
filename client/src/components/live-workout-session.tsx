@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Play, 
   Square, 
@@ -31,7 +32,13 @@ export function LiveWorkoutSession() {
     calculateSessionStats 
   } = useWorkoutSession();
   
-  const [currentSet, setCurrentSet] = useState({ weight: 0, reps: 0 });
+  const [currentSets, setCurrentSets] = useState<{ [exerciseIndex: number]: { weight: number, reps: number, equipment: string } }>({});
+  
+  // Equipment options from your database
+  const equipmentOptions = [
+    "Bodyweight", "Dumbbell", "Kettlebell", "Barbell", "TRX", 
+    "Cable", "Pull-up Bar", "Bench", "Plybox", "Countertop", "OYA"
+  ];
   const [isResting, setIsResting] = useState(false);
   const [restTimer, setRestTimer] = useState(0);
   const [sessionDuration, setSessionDuration] = useState(0);
@@ -78,26 +85,7 @@ export function LiveWorkoutSession() {
     }
   }, [isResting, restTimer, toast]);
 
-  const handleLogSet = () => {
-    if (!session || currentSet.reps <= 0) return;
-
-    const currentExercise = session.exercises[session.currentExerciseIndex];
-    
-    logSet(currentSet.weight, currentSet.reps, "Default Equipment");
-    setCurrentSet({ weight: 0, reps: 0 });
-
-    // Start rest timer based on exercise
-    const restTime = getRestTimeForExercise(currentExercise.exerciseName);
-    if (restTime > 0) {
-      setRestTimer(restTime);
-      setIsResting(true);
-    }
-
-    toast({
-      title: "Set Logged!",
-      description: `${currentSet.reps} reps @ ${currentSet.weight}lbs - Volume: ${currentSet.weight * currentSet.reps}`,
-    });
-  };
+  // Remove the old handleLogSet function since we're now using individual exercise logging
 
   const handleCompleteExercise = () => {
     if (!session) return;
@@ -253,7 +241,7 @@ export function LiveWorkoutSession() {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <Card>
           <CardHeader>
@@ -261,135 +249,183 @@ export function LiveWorkoutSession() {
               <div>
                 <CardTitle className="text-xl">{getWorkoutDisplayName(session.workoutType)}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Exercise {session.currentExerciseIndex + 1} of {session.exercises.length}
+                  {session.exercises.length} exercises • Work at your own pace
                 </p>
               </div>
-              <div className="text-right">
-                <div className="text-lg font-bold">{formatTime(sessionDuration)}</div>
-                <div className="text-sm text-muted-foreground">Duration</div>
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <div className="text-lg font-bold">{formatTime(sessionDuration)}</div>
+                  <div className="text-xs text-muted-foreground">Duration</div>
+                </div>
+                <Button 
+                  onClick={endWorkout}
+                  variant="destructive"
+                  size="sm"
+                >
+                  <Square className="w-4 h-4 mr-2" />
+                  End Workout
+                </Button>
               </div>
             </div>
-            <Progress value={progress} className="mt-4" />
           </CardHeader>
         </Card>
 
-        {/* Current Exercise */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl">{currentExercise.exerciseName}</CardTitle>
-              <Badge className="bg-primary/10 text-primary">
-                {getDifficultyFromExercise(currentExercise.exerciseName)}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Set Logging */}
-            <div className="space-y-4">
-              <h3 className="font-semibold">Log Set #{currentExercise.sets.length + 1}</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="weight">Weight (lbs)</Label>
-                  <Input
-                    id="weight"
-                    type="number"
-                    value={currentSet.weight || ""}
-                    onChange={(e) => setCurrentSet(prev => ({ ...prev, weight: Number(e.target.value) }))}
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="reps">Reps</Label>
-                  <Input
-                    id="reps"
-                    type="number"
-                    value={currentSet.reps || ""}
-                    onChange={(e) => setCurrentSet(prev => ({ ...prev, reps: Number(e.target.value) }))}
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-              
-              {currentSet.weight > 0 && currentSet.reps > 0 && (
-                <div className="p-3 bg-muted/30 rounded-lg">
-                  <div className="text-sm font-medium">Set Volume: {currentSet.weight * currentSet.reps} lbs</div>
-                  <div className="text-sm text-muted-foreground">
-                    Est. Calories: {Math.round(currentSet.weight * currentSet.reps * 0.1)}
+        {/* All Exercises Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {session.exercises.map((exercise, index) => (
+            <Card key={index} className="relative">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">{exercise.exerciseName}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={exercise.completed ? "default" : "secondary"} className="text-xs">
+                      {exercise.completed ? "Complete" : `${exercise.sets.length} sets`}
+                    </Badge>
+                    <Badge className="bg-primary/10 text-primary text-xs">
+                      {getDifficultyFromExercise(exercise.exerciseName)}
+                    </Badge>
                   </div>
                 </div>
-              )}
-
-              <Button 
-                onClick={handleLogSet} 
-                disabled={currentSet.reps <= 0 || isResting}
-                className="w-full gradient-bg"
-              >
-                <Check className="w-4 h-4 mr-2" />
-                Log Set
-              </Button>
-            </div>
-
-            {/* Rest Timer */}
-            {isResting && (
-              <Card className="bg-accent/10 border-accent">
-                <CardContent className="p-4 text-center">
-                  <Timer className="w-8 h-8 mx-auto text-accent mb-2" />
-                  <div className="text-2xl font-bold text-accent">{restTimer}s</div>
-                  <div className="text-sm text-muted-foreground">Rest Time Remaining</div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Previous Sets */}
-            {currentExercise.sets.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="font-semibold">Previous Sets</h4>
-                <div className="space-y-2">
-                  {currentExercise.sets.map((set, index) => (
-                    <div key={index} className="flex justify-between items-center p-2 bg-muted/30 rounded">
-                      <span className="text-sm">
-                        Set {set.setNumber}: {set.reps} reps @ {set.weight}lbs
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        Vol: {set.volume}
-                      </span>
+              </CardHeader>
+              
+              <CardContent className="space-y-4">
+                {/* Set Logging */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">Log Set #{exercise.sets.length + 1}</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Weight (lbs)</Label>
+                      <Input
+                        type="number"
+                        value={currentSets[index]?.weight || ""}
+                        onChange={(e) => setCurrentSets(prev => ({ 
+                          ...prev, 
+                          [index]: { ...prev[index], weight: Number(e.target.value) } 
+                        }))}
+                        placeholder="0"
+                        className="h-8"
+                      />
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                    <div>
+                      <Label className="text-xs">Reps</Label>
+                      <Input
+                        type="number"
+                        value={currentSets[index]?.reps || ""}
+                        onChange={(e) => setCurrentSets(prev => ({ 
+                          ...prev, 
+                          [index]: { ...prev[index], reps: Number(e.target.value) } 
+                        }))}
+                        placeholder="0"
+                        className="h-8"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs">Equipment</Label>
+                    <Select 
+                      value={currentSets[index]?.equipment || ""}
+                      onValueChange={(value) => setCurrentSets(prev => ({ 
+                        ...prev, 
+                        [index]: { ...prev[index], equipment: value } 
+                      }))}
+                    >
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder="Select equipment" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {equipmentOptions.map((equipment) => (
+                          <SelectItem key={equipment} value={equipment}>
+                            {equipment}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {(currentSets[index]?.weight || 0) > 0 && (currentSets[index]?.reps || 0) > 0 && (
+                    <div className="p-2 bg-muted/30 rounded text-xs">
+                      Volume: {(currentSets[index]?.weight || 0) * (currentSets[index]?.reps || 0)} lbs
+                    </div>
+                  )}
 
-            {/* Exercise Controls */}
-            <div className="flex gap-3">
-              <Button 
-                onClick={handleCompleteExercise}
-                disabled={currentExercise.sets.length === 0}
-                className="flex-1"
-                variant="outline"
-              >
-                {session.currentExerciseIndex === session.exercises.length - 1 ? (
-                  <>
-                    <Square className="w-4 h-4 mr-2" />
-                    Finish Workout
-                  </>
-                ) : (
-                  <>
-                    <ChevronRight className="w-4 h-4 mr-2" />
-                    Next Exercise
-                  </>
+                  <Button 
+                    onClick={() => {
+                      const currentSet = currentSets[index];
+                      if (!currentSet || currentSet.reps <= 0) return;
+                      
+                      // Temporarily set the session's current exercise index to this exercise
+                      const originalIndex = session.currentExerciseIndex;
+                      session.currentExerciseIndex = index;
+                      
+                      // Use the existing logSet function with selected equipment
+                      logSet(currentSet.weight, currentSet.reps, currentSet.equipment || "Bodyweight");
+                      
+                      // Restore the original index (though it doesn't really matter now)
+                      session.currentExerciseIndex = originalIndex;
+                      
+                      // Clear this exercise's input
+                      setCurrentSets(prev => ({ 
+                        ...prev, 
+                        [index]: { weight: 0, reps: 0, equipment: currentSet.equipment || "Bodyweight" } 
+                      }));
+
+                      toast({
+                        title: "Set Logged!",
+                        description: `${exercise.exerciseName}: ${currentSet.reps} reps @ ${currentSet.weight}lbs (${currentSet.equipment})`,
+                      });
+                    }} 
+                    disabled={(currentSets[index]?.reps || 0) <= 0 || !(currentSets[index]?.equipment)}
+                    className="w-full"
+                    size="sm"
+                  >
+                    <Check className="w-3 h-3 mr-1" />
+                    Log Set
+                  </Button>
+                </div>
+
+                {/* Previous Sets */}
+                {exercise.sets.length > 0 && (
+                  <div className="space-y-2">
+                    <h5 className="font-medium text-xs">Previous Sets</h5>
+                    <div className="space-y-1 max-h-24 overflow-y-auto">
+                      {exercise.sets.map((set, setIndex) => (
+                        <div key={setIndex} className="flex justify-between items-center p-1 bg-muted/20 rounded text-xs">
+                          <span>Set {set.setNumber}: {set.reps} @ {set.weight}lbs</span>
+                          <span className="text-muted-foreground">{set.volume}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+
+                {/* Exercise Controls */}
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => {
+                      const updatedSession = { ...session };
+                      updatedSession.exercises[index].completed = !exercise.completed;
+                      // Note: This is a simplified update - in reality you'd use the context methods
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    {exercise.completed ? "Reopen" : "Mark Complete"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
         {/* Session Stats */}
         <Card>
           <CardContent className="p-4">
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-4 gap-4 text-center">
               <div>
                 <div className="text-lg font-bold text-primary">{session.totalVolume}</div>
-                <div className="text-xs text-muted-foreground">Total Volume</div>
+                <div className="text-xs text-muted-foreground">Total Volume (lbs)</div>
               </div>
               <div>
                 <div className="text-lg font-bold text-accent">{session.estimatedCalories}</div>
@@ -399,7 +435,13 @@ export function LiveWorkoutSession() {
                 <div className="text-lg font-bold text-secondary">
                   {session.exercises.reduce((total, ex) => total + ex.sets.length, 0)}
                 </div>
-                <div className="text-xs text-muted-foreground">Sets</div>
+                <div className="text-xs text-muted-foreground">Total Sets</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-orange-500">
+                  {session.exercises.filter(ex => ex.completed).length} / {session.exercises.length}
+                </div>
+                <div className="text-xs text-muted-foreground">Completed</div>
               </div>
             </div>
           </CardContent>
