@@ -17,9 +17,17 @@ import Progress from "@/pages/progress";
 import Community from "@/pages/community";
 import Profile from "@/pages/profile";
 import Nutrition from "@/pages/nutrition";
+import StartWorkout from "@/pages/start-workout";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
+
+  // Development mode: skip authentication entirely
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  if (isDevelopment) {
+    return <>{children}</>;
+  }
 
   if (isLoading) {
     return (
@@ -53,6 +61,11 @@ function Router() {
         <Route path="/workouts">
           <ProtectedRoute>
             <Workouts />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/start-workout">
+          <ProtectedRoute>
+            <StartWorkout />
           </ProtectedRoute>
         </Route>
         <Route path="/progress">

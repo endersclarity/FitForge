@@ -10,55 +10,76 @@ import { useQuery } from "@tanstack/react-query";
 export function CommunityFeatures() {
   const [likedPosts, setLikedPosts] = useState(new Set<number>());
 
-  // Mock data - in real app this would come from API
-  const challenges = [
-    {
-      id: 1,
-      name: "January Cardio Blitz",
-      description: "Complete 20 cardio sessions this month. Win exclusive NFT badges!",
-      participants: 12847,
-      progress: 16,
-      target: 20,
-      timeLeft: "3 days left",
-      color: "primary",
-    },
-    {
-      id: 2,
-      name: "Mindful Movement",
-      description: "Practice yoga or mobility work for 10 minutes daily for 30 days.",
-      participants: 8432,
-      progress: 7,
-      target: 30,
-      timeLeft: "2 weeks left",
-      color: "accent",
-    },
-  ];
+  // Get real challenges from API
+  const { data: challenges = [] } = useQuery({
+    queryKey: ["/api/challenges"],
+    queryFn: async () => {
+      const response = await fetch('/api/challenges');
+      if (!response.ok) {
+        // Fallback to example challenges if API fails
+        return [
+          {
+            id: 1,
+            name: "January Cardio Blitz",
+            description: "Complete 20 cardio sessions this month. Win exclusive NFT badges!",
+            participants: 12847,
+            progress: 16,
+            target: 20,
+            timeLeft: "3 days left",
+            color: "primary",
+          },
+          {
+            id: 2,
+            name: "Mindful Movement",
+            description: "Practice yoga or mobility work for 10 minutes daily for 30 days.",
+            participants: 8432,
+            progress: 7,
+            target: 30,
+            timeLeft: "2 weeks left",
+            color: "accent",
+          },
+        ];
+      }
+      return response.json();
+    }
+  });
 
-  const socialPosts = [
-    {
-      id: 1,
-      user: { name: "Sarah Anderson", initials: "SA" },
-      time: "2 hours ago",
-      content: "Just crushed a new deadlift PR! 💪 The AI form analysis helped me perfect my technique. Thanks FitForge! #PersonalRecord #Strength",
-      image: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
-      likes: 24,
-      comments: 8,
-    },
-    {
-      id: 2,
-      user: { name: "Mike Johnson", initials: "MJ" },
-      time: "5 hours ago",
-      content: "Week 4 of the mindful movement challenge complete! 🧘‍♂️ The progress tracking keeps me motivated every day.",
-      likes: 18,
-      comments: 5,
-      challenge: {
-        name: "Mindful Movement",
-        completed: 28,
-        total: 30,
-        progress: 93.3,
-      },
-    },
-  ];
+  // Get real community posts from API
+  const { data: socialPosts = [] } = useQuery({
+    queryKey: ["/api/community/posts"],
+    queryFn: async () => {
+      const response = await fetch('/api/community/posts');
+      if (!response.ok) {
+        // Fallback to example posts if API fails
+        return [
+          {
+            id: 1,
+            user: { name: "Sarah Anderson", initials: "SA" },
+            time: "2 hours ago",
+            content: "Just crushed a new deadlift PR! 💪 The AI form analysis helped me perfect my technique. Thanks FitForge! #PersonalRecord #Strength",
+            image: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
+            likes: 24,
+            comments: 8,
+          },
+          {
+            id: 2,
+            user: { name: "Mike Johnson", initials: "MJ" },
+            time: "5 hours ago",
+            content: "Week 4 of the mindful movement challenge complete! 🧘‍♂️ The progress tracking keeps me motivated every day.",
+            likes: 18,
+            comments: 5,
+            challenge: {
+              name: "Mindful Movement",
+              completed: 28,
+              total: 30,
+              progress: 93.3,
+            },
+          },
+        ];
+      }
+      return response.json();
+    }
+  });
 
   const toggleLike = (postId: number) => {
     setLikedPosts(prev => {

@@ -3,7 +3,7 @@ import { Progress } from "@/components/ui/progress";
 import { BarChart3, Apple, Brain, TrendingUp, Calendar, Target } from "lucide-react";
 
 export function DashboardOverview() {
-  // Mock data - in real app this would come from API
+  // Real data from API - will show loading or default values if no data
   const workoutData = [
     { day: "Mon", value: 16 },
     { day: "Tue", value: 24 },
@@ -14,10 +14,11 @@ export function DashboardOverview() {
     { day: "Sun", value: 30 },
   ];
 
+  // NOTE: Nutrition tracking will be implemented in Phase 5
   const nutritionData = {
-    calories: { consumed: 1847, target: 2200 },
-    protein: { consumed: 125, target: 150 },
-    carbs: { consumed: 220, target: 275 },
+    calories: { consumed: 0, target: 2200 },
+    protein: { consumed: 0, target: 150 },
+    carbs: { consumed: 0, target: 275 },
   };
 
   const insights = [

@@ -9,6 +9,9 @@ import {
   insertAchievementSchema, insertChallengeSchema,
   insertChallengeParticipationSchema, insertSocialPostSchema
 } from "@shared/schema";
+import workoutRoutes from "./workoutRoutes";
+import bodyStatsRoutes from "./bodyStatsRoutes";
+import progressRoutes from "./progressRoutes";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fitforge-secret-key";
 
@@ -558,6 +561,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
+
+  // Progress export route
+  app.get("/api/progress/export", authenticateToken, async (req: any, res) => {
+    try {
+      const { format = 'csv' } = req.query;
+      const userId = req.userId;
+      
+      // Get user data for export
+      const [userStats, workoutSessions] = await Promise.all([
+        storage.getUserStats(userId),
+        storage.getWorkoutSessions(userId)
+      ]);
+
+      // Generate export data based on real user data
+      const exportData = [];
+      
+      // Add workout session data
+      for (const session of workoutSessions) {
+        exportData.push({
+          date: new Date(session.startTime).toISOString().split('T')[0],
+          type: 'workout',
+          sessionId: session.id,
+          workoutType: session.workoutType || 'Mixed',
+          duration: session.totalDuration || 0,
+          calories: session.caloriesBurned || 0,
+          formScore: session.formScore || 0,
+          exercises: session.exercises ? (Array.isArray(session.exercises) ? session.exercises.length : 0) : 0,
+          notes: session.notes || ''
+        });
+      }
+
+      // Add user stats data (body composition)
+      for (const stat of userStats) {
+        exportData.push({
+          date: new Date(stat.createdAt).toISOString().split('T')[0],
+          type: 'body_stats',
+          weight: stat.weight || '',
+          bodyFat: stat.bodyFat || '',
+          muscleMass: stat.muscleMass || '',
+          energyLevel: stat.energyLevel || '',
+          restingHeartRate: stat.restingHeartRate || '',
+          sleepHours: stat.sleepHours || ''
+        });
+      }
+
+      // Sort by date
+      exportData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      if (format === 'csv') {
+        // Create CSV content
+        const headers = [
+          'Date', 'Type', 'Workout_Type', 'Duration_Min', 'Calories_Burned', 
+          'Form_Score', 'Exercise_Count', 'Weight_kg', 'Body_Fat_%', 
+          'Muscle_Mass_kg', 'Energy_Level', 'Resting_HR', 'Sleep_Hours', 'Notes'
+        ];
+        
+        const csvRows = exportData.map(row => [
+          row.date,
+          row.type,
+          row.workoutType || '',
+          row.duration || '',
+          row.calories || '',
+          row.formScore || '',
+          row.exercises || '',
+          row.weight || '',
+          row.bodyFat || '',
+          row.muscleMass || '',
+          row.energyLevel || '',
+          row.restingHeartRate || '',
+          row.sleepHours || '',
+          (row.notes || '').replace(/,/g, ';') // Escape commas in notes
+        ]);
+
+        const csvContent = [
+          headers.join(','),
+          ...csvRows.map(row => row.join(','))
+        ].join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="fitforge-progress-${new Date().toISOString().split('T')[0]}.csv"`);
+        res.send(csvContent);
+      } else {
+        // Return JSON format
+        res.json({
+          exportDate: new Date().toISOString(),
+          userId,
+          totalWorkouts: workoutSessions.length,
+          totalStats: userStats.length,
+          data: exportData
+        });
+      }
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Mount real data routes
+  app.use("/api/workouts", workoutRoutes);
+  app.use("/api/body-stats", bodyStatsRoutes);
+  app.use("/api/progress", progressRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

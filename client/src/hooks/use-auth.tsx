@@ -17,7 +17,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Auto-login as Ender (bypass authentication for testing)
+    // Auto-login as Ender (bypass authentication for development)
     fetchCurrentUser();
   }, []);
 
@@ -27,13 +27,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (response.ok) {
         const userData = await response.json();
+        console.log("Auto-logged in as:", userData);
         setUser(userData);
-        setToken("auto-login"); // Set dummy token
+        setToken("dev-token"); // Set dummy token for development
       } else {
-        console.error("Failed to auto-login as Ender");
+        console.error("Failed to auto-login as Ender, response:", response.status);
+        // For development, create a fallback user
+        setUser({
+          id: 1,
+          username: "ender",
+          email: "endersclarity@gmail.com",
+          firstName: "Ender",
+          lastName: "Developer",
+          profileImage: null,
+          createdAt: new Date().toISOString()
+        });
+        setToken("dev-fallback-token");
       }
     } catch (error) {
       console.error("Failed to fetch current user:", error);
+      // For development, create a fallback user
+      setUser({
+        id: 1,
+        username: "ender",
+        email: "endersclarity@gmail.com",
+        firstName: "Ender",
+        lastName: "Developer",
+        profileImage: null,
+        createdAt: new Date().toISOString()
+      });
+      setToken("dev-fallback-token");
     } finally {
       setIsLoading(false);
     }
