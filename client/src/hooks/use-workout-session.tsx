@@ -40,9 +40,30 @@ export interface WorkoutExercise {
   workoutType: string;
 }
 
+export interface SessionConflictData {
+  sessionId: string;
+  sessionStartTime: string;
+  sessionExerciseCount: number;
+  canAbandon: boolean;
+  message: string;
+}
+
+export class SessionConflictError extends Error {
+  public conflictData: SessionConflictData;
+  
+  constructor(conflictData: SessionConflictData) {
+    super(conflictData.message);
+    this.name = 'SessionConflictError';
+    this.conflictData = conflictData;
+  }
+}
+
 interface WorkoutSessionContextType {
   session: WorkoutSessionState | null;
-  startWorkout: (workoutType: string, exercises: WorkoutExercise[]) => void;
+  startWorkout: (workoutType: string, exercises: WorkoutExercise[]) => Promise<void>;
+  abandonActiveSession: () => Promise<void>;
+  resumeActiveSession: () => Promise<void>;
+  checkForActiveSession: () => Promise<SessionConflictData | null>;
   pauseWorkout: () => void;
   resumeWorkout: () => void;
   endWorkout: () => void;
@@ -113,49 +134,18 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('activeWorkoutSession', JSON.stringify(newSession));
         console.log("💪 SESSION SAVED TO LOCALSTORAGE");
         console.log("💪 startWorkout COMPLETED SUCCESSFULLY");
+      } else if (response.status === 400) {
+        // Session conflict - get details and throw for UI to handle
+        const conflictData = await response.json();
+        console.log("Session conflict detected:", conflictData);
+        throw new SessionConflictError(conflictData);
       } else {
         console.error("Failed to start workout on backend:", await response.text());
-        // Fall back to local-only session
-        const fallbackSession: WorkoutSessionState = {
-          sessionId: `local_session_${Date.now()}`,
-          startTime: new Date(),
-          currentExerciseIndex: 0,
-          exercises: exercises.map(ex => ({
-            exerciseId: ex.id,
-            exerciseName: ex.name,
-            sets: [],
-            completed: false,
-            restTimeRemaining: ex.restTime
-          })),
-          status: "in_progress",
-          totalVolume: 0,
-          estimatedCalories: 0,
-          workoutType
-        };
-        setSession(fallbackSession);
-        localStorage.setItem('activeWorkoutSession', JSON.stringify(fallbackSession));
+        throw new Error('Failed to start workout session');
       }
     } catch (error) {
       console.error("Error starting workout:", error);
-      // Fall back to local-only session
-      const fallbackSession: WorkoutSessionState = {
-        sessionId: `local_session_${Date.now()}`,
-        startTime: new Date(),
-        currentExerciseIndex: 0,
-        exercises: exercises.map(ex => ({
-          exerciseId: ex.id,
-          exerciseName: ex.name,
-          sets: [],
-          completed: false,
-          restTimeRemaining: ex.restTime
-        })),
-        status: "in_progress",
-        totalVolume: 0,
-        estimatedCalories: 0,
-        workoutType
-      };
-      setSession(fallbackSession);
-      localStorage.setItem('activeWorkoutSession', JSON.stringify(fallbackSession));
+      throw error; // Re-throw for UI to handle
     }
   }, []);
 
@@ -368,6 +358,100 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const abandonActiveSession = useCallback(async () => {
+    try {
+      // Get active session first
+      const activeResponse = await fetch('/api/workouts/active');
+      if (activeResponse.ok) {
+        const activeSession = await activeResponse.json();
+        
+        // Abandon it
+        const abandonResponse = await fetch(`/api/workouts/${activeSession.id}/abandon`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (abandonResponse.ok) {
+          console.log('Active session abandoned successfully');
+          // Clear any local session
+          setSession(null);
+          localStorage.removeItem('activeWorkoutSession');
+        } else {
+          throw new Error('Failed to abandon active session');
+        }
+      }
+    } catch (error) {
+      console.error('Error abandoning active session:', error);
+      throw error;
+    }
+  }, []);
+
+  const resumeActiveSession = useCallback(async () => {
+    try {
+      const response = await fetch('/api/workouts/active/details');
+      if (response.ok) {
+        const activeSession = await response.json();
+        
+        // Convert backend session to frontend session state
+        const resumedSession: WorkoutSessionState = {
+          sessionId: activeSession.id,
+          startTime: new Date(activeSession.startTime),
+          endTime: activeSession.endTime ? new Date(activeSession.endTime) : undefined,
+          currentExerciseIndex: 0, // Start from beginning
+          exercises: activeSession.exercises.map((ex: any) => ({
+            exerciseId: ex.exerciseId,
+            exerciseName: ex.exerciseName,
+            sets: ex.sets.map((set: any) => ({
+              weight: set.weight,
+              reps: set.reps,
+              equipment: set.equipment || '',
+              timestamp: new Date(set.timestamp),
+              setNumber: set.setNumber,
+              volume: set.weight * set.reps
+            })),
+            completed: ex.sets.length > 0,
+            restTimeRemaining: 60 // Default rest time
+          })),
+          status: "in_progress",
+          totalVolume: activeSession.totalVolume,
+          estimatedCalories: activeSession.caloriesBurned || 0,
+          workoutType: activeSession.workoutType
+        };
+        
+        setSession(resumedSession);
+        localStorage.setItem('activeWorkoutSession', JSON.stringify(resumedSession));
+        console.log('Active session resumed successfully');
+      } else {
+        throw new Error('No active session to resume');
+      }
+    } catch (error) {
+      console.error('Error resuming active session:', error);
+      throw error;
+    }
+  }, []);
+
+  const checkForActiveSession = useCallback(async (): Promise<SessionConflictData | null> => {
+    try {
+      const response = await fetch('/api/workouts/active/details');
+      if (response.ok) {
+        const activeSession = await response.json();
+        return {
+          sessionId: activeSession.id,
+          sessionStartTime: activeSession.startTime,
+          sessionExerciseCount: activeSession.exercises.length,
+          canAbandon: activeSession.canAbandon,
+          message: `You have an unfinished workout from ${new Date(activeSession.startTime).toLocaleString()}`
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error checking for active session:', error);
+      return null;
+    }
+  }, []);
+
   // Initialize session recovery on mount
   React.useEffect(() => {
     recoverSession();
@@ -378,6 +462,9 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       value={{
         session,
         startWorkout,
+        abandonActiveSession,
+        resumeActiveSession,
+        checkForActiveSession,
         pauseWorkout,
         resumeWorkout,
         endWorkout,

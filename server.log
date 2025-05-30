@@ -9,41 +9,19 @@ Abs: 4 exercises, 30min
 BackBiceps: 13 exercises, 60min
 ChestTriceps: 14 exercises, 75min
 Legs: 7 exercises, 50min
-Generated 97 realistic workout sessions over 6 months
+Generated 93 realistic workout sessions over 6 months
 [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
-6:27:03 AM [express] serving on port 5000
-6:27:33 AM [express] GET /api/exercises 200 in 4ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:27:37 AM [express] GET /api/workout-sessions 200 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-6:27:42 AM [express] GET /api/auth/me 200 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:28:02 AM [express] GET /api/workout-sessions 200 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
-6:28:02 AM [express] GET /api/challenges 200 in 0ms :: []
-6:28:03 AM [express] GET /api/auth/me 200 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
-6:28:03 AM [express] GET /api/progress/chart-data 200 in 6ms :: []
-6:28:03 AM [express] GET /api/community/posts 404 in 5ms
-6:28:05 AM [express] GET /api/user-preferences 404 in 1ms
-6:28:12 AM [express] GET /api/progress/metrics 200 in 1ms :: {"muscle":{"start":0,"current":0,"chang…
-6:28:15 AM [express] GET /api/progress/export 200 in 2ms
-6:28:26 AM [express] GET /api/user-stats/latest 200 in 1ms
-6:28:26 AM [express] GET /api/achievements 200 in 1ms :: []
-6:28:51 AM [express] GET /api/users/preferences 404 in 2ms
-Error fetching user preferences: [Error: ENOENT: no such file or directory, open '/home/ender/.claude/projects/ai-tools-workflow-integration/FitForge/data/users/1/preferences.json'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ender/.claude/projects/ai-tools-workflow-integration/FitForge/data/users/1/preferences.json'
-}
-6:29:04 AM [express] GET /api/users/preferences/1 500 in 4ms :: {"error":"Failed to fetch user prefe…
-6:29:29 AM [express] GET /api/users/preferences/1 200 in 3ms :: {"goals":["general_fitness"],"experi…
-6:29:38 AM [express] GET /api/exercises 200 in 2ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
-6:30:06 AM [express] POST /api/workouts/start 200 in 3ms :: {"sessionId":"a5a318c9-4d36-4b7e-b29c-55…
-6:30:13 AM [express] POST /api/workouts/start 400 in 1ms :: {"message":"You already have an active w…
-Error logging set: Error: Workout session not found
-    at FileStorage.logSet (/home/ender/.claude/projects/ai-tools-workflow-integration/FitForge/server/fileStorage.ts:2:2441)
-    at async /home/ender/.claude/projects/ai-tools-workflow-integration/FitForge/server/workoutRoutes.ts:2:2895
-6:31:11 AM [express] POST /api/workouts/local_session_1748611813368/sets 500 in 3ms :: {"message":"W…
-Error completing workout: Error: Workout session not found
-    at FileStorage.completeWorkout (/home/ender/.claude/projects/ai-tools-workflow-integration/FitForge/server/fileStorage.ts:2:3382)
-    at async /home/ender/.claude/projects/ai-tools-workflow-integration/FitForge/server/workoutRoutes.ts:2:3760
-6:31:58 AM [express] PUT /api/workouts/local_session_1748611813368/complete 500 in 2ms :: {"message"…
-6:32:11 AM [express] GET /api/user-stats 200 in 0ms :: []
-6:32:35 AM [express] GET /api/social/posts 200 in 0ms :: []
+8:54:28 AM [express] serving on port 5000
+8:56:10 AM [express] GET /api/workouts/active 404 in 1ms :: {"message":"Workout not found"}
+8:56:15 AM [express] GET /api/workouts/active 404 in 1ms :: {"message":"Workout not found"}
+8:56:51 AM [express] GET /api/workouts/active 404 in 0ms :: {"message":"Workout not found"}
+8:57:08 AM [express] GET /api/workouts/active 404 in 1ms :: {"message":"Workout not found"}
+8:58:32 AM [express] GET /api/workout-sessions 200 in 2ms :: [{"userId":1,"workoutTemplateId":null,"…
+8:58:32 AM [express] GET /api/challenges 200 in 0ms :: []
+8:58:32 AM [express] GET /api/progress/chart-data 200 in 3ms :: []
+8:58:32 AM [express] GET /api/auth/me 200 in 1ms :: {"id":1,"username":"ender","email":"ender@test.c…
+8:58:32 AM [express] GET /api/community/posts 404 in 4ms
+8:59:17 AM [express] GET /api/auth/me 304 in 2ms :: {"id":1,"username":"ender","email":"ender@test.c…
+9:00:02 AM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…
+9:00:02 AM [express] GET /api/exercises 200 in 4ms :: [{"exerciseName":"Planks","equipmentType":"Bod…
+9:00:56 AM [express] GET /api/auth/me 304 in 0ms :: {"id":1,"username":"ender","email":"ender@test.c…

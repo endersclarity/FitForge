@@ -41,7 +41,10 @@ router.post("/start", authenticateToken, async (req: any, res) => {
     if (activeSession) {
       return res.status(400).json({ 
         message: "You already have an active workout session. Please complete or abandon it first.",
-        sessionId: activeSession.id 
+        sessionId: activeSession.id,
+        sessionStartTime: activeSession.startTime,
+        sessionExerciseCount: activeSession.exercises.length,
+        canAbandon: true
       });
     }
     
@@ -171,16 +174,72 @@ router.get("/active", authenticateToken, async (req: any, res) => {
   }
 });
 
+// Get detailed active session info
+router.get("/active/details", authenticateToken, async (req: any, res) => {
+  try {
+    const userId = req.userId.toString();
+    const activeSession = await fileStorage.getActiveWorkoutSession(userId);
+    
+    if (!activeSession) {
+      return res.status(404).json({ message: "No active workout session found" });
+    }
+    
+    const sessionAge = Date.now() - new Date(activeSession.startTime).getTime();
+    const sessionAgeMinutes = Math.round(sessionAge / 1000 / 60);
+    
+    res.json({
+      ...activeSession,
+      sessionAgeMinutes,
+      canAbandon: true,
+      canResume: activeSession.exercises.some(e => e.sets.length > 0)
+    });
+  } catch (error: any) {
+    console.error("Error fetching active session details:", error);
+    res.status(500).json({ message: error.message || "Failed to fetch active session details" });
+  }
+});
+
+// Force cleanup active sessions
+router.delete("/active", authenticateToken, async (req: any, res) => {
+  try {
+    const userId = req.userId.toString();
+    const cleanedCount = await fileStorage.cleanupOldSessions(userId, 0); // Force cleanup all
+    
+    res.json({ 
+      message: `Cleaned up ${cleanedCount} active sessions`,
+      cleanedCount 
+    });
+  } catch (error: any) {
+    console.error("Error cleaning up sessions:", error);
+    res.status(500).json({ message: error.message || "Failed to cleanup sessions" });
+  }
+});
+
+// Force abandon specific session
+router.put("/:sessionId/force-abandon", authenticateToken, async (req: any, res) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.userId.toString();
+    
+    await fileStorage.forceAbandonSession(userId, sessionId);
+    
+    res.json({ message: "Session force abandoned successfully" });
+  } catch (error: any) {
+    console.error("Error force abandoning session:", error);
+    res.status(500).json({ message: error.message || "Failed to force abandon session" });
+  }
+});
+
 // Abandon a workout session
 router.put("/:sessionId/abandon", authenticateToken, async (req: any, res) => {
   try {
     const { sessionId } = req.params;
     const userId = req.userId.toString();
     
-    // For now, we'll complete it with a note that it was abandoned
-    await fileStorage.completeWorkout(userId, sessionId, 1, "Workout abandoned");
+    // Use the dedicated abandon method instead of completing
+    await fileStorage.forceAbandonSession(userId, sessionId);
     
-    res.json({ message: "Workout session abandoned" });
+    res.json({ message: "Workout session abandoned successfully" });
   } catch (error: any) {
     console.error("Error abandoning workout:", error);
     res.status(500).json({ message: error.message || "Failed to abandon workout" });
