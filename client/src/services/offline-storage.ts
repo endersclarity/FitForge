@@ -326,6 +326,27 @@ class OfflineStorageService {
   }
 
   /**
+   * Clear corrupted sync queue items (emergency cleanup)
+   */
+  clearCorruptedSyncItems(): void {
+    try {
+      const queue = this.getSyncQueue();
+      const originalLength = queue.length;
+      
+      // Remove items containing the known corrupted session ID
+      const cleanQueue = queue.filter(item => 
+        !item.id.includes('session_1748626935840_z2vi8nw1d') &&
+        !JSON.stringify(item.data).includes('session_1748626935840_z2vi8nw1d')
+      );
+      
+      localStorage.setItem(this.STORAGE_KEYS.SYNC_QUEUE, JSON.stringify(cleanQueue));
+      console.log(`🧹 Cleared ${originalLength - cleanQueue.length} corrupted sync items`);
+    } catch (error) {
+      console.error('Error clearing corrupted sync items:', error);
+    }
+  }
+
+  /**
    * Utility methods
    */
   private generateSessionId(): string {

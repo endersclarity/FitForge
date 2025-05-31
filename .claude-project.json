@@ -1,110 +1,67 @@
 {
-  "name": "FitForge",
-  "description": "AI-Powered Fitness Ecosystem with workout tracking, progress analytics, and community features",
-  "version": "1.0.0",
+  "name": "FitForge - Real Data Architecture",
+  "description": "Data-driven fitness ecosystem with transparent calculations and no mock data",
+  "version": "3.0.0",
+  "type": "full-stack-typescript",
+  "architecture": "real-data-driven",
   "commands": {
-    "dev": "npm run dev",
-    "build": "npm run build", 
-    "start": "npm run start",
-    "check": "npm run check",
-    "db:push": "npm run db:push",
-    "audit": "grep -r 'onClick.*undefined\\|onClick.*{' client/src/ || echo 'No missing onClick handlers found'",
-    "test-server": "curl -s http://$(ip addr show eth0 | grep 'inet ' | awk '{print $2}' | cut -d/ -f1):5000 | head -10"
+    "/load": "Load project context and current development status",
+    "/implement": "Implement features using database-first methodology",
+    "/quality": "Run TypeScript validation and real data tests",
+    "/process": "Enforce git workflow and commit real changes",
+    "/architect": "Run complete project scaffolding with HDTA templates"
   },
-  "paths": {
-    "frontend": "client/src",
-    "backend": "server", 
-    "components": "client/src/components",
-    "pages": "client/src/pages",
-    "hooks": "client/src/hooks",
-    "schemas": "shared",
-    "scripts": "scripts",
-    "docs": "docs",
-    "memory": "memory-bank"
+  "keyPaths": {
+    "systemManifest": "memory-bank/system_manifest_data_driven.md",
+    "databaseSchema": "memory-bank/database_schema_module.md",
+    "userDataEntry": "memory-bank/user_data_entry_module.md",
+    "progressCalculations": "memory-bank/progress_calculations_module.md",
+    "realDataPlan": "memory-bank/implementation_plan_real_data_architecture.md",
+    "projectRoadmap": "memory-bank/project_roadmap_data_driven.md",
+    "mainConfig": "CLAUDE.md",
+    "packageJson": "package.json",
+    "architecture": "ARCHITECTURE.md"
   },
-  "workflows": {
-    "button-fix": [
-      "Read memory-bank/task_button_audit.md",
-      "Grep for missing onClick handlers in components",
-      "Edit components to add event handlers",
-      "Test navigation functionality"
+  "dataArchitecture": {
+    "philosophy": "Every feature driven by real user-entered data",
+    "noMockData": true,
+    "formulaTransparency": true,
+    "databaseFirst": true,
+    "userDataPaths": [
+      "data/users/{userId}/workouts.json",
+      "data/users/{userId}/preferences.json",
+      "data/users/{userId}/body-stats.json",
+      "data/users/{userId}/goals.json"
     ],
-    "feature-dev": [
-      "Review activeContext.md for current focus",
-      "Check memory-bank/ for implementation plans",
-      "Create or update relevant module documentation",
-      "Implement feature with tests"
-    ],
-    "debug-session": [
-      "Start dev server with npm run dev", 
-      "Get WSL IP with test-server command",
-      "Use Interactive Web Debugging Extension",
-      "Document findings in activeContext.md"
-    ]
-  },
-  "context_files": [
-    "activeContext.md",
-    "BRANCH_README.md", 
-    "memory-bank/system_manifest.md",
-    "memory-bank/implementation_plan_button_functionality.md",
-    "memory-bank/project_roadmap.md"
-  ],
-  "architecture": {
-    "frontend": "React + TypeScript + Tailwind + Radix UI",
-    "backend": "Express + TypeScript + Drizzle ORM",
-    "database": "PostgreSQL with enhanced schema",
-    "auth": "Passport.js with session management",
-    "routing": "Wouter for client-side navigation", 
-    "state": "React Query + custom hooks",
-    "styling": "Tailwind CSS with theme provider"
-  },
-  "current_focus": {
-    "phase": "Production Readiness - All Features Merged to Master",
-    "branch": "master",
-    "priority": "End-to-end testing and final issue validation",
-    "completed_objectives": [
-      "✅ Created dedicated branch for Issue #7 real data architecture",
-      "✅ Phase 1 COMPLETE: Audited all fake data generation (8 files identified)",
-      "✅ Phase 1 COMPLETE: Designed comprehensive real data architecture",
-      "✅ Phase 2 COMPLETE: Built FileStorage class with JSON persistence",
-      "✅ Phase 2 COMPLETE: Created real workout logging API endpoints",
-      "✅ Phase 2 COMPLETE: Implemented body stats and progress metrics APIs",
-      "✅ Phase 2 COMPLETE: Built frontend components (hooks and UI)",
-      "✅ Phase 3 COMPLETE: Complete workout selection and session system",
-      "✅ BREAKTHROUGH: Full equipment integration with user's workout logs",
-      "✅ BREAKTHROUGH: Revolutionary UX with all exercises visible simultaneously",
-      "✅ BREAKTHROUGH: Complete API integration with persistent data storage",
-      "✅ Documentation fix: Updated port 3000 → 5000 in pain points tracker"
-    ],
-    "current_issues": [
-      "✅ #7 FULLY RESOLVED: Complete real workout system operational in master",
-      "✅ #5 FULLY RESOLVED: Progress metrics API working with real data foundation",
-      "✅ #3 FULLY RESOLVED: Navigation confirmed working - all routes HTTP 200",
-      "✅ #2 FULLY RESOLVED: User preferences API working with auto-initialization",
-      "🟢 #6 Error handling: Low priority UX enhancement",
-      "✅ #4 FULLY RESOLVED: Export button working with real CSV data",
-      "🚨 CRITICAL: UX workflow failures detected - Enhanced debugging shows 0/100 UX score",
-      "✅ RESOLVED: Enhanced WSL Chrome debugger with real DOM interaction capabilities"
-    ],
-    "next_tasks": [
-      "URGENT: Fix UX workflow failures identified by enhanced debugging (0/100 score)",
-      "High Priority: Investigate workout flow interactions causing critical failures",
-      "High Priority: Fix DOM element detection and click event handling",
-      "Medium Priority: Enhanced error handling for session lifecycle", 
-      "Medium Priority: Remove remaining fake data generation components",
-      "Low Priority: Performance optimization and code cleanup",
-      "Future: Mobile responsive improvements and PWA features"
+    "universalData": [
+      "data/exercises/universal-exercise-database.json"
     ]
   },
   "metadata": {
-    "last_sync": "2025-05-30T14:45:00Z",
-    "last_load": "2025-05-30T19:00:00Z", 
-    "project_status": "CRITICAL UX ISSUES DETECTED: Enhanced debugging reveals workflow failures blocking user adoption",
-    "deployment_url": "http://172.22.206.209:5000",
-    "resolution_rate": "85% (6 issues resolved, 1 critical UX issue found)",
-    "active_issues": 1,
-    "repository_health": "Good - Technical foundation solid but UX workflows need immediate attention",
-    "key_breakthrough": "Enhanced WSL Chrome debugger with real DOM interaction - detected critical UX failures missed by previous testing",
-    "branch_status": "master branch technically sound but UX workflows failing real user testing"
+    "lastSync": "2025-05-31T01:15:00.000Z",
+    "completedPhases": ["Phase1_DatabaseFoundation"],
+    "currentPhase": "Phase2_UserDataEntry",
+    "lastMajorAccomplishment": "Universal Exercise Database - 38 real exercises with comprehensive schema implementation"
+  },
+  "developmentWorkflow": [
+    "1. Design database schema first",
+    "2. Build user data entry forms",
+    "3. Create API endpoints for real data",
+    "4. Implement formula-based calculations",
+    "5. Build UI showing real data or formulas",
+    "6. Test with real user input scenarios"
+  ],
+  "testingStrategy": {
+    "primary": "MCP BrowserMCP for user flow testing",
+    "dataValidation": "Real user input scenarios only",
+    "missingData": "Test behavior without data",
+    "formulaAccuracy": "Verify mathematical calculations"
+  },
+  "codeStandards": {
+    "typescript": "Full coverage, no any types",
+    "react": "Functional components with hooks",
+    "validation": "Zod schemas for all user input",
+    "apiDesign": "RESTful with real data only",
+    "uiFramework": "Radix UI + Tailwind CSS"
   }
 }

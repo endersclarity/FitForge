@@ -1,12 +1,48 @@
 [
   {
-    "id": "a5a318c9-4d36-4b7e-b29c-5544a2afdd2e",
+    "id": "659be8af-14fa-427d-836f-70c9995fb321",
     "userId": "1",
-    "startTime": "2025-05-30T13:30:06.155Z",
-    "workoutType": "ChestTriceps",
-    "exercises": [],
-    "totalVolume": 0,
-    "caloriesBurned": 0,
-    "status": "in_progress"
+    "startTime": "2025-05-30T23:50:48.859Z",
+    "endTime": "2025-05-30T23:55:48.859Z",
+    "workoutType": "Legs",
+    "exercises": [
+      {
+        "exerciseId": 1,
+        "exerciseName": "Calf Raises",
+        "sets": [
+          {
+            "setNumber": 1,
+            "weight": 0,
+            "reps": 15,
+            "timestamp": "2025-05-30T23:52:00.000Z",
+            "formScore": 8,
+            "equipment": "Bodyweight"
+          },
+          {
+            "setNumber": 2,
+            "weight": 0,
+            "reps": 15,
+            "timestamp": "2025-05-30T23:53:30.000Z",
+            "formScore": 8,
+            "equipment": "Bodyweight"
+          },
+          {
+            "setNumber": 3,
+            "weight": 0,
+            "reps": 12,
+            "timestamp": "2025-05-30T23:55:00.000Z",
+            "formScore": 7,
+            "equipment": "Bodyweight"
+          }
+        ],
+        "restTimes": [90, 90],
+        "formScore": 7.7
+      }
+    ],
+    "totalVolume": 42,
+    "caloriesBurned": 35,
+    "status": "completed",
+    "rating": 4,
+    "notes": "Good calf workout, felt the burn on the last set"
   }
 ]

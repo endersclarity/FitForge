@@ -74,8 +74,8 @@ class ProgressDataService {
       }));
     } catch (error) {
       console.error('Error fetching workout sessions:', error);
-      // Return mock data for development
-      return this.getMockWorkoutData(timeRange);
+      // NO MOCK DATA - Show real error
+      throw new Error(`Failed to load workout data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -100,17 +100,17 @@ class ProgressDataService {
         new Date(stat.createdAt) >= cutoffDate
       );
       
-      // Transform to chart data format
+      // Transform to chart data format - REAL DATA ONLY
       return filteredStats.map((stat: any) => ({
         date: stat.createdAt,
-        weight: stat.weight || 175,
-        bodyFat: stat.bodyFat || 15,
-        muscleMass: stat.muscleMass || 140
+        weight: stat.weight || 0, // Show 0 if no real data
+        bodyFat: stat.bodyFat || 0, // Show 0 if no real data  
+        muscleMass: stat.muscleMass || 0 // Show 0 if no real data
       }));
     } catch (error) {
       console.error('Error fetching body stats:', error);
-      // Return mock data for development
-      return this.getMockBodyStatsData(timeRange);
+      // NO MOCK DATA - Show real error  
+      throw new Error(`Failed to load body stats: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -243,94 +243,7 @@ class ProgressDataService {
     }));
   }
 
-  /**
-   * Mock workout data for development/demo
-   */
-  private getMockWorkoutData(timeRange: '1M' | '3M' | '6M' | '1Y'): WorkoutSession[] {
-    const sessionCount = this.getMonthsFromRange(timeRange) * 8; // ~2 workouts per week
-    const sessions: WorkoutSession[] = [];
-    
-    const workoutTypes = ['Chest & Triceps', 'Back & Biceps', 'Legs', 'Abs', 'Mixed'];
-    const exercises = [
-      'Bench Press', 'Deadlift', 'Squat', 'Pull-ups', 'Shoulder Press',
-      'Barbell Rows', 'Bicep Curls', 'Tricep Extensions', 'Planks', 'Lunges'
-    ];
-    
-    for (let i = 0; i < sessionCount; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - (i * 3.5)); // Every ~3.5 days
-      
-      const workoutType = workoutTypes[Math.floor(Math.random() * workoutTypes.length)];
-      const sessionExercises = this.getRandomSubset(exercises, 3 + Math.floor(Math.random() * 3));
-      
-      sessions.push({
-        date: date.toISOString(),
-        workoutType,
-        duration: 45 + Math.floor(Math.random() * 30), // 45-75 minutes
-        totalVolume: 2000 + Math.floor(Math.random() * 2000), // 2000-4000 lbs
-        caloriesBurned: 300 + Math.floor(Math.random() * 200), // 300-500 calories
-        formScore: 7 + Math.random() * 2.5, // 7-9.5
-        exercises: sessionExercises.map(name => ({
-          name,
-          sets: Array.from({ length: 3 + Math.floor(Math.random() * 2) }, (_, setIndex) => ({
-            weight: 135 + Math.floor(Math.random() * 90), // 135-225 lbs
-            reps: 8 + Math.floor(Math.random() * 5), // 8-12 reps
-            volume: 0 // Will be calculated
-          }))
-        }))
-      });
-    }
-    
-    // Calculate volumes
-    sessions.forEach(session => {
-      session.exercises.forEach(exercise => {
-        exercise.sets.forEach(set => {
-          set.volume = set.weight * set.reps;
-        });
-      });
-    });
-    
-    return sessions.reverse(); // Chronological order
-  }
-
-  /**
-   * Mock body stats data for development/demo
-   */
-  private getMockBodyStatsData(timeRange: '1M' | '3M' | '6M' | '1Y'): BodyStats[] {
-    const dataPoints = this.getMonthsFromRange(timeRange) * 4; // Weekly measurements
-    const stats: BodyStats[] = [];
-    
-    let weight = 175;
-    let bodyFat = 18;
-    let muscleMass = 140;
-    
-    for (let i = 0; i < dataPoints; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - (i * 7)); // Weekly
-      
-      // Simulate gradual improvement
-      weight += (Math.random() - 0.6) * 0.5; // Slight weight loss trend
-      bodyFat += (Math.random() - 0.7) * 0.3; // Body fat loss trend
-      muscleMass += (Math.random() - 0.3) * 0.4; // Muscle gain trend
-      
-      stats.push({
-        date: date.toISOString(),
-        weight: Math.round(weight * 10) / 10,
-        bodyFat: Math.round(bodyFat * 10) / 10,
-        muscleMass: Math.round(muscleMass * 10) / 10
-      });
-    }
-    
-    return stats.reverse(); // Chronological order
-  }
-
-  /**
-   * Get random subset of array
-   */
-  private getRandomSubset<T>(array: T[], count: number): T[] {
-    const shuffled = [...array].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
-  }
+  // ALL MOCK DATA FUNCTIONS REMOVED - REAL DATA ONLY
 }
 
 // Export singleton instance

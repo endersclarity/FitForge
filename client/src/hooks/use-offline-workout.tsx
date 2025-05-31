@@ -14,7 +14,7 @@ interface UseOfflineWorkoutReturn {
   error: string | null;
   
   // Session management
-  startWorkout: (workoutType: string, plannedExercises?: string[]) => Promise<boolean>;
+  startWorkout: (workoutType: string, plannedExercises?: string[]) => Promise<OfflineWorkoutSession | null>;
   completeWorkout: (rating?: number, notes?: string) => Promise<boolean>;
   abandonWorkout: () => Promise<boolean>;
   
@@ -39,6 +39,7 @@ interface UseOfflineWorkoutReturn {
   // Sync actions
   forceSyncAll: () => Promise<{ synced: number; failed: number }>;
   clearFailedSyncs: () => number;
+  clearCorruptedSyncItems: () => void;
 }
 
 export function useOfflineWorkout(): UseOfflineWorkoutReturn {
@@ -56,6 +57,22 @@ export function useOfflineWorkout(): UseOfflineWorkoutReturn {
   useEffect(() => {
     const session = offlineStorage.getActiveSession();
     setActiveSession(session);
+    
+    // Clear any corrupted sync items on startup
+    try {
+      const syncQueue = offlineStorage.getSyncQueue();
+      const corruptedItems = syncQueue.filter(item => 
+        item.id.includes('session_1748626935840_z2vi8nw1d') ||
+        JSON.stringify(item.data).includes('session_1748626935840_z2vi8nw1d')
+      );
+      
+      if (corruptedItems.length > 0) {
+        console.log(`🚨 Found ${corruptedItems.length} corrupted sync items, cleaning up...`);
+        offlineStorage.clearCorruptedSyncItems();
+      }
+    } catch (error) {
+      console.error('Error checking for corrupted sync items:', error);
+    }
     
     // Start background sync
     syncQueue.startBackgroundSync(30000); // Every 30 seconds
@@ -91,7 +108,7 @@ export function useOfflineWorkout(): UseOfflineWorkoutReturn {
   const startWorkout = useCallback(async (
     workoutType: string, 
     plannedExercises?: string[]
-  ): Promise<boolean> => {
+  ): Promise<OfflineWorkoutSession | null> => {
     try {
       setIsLoading(true);
       setError(null);
@@ -100,19 +117,19 @@ export function useOfflineWorkout(): UseOfflineWorkoutReturn {
       const existingSession = offlineStorage.getActiveSession();
       if (existingSession) {
         setError('You already have an active workout session. Please complete or abandon it first.');
-        return false;
+        return null;
       }
       
       const session = offlineStorage.startWorkoutSession(workoutType, plannedExercises);
       setActiveSession(session);
       
       console.log('🚀 Workout started offline:', session.id);
-      return true;
+      return session;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to start workout';
       setError(errorMessage);
       console.error('Error starting workout:', err);
-      return false;
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -242,6 +259,15 @@ export function useOfflineWorkout(): UseOfflineWorkoutReturn {
     }
   }, []);
 
+  const clearCorruptedSyncItems = useCallback((): void => {
+    try {
+      offlineStorage.clearCorruptedSyncItems();
+      console.log('🧹 Corrupted sync items cleared');
+    } catch (err) {
+      console.error('Error clearing corrupted sync items:', err);
+    }
+  }, []);
+
   // Auto-refresh active session when it changes
   useEffect(() => {
     const refreshSession = () => {
@@ -279,6 +305,7 @@ export function useOfflineWorkout(): UseOfflineWorkoutReturn {
     
     // Sync actions
     forceSyncAll,
-    clearFailedSyncs
+    clearFailedSyncs,
+    clearCorruptedSyncItems
   };
 }

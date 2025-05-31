@@ -237,25 +237,7 @@ export function ProgressCharts({ data, timeRange, onTimeRangeChange, onExport }:
     ]
   };
 
-  // Form Score Trend Chart Data
-  const formScoreData: ChartData<'line'> = {
-    labels: data.sessions.map(s => new Date(s.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
-    datasets: [
-      {
-        label: 'Form Score',
-        data: data.sessions.map(s => s.formScore || 8),
-        borderColor: chartTheme.success,
-        backgroundColor: `${chartTheme.success}20`,
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: chartTheme.success,
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 5
-      }
-    ]
-  };
+  // Removed Form Score chart - not useful for tracking progress
 
   // Calculate key metrics
   const totalWorkouts = data.sessions.length;
@@ -263,12 +245,28 @@ export function ProgressCharts({ data, timeRange, onTimeRangeChange, onExport }:
   const totalCalories = data.sessions.reduce((sum, s) => sum + s.caloriesBurned, 0);
   const avgFormScore = Math.round((data.sessions.reduce((sum, s) => sum + (s.formScore || 8), 0) / totalWorkouts) * 10) / 10;
 
-  // Recent personal records (mock data for demonstration)
-  const recentPRs = [
-    { exercise: 'Bench Press', weight: 225, date: '2025-01-28' },
-    { exercise: 'Deadlift', weight: 315, date: '2025-01-25' },
-    { exercise: 'Squat', weight: 275, date: '2025-01-22' }
-  ];
+  // Calculate REAL personal records from actual workout data
+  const recentPRs = data.sessions.flatMap(session => 
+    session.exercises.flatMap(exercise =>
+      exercise.sets.map(set => ({
+        exercise: exercise.name,
+        weight: set.weight,
+        date: session.date,
+        reps: set.reps
+      }))
+    )
+  )
+  .filter(record => record.weight > 0) // Only include weighted exercises
+  .reduce((acc, record) => {
+    const existing = acc.find(pr => pr.exercise === record.exercise);
+    if (!existing || record.weight > existing.weight) {
+      acc = acc.filter(pr => pr.exercise !== record.exercise);
+      acc.push(record);
+    }
+    return acc;
+  }, [] as Array<{ exercise: string; weight: number; date: string; reps: number }>)
+  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  .slice(0, 3); // Show top 3 most recent PRs
 
   return (
     <div className="space-y-6">
@@ -346,9 +344,9 @@ export function ProgressCharts({ data, timeRange, onTimeRangeChange, onExport }:
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg Form Score</p>
-                <p className="text-2xl font-bold">{avgFormScore}</p>
-                <p className="text-xs text-muted-foreground">out of 10</p>
+                <p className="text-sm font-medium text-muted-foreground">Real Data Only</p>
+                <p className="text-2xl font-bold">✓</p>
+                <p className="text-xs text-muted-foreground">No mock data</p>
               </div>
               <Target className="w-8 h-8 text-success" />
             </div>
@@ -412,20 +410,23 @@ export function ProgressCharts({ data, timeRange, onTimeRangeChange, onExport }:
           </CardContent>
         </Card>
 
-        {/* Form Score Trend */}
+        {/* Exercise Progress - Real data only */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-success" />
-              Form Score Progression
+              Exercise Progress
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
-              <Line 
-                data={formScoreData} 
-                options={defaultOptions as any} 
-              />
+            <div className="p-8 text-center text-muted-foreground">
+              <p className="text-lg font-medium">Real Exercise Progression</p>
+              <p className="text-sm mt-2">
+                Formula: Track max weight × reps for each exercise over time
+              </p>
+              <p className="text-xs mt-1">
+                Data source: Exercise sets from workout sessions
+              </p>
             </div>
           </CardContent>
         </Card>
