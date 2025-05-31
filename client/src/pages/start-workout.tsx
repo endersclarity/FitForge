@@ -386,11 +386,11 @@ export default function StartWorkout() {
                   <div>
                     <p className="text-sm font-medium mb-2">Primary Muscles</p>
                     <div className="flex flex-wrap gap-1">
-                      {exercise.primaryMuscles.slice(0, 3).map((muscle, i) => (
+                      {exercise.primaryMuscles?.slice(0, 3).map((muscle, i) => (
                         <Badge key={i} variant="secondary" className="text-xs">
                           {muscle.muscle} ({muscle.percentage}%)
                         </Badge>
-                      ))}
+                      )) || []}
                     </div>
                   </div>
                 </div>
@@ -444,14 +444,14 @@ export default function StartWorkout() {
                       <div>
                         <p className="text-sm font-medium mb-1">Primary Muscles:</p>
                         <div className="flex flex-wrap gap-1">
-                          {exercise.primaryMuscles.slice(0, 2).map((muscle, i) => (
+                          {exercise.primaryMuscles?.slice(0, 2).map((muscle, i) => (
                             <Badge key={i} variant="secondary" className="text-xs">
                               {muscle.muscle}
                             </Badge>
-                          ))}
-                          {exercise.primaryMuscles.length > 2 && (
+                          )) || []}
+                          {(exercise.primaryMuscles?.length || 0) > 2 && (
                             <Badge variant="secondary" className="text-xs">
-                              +{exercise.primaryMuscles.length - 2}
+                              +{(exercise.primaryMuscles?.length || 0) - 2}
                             </Badge>
                           )}
                         </div>

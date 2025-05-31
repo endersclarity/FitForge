@@ -56,7 +56,8 @@ class ProgressDataService {
       // Filter by time range
       const now = new Date();
       const monthsBack = this.getMonthsFromRange(timeRange);
-      const cutoffDate = new Date(now.getFullYear(), now.getMonth() - monthsBack, now.getDate());
+      const cutoffDate = new Date();
+      cutoffDate.setMonth(cutoffDate.getMonth() - monthsBack);
       
       const filteredSessions = sessions.filter((session: any) => 
         new Date(session.startTime) >= cutoffDate
@@ -94,7 +95,8 @@ class ProgressDataService {
       // Filter by time range
       const now = new Date();
       const monthsBack = this.getMonthsFromRange(timeRange);
-      const cutoffDate = new Date(now.getFullYear(), now.getMonth() - monthsBack, now.getDate());
+      const cutoffDate = new Date();
+      cutoffDate.setMonth(cutoffDate.getMonth() - monthsBack);
       
       const filteredStats = stats.filter((stat: any) => 
         new Date(stat.createdAt) >= cutoffDate

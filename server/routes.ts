@@ -293,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             targetReps: exerciseData.targetReps || 8,
             targetSets: exerciseData.targetSets || 3,
             averageRPE: exerciseData.sets?.length > 0 
-              ? exerciseData.sets.reduce((sum: number, set: any) => sum + (set.rpe || 7), 0) / exerciseData.sets.length 
+              ? exerciseData.sets.reduce((sum: number, set: any) => sum + (set.rpe ?? 7), 0) / exerciseData.sets.length 
               : undefined,
             notes: exerciseData.notes
           };

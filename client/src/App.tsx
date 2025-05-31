@@ -49,7 +49,7 @@ function Router() {
   const { user } = useAuth();
   
   // Initialize data migration system on app startup
-  const migration = useDataMigration({
+  useDataMigration({
     autoMigrate: true,
     onMigrationComplete: (result) => {
       console.log(`✅ Data migration completed: v${result.fromVersion} → v${result.toVersion}`);

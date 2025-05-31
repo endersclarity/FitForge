@@ -60,8 +60,11 @@ class DataMigrationService {
         console.log('⏪ Rolling back version 1: Removing versioning fields');
         
         if (data.activeSession) {
-          delete data.activeSession.version;
-          delete data.activeSession.syncStatus;
+          data.activeSession = {
+            ...data.activeSession,
+            version: undefined,
+            syncStatus: undefined,
+          };
         }
         
         if (data.sessionHistory && Array.isArray(data.sessionHistory)) {
@@ -316,7 +319,7 @@ class DataMigrationService {
    */
   restoreFromBackup(backup: any): boolean {
     try {
-      if (backup && backup.data) {
+      if (backup?.data) {
         this.saveAllData(backup.data);
         this.setDataVersion(backup.version || 0);
         console.log(`🔄 Data restored from backup (v${backup.version})`);
@@ -376,7 +379,7 @@ class DataMigrationService {
       
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('fitforge_backup_')) {
+        if (key?.startsWith('fitforge_backup_')) {
           const timestamp = parseInt(key.replace('fitforge_backup_', ''), 10);
           const age = Date.now() - timestamp;
           
@@ -438,7 +441,7 @@ class DataMigrationService {
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('fitforge_backup_')) {
+        if (key?.startsWith('fitforge_backup_')) {
           const backupData = localStorage.getItem(key);
           if (backupData) {
             const backup = JSON.parse(backupData);

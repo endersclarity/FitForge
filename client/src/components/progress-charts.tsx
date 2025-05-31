@@ -3,7 +3,7 @@
  * Chart.js-powered progress visualization dashboard
  */
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,

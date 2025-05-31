@@ -477,7 +477,7 @@ class SmartExerciseSelectionService {
     const name = exerciseName.toLowerCase();
     const groups: string[] = [];
     
-    if (name.includes('bench') || name.includes('press') && name.includes('chest')) {
+    if (name.includes('bench') || (name.includes('press') && name.includes('chest'))) {
       groups.push('chest');
     }
     if (name.includes('pull') || name.includes('row') || name.includes('lat')) {

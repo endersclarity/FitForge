@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { WorkoutSession } from "@shared/schema";
 import { ProgressCharts } from "./progress-charts";
 import { progressDataService, type ProgressMetrics } from "../services/progress-data";
 
