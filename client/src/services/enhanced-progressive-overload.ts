@@ -291,31 +291,34 @@ export class EnhancedProgressiveOverloadService {
   }
 
   private getStandardRecommendation(strategy: ProgressionStrategy): string {
-    const recommendations = {
+    const recommendations: Record<ProgressionStrategy, string> = {
       linear_progression: 'Continue linear weight progression based on completion and RPE metrics',
       double_progression: 'Focus on rep progression before increasing weight',
       auto_regulation: 'Use RPE-based autoregulation for optimal load selection',
-      deload_protocol: 'Implement recovery-focused deload protocol'
+      deload_protocol: 'Implement recovery-focused deload protocol',
+      wave_loading: 'Implement wave loading with cyclical intensity patterns'
     };
     return recommendations[strategy] || 'Continue current programming approach';
   }
 
   private getResearchBasis(strategy: ProgressionStrategy): string {
-    const research = {
+    const research: Record<ProgressionStrategy, string> = {
       linear_progression: 'Linear progression effective for novice trainees with consistent adaptation',
       double_progression: 'Double progression maximizes volume before intensity increases',
       auto_regulation: 'RPE-based training shows superior outcomes in trained individuals',
-      deload_protocol: 'Systematic deloading prevents overtraining and enhances recovery'
+      deload_protocol: 'Systematic deloading prevents overtraining and enhances recovery',
+      wave_loading: 'Wave loading periodization optimizes fatigue management'
     };
     return research[strategy] || 'Standard periodization principles';
   }
 
   private getExpectedOutcome(strategy: ProgressionStrategy): string {
-    const outcomes = {
+    const outcomes: Record<ProgressionStrategy, string> = {
       linear_progression: 'Consistent strength gains over 8-12 week periods',
       double_progression: 'Enhanced work capacity and muscle endurance development',
       auto_regulation: 'Optimized training stimulus matching daily readiness',
-      deload_protocol: 'Restored performance capacity and renewed progression'
+      deload_protocol: 'Restored performance capacity and renewed progression',
+      wave_loading: 'Optimized strength gains through periodized loading'
     };
     return outcomes[strategy] || 'Continued training adaptation';
   }

@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { WorkoutSessionProvider } from "@/hooks/use-workout-session";
+import { useDataMigration, MigrationStatus } from "@/hooks/use-data-migration";
 import { Navigation } from "@/components/navigation";
 import { LiveWorkoutSession } from "@/components/live-workout-session";
 import NotFound from "@/pages/not-found";
@@ -46,6 +47,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function Router() {
   const { user } = useAuth();
+  
+  // Initialize data migration system on app startup
+  useDataMigration({
+    autoMigrate: true,
+    onMigrationComplete: (result) => {
+      console.log(`✅ Data migration completed: v${result.fromVersion} → v${result.toVersion}`);
+      if (result.migrationsApplied.length > 0) {
+        console.log(`📝 Applied migrations: ${result.migrationsApplied.join(', ')}`);
+      }
+    },
+    onMigrationError: (error) => {
+      console.error('❌ Data migration failed:', error);
+    }
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,6 +110,9 @@ function Router() {
         </Route>
         <Route component={NotFound} />
       </Switch>
+      
+      {/* Migration status indicator (only shows when migration is needed/in progress) */}
+      <MigrationStatus />
     </div>
   );
 }

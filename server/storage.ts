@@ -342,9 +342,9 @@ export class MemStorage implements IStorage {
       profileImage: null
     });
 
-    // Generate realistic 6-month workout history with proper periodization
-    const realisticWorkoutHistory = generateSixMonthWorkoutHistory(userId);
-    console.log(`Generated ${realisticWorkoutHistory.length} realistic workout sessions over 6 months`);
+    // REMOVED: No fake workout history generation - only real user data
+    const realisticWorkoutHistory: any[] = [];
+    console.log(`No fake data generated - using only real user workout sessions`);
 
     // Seed workouts
     realWorkouts.forEach(workout => {

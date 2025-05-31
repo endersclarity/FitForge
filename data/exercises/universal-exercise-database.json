@@ -1,0 +1,1506 @@
+[
+  {
+    "id": "planks",
+    "exerciseName": "Planks",
+    "category": "Isolation",
+    "movementPattern": "Core",
+    "workoutType": "Abs",
+    "equipmentType": [
+      "Bodyweight"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Rectus Abdominis",
+        "percentage": 62
+      },
+      {
+        "muscle": "Transverse Abdominis",
+        "percentage": 38
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Obliques",
+        "percentage": 20
+      },
+      {
+        "muscle": "Erector Spinae",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Beginner",
+    "variation": "A",
+    "restTimeSeconds": 30,
+    "defaultReps": 1,
+    "defaultWeight": 0,
+    "description": "Planks is a isolation core exercise targeting Rectus Abdominis, Transverse Abdominis.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "spider-planks",
+    "exerciseName": "Spider Planks",
+    "category": "Isolation",
+    "movementPattern": "Core",
+    "workoutType": "Abs",
+    "equipmentType": [
+      "Bench"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Rectus Abdominis",
+        "percentage": 60
+      },
+      {
+        "muscle": "Transverse Abdominis",
+        "percentage": 30
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Obliques",
+        "percentage": 30
+      },
+      {
+        "muscle": "Erector Spinae",
+        "percentage": 10
+      },
+      {
+        "muscle": "Shoulders",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A",
+    "restTimeSeconds": 60,
+    "defaultReps": 2,
+    "defaultWeight": 1,
+    "description": "Spider Planks is a isolation core exercise targeting Rectus Abdominis, Transverse Abdominis.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "bench-situps",
+    "exerciseName": "Bench Situps",
+    "category": "Isolation",
+    "movementPattern": "Core",
+    "workoutType": "Abs",
+    "equipmentType": [
+      "TRX",
+      "Bench"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Rectus Abdominis",
+        "percentage": 60
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Hip Flexors",
+        "percentage": 25
+      },
+      {
+        "muscle": "Obliques",
+        "percentage": 15
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A",
+    "restTimeSeconds": 90,
+    "defaultReps": 3,
+    "defaultWeight": 5,
+    "description": "Bench Situps is a isolation core exercise targeting Rectus Abdominis.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "hanging-knee-raises",
+    "exerciseName": "Hanging Knee Raises",
+    "category": "Isolation",
+    "movementPattern": "Core",
+    "workoutType": "Abs",
+    "equipmentType": [
+      "Kettlebell",
+      "Pull-up Bar"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Rectus Abdominis",
+        "percentage": 80
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Hip Flexors",
+        "percentage": 23
+      },
+      {
+        "muscle": "Obliques",
+        "percentage": 40
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A",
+    "restTimeSeconds": 120,
+    "defaultReps": 4,
+    "defaultWeight": 10,
+    "description": "Hanging Knee Raises is a isolation core exercise targeting Rectus Abdominis.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "shoulder-shrugs",
+    "exerciseName": "Shoulder Shrugs",
+    "category": "Isolation",
+    "movementPattern": "Pull",
+    "workoutType": "BackBiceps",
+    "equipmentType": [
+      "Dumbbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Trapezius",
+        "percentage": 80
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Levator Scapulae",
+        "percentage": 20
+      }
+    ],
+    "difficultyLevel": "Beginner",
+    "variation": "A/B",
+    "restTimeSeconds": 150,
+    "defaultReps": 5,
+    "defaultWeight": 15,
+    "description": "Shoulder Shrugs is a isolation pull exercise targeting Trapezius.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "t-row",
+    "exerciseName": "T Row",
+    "category": "Compound",
+    "movementPattern": "Pull",
+    "workoutType": "BackBiceps",
+    "equipmentType": [
+      "T-Bar",
+      "Barbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Latissimus Dorsi",
+        "percentage": 85
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Rhomboids",
+        "percentage": 25
+      },
+      {
+        "muscle": "Trapezius",
+        "percentage": 15
+      },
+      {
+        "muscle": "Biceps Brachii",
+        "percentage": 12
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 8
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "B",
+    "restTimeSeconds": 180,
+    "defaultReps": 6,
+    "defaultWeight": 20,
+    "description": "T Row is a compound pull exercise targeting Latissimus Dorsi.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "incline-hammer-curl",
+    "exerciseName": "Incline Hammer Curl",
+    "category": "Isolation",
+    "movementPattern": "Pull",
+    "workoutType": "BackBiceps",
+    "equipmentType": [
+      "Pull-up Bar"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Biceps Brachii",
+        "percentage": 70
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Brachialis",
+        "percentage": 20
+      },
+      {
+        "muscle": "Brachioradialis",
+        "percentage": 10
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Beginner",
+    "variation": "B",
+    "restTimeSeconds": 210,
+    "defaultReps": 7,
+    "defaultWeight": 25,
+    "description": "Incline Hammer Curl is a isolation pull exercise targeting Biceps Brachii.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "neutral-grip-pull-ups",
+    "exerciseName": "Neutral Grip Pull-ups",
+    "category": "Compound",
+    "movementPattern": "Pull",
+    "workoutType": "BackBiceps",
+    "equipmentType": [
+      "Bodyweight",
+      "Pull-up Bar"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Latissimus Dorsi",
+        "percentage": 85
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Biceps Brachii",
+        "percentage": 25
+      },
+      {
+        "muscle": "Rhomboids",
+        "percentage": 15
+      },
+      {
+        "muscle": "Trapezius",
+        "percentage": 15
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "B",
+    "restTimeSeconds": 240,
+    "defaultReps": 8,
+    "defaultWeight": 30,
+    "description": "Neutral Grip Pull-ups is a compound pull exercise targeting Latissimus Dorsi.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "bent-over-rows",
+    "exerciseName": "Bent Over Rows",
+    "category": "Compound",
+    "movementPattern": "Pull",
+    "workoutType": "BackBiceps",
+    "equipmentType": [
+      "Plybox",
+      "Barbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Latissimus Dorsi",
+        "percentage": 90
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Rhomboids",
+        "percentage": 25
+      },
+      {
+        "muscle": "Trapezius",
+        "percentage": 20
+      },
+      {
+        "muscle": "Biceps Brachii",
+        "percentage": 15
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A",
+    "restTimeSeconds": 270,
+    "defaultReps": 9,
+    "defaultWeight": 35,
+    "description": "Bent Over Rows is a compound pull exercise targeting Latissimus Dorsi.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "row",
+    "exerciseName": "Row",
+    "category": "Compound",
+    "movementPattern": "Pull",
+    "workoutType": "BackBiceps",
+    "equipmentType": [
+      "Cable"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Latissimus Dorsi",
+        "percentage": 85
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Rhomboids",
+        "percentage": 25
+      },
+      {
+        "muscle": "Trapezius",
+        "percentage": 20
+      },
+      {
+        "muscle": "Biceps Brachii",
+        "percentage": 15
+      },
+      {
+        "muscle": "Core",
+        "percentage": 10
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "B",
+    "restTimeSeconds": 300,
+    "defaultReps": 10,
+    "defaultWeight": 40,
+    "description": "Row is a compound pull exercise targeting Latissimus Dorsi.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "renegade-rows",
+    "exerciseName": "Renegade Rows",
+    "category": "Compound",
+    "movementPattern": "Pull",
+    "workoutType": "BackBiceps",
+    "equipmentType": [
+      "Dumbbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Latissimus Dorsi",
+        "percentage": 70
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Rhomboids",
+        "percentage": 25
+      },
+      {
+        "muscle": "Trapezius",
+        "percentage": 20
+      },
+      {
+        "muscle": "Biceps Brachii",
+        "percentage": 15
+      },
+      {
+        "muscle": "Core",
+        "percentage": 30
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Advanced",
+    "variation": "A/B",
+    "restTimeSeconds": 330,
+    "defaultReps": 11,
+    "defaultWeight": 45,
+    "description": "Renegade Rows is a compound pull exercise targeting Latissimus Dorsi.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "single-arm-upright-row",
+    "exerciseName": "Single Arm Upright Row",
+    "category": "Isolation",
+    "movementPattern": "Pull",
+    "workoutType": "BackBiceps",
+    "equipmentType": [
+      "Dumbbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Trapezius",
+        "percentage": 60
+      },
+      {
+        "muscle": "Deltoids",
+        "percentage": 40
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Biceps Brachii",
+        "percentage": 20
+      },
+      {
+        "muscle": "Core",
+        "percentage": 15
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A/B",
+    "restTimeSeconds": 360,
+    "defaultReps": 12,
+    "defaultWeight": 50,
+    "description": "Single Arm Upright Row is a isolation pull exercise targeting Trapezius, Deltoids.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "trx-bicep-curl",
+    "exerciseName": "TRX Bicep Curl",
+    "category": "Isolation",
+    "movementPattern": "Pull",
+    "workoutType": "BackBiceps",
+    "equipmentType": [
+      "TRX"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Biceps Brachii",
+        "percentage": 80
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Brachialis",
+        "percentage": 15
+      },
+      {
+        "muscle": "Brachioradialis",
+        "percentage": 5
+      },
+      {
+        "muscle": "Core",
+        "percentage": 15
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A/B",
+    "restTimeSeconds": 390,
+    "defaultReps": 13,
+    "defaultWeight": 55,
+    "description": "TRX Bicep Curl is a isolation pull exercise targeting Biceps Brachii.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "chin-ups",
+    "exerciseName": "Chin-Ups",
+    "category": "Compound",
+    "movementPattern": "Pull",
+    "workoutType": "BackBiceps",
+    "equipmentType": [
+      "Pull-up Bar"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Latissimus Dorsi",
+        "percentage": 74
+      },
+      {
+        "muscle": "Biceps Brachii",
+        "percentage": 26
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Rhomboids",
+        "percentage": 20
+      },
+      {
+        "muscle": "Trapezius",
+        "percentage": 15
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "B",
+    "restTimeSeconds": 420,
+    "defaultReps": 14,
+    "defaultWeight": 60,
+    "description": "Chin-Ups is a compound pull exercise targeting Latissimus Dorsi, Biceps Brachii.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "face-pull",
+    "exerciseName": "Face Pull",
+    "category": "Isolation",
+    "movementPattern": "Pull",
+    "workoutType": "BackBiceps",
+    "equipmentType": [
+      "Cable"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Trapezius",
+        "percentage": 50
+      },
+      {
+        "muscle": "Rhomboids",
+        "percentage": 40
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Rear Deltoids",
+        "percentage": 40
+      },
+      {
+        "muscle": "Rotator Cuff",
+        "percentage": 15
+      }
+    ],
+    "difficultyLevel": "Beginner",
+    "variation": "A/B",
+    "restTimeSeconds": 450,
+    "defaultReps": 15,
+    "defaultWeight": 65,
+    "description": "Face Pull is a isolation pull exercise targeting Trapezius, Rhomboids.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "concentration-curl",
+    "exerciseName": "Concentration Curl",
+    "category": "Isolation",
+    "movementPattern": "Pull",
+    "workoutType": "BackBiceps",
+    "equipmentType": [
+      "Dumbbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Biceps Brachii",
+        "percentage": 90
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Brachialis",
+        "percentage": 10
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Beginner",
+    "variation": "A",
+    "restTimeSeconds": 480,
+    "defaultReps": 16,
+    "defaultWeight": 70,
+    "description": "Concentration Curl is a isolation pull exercise targeting Biceps Brachii.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "wide-grip-pullups",
+    "exerciseName": "Wide Grip Pullups",
+    "category": "Compound",
+    "movementPattern": "Pull",
+    "workoutType": "BackBiceps",
+    "equipmentType": [
+      "Pull-up Bar"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Latissimus Dorsi",
+        "percentage": 90
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Biceps Brachii",
+        "percentage": 20
+      },
+      {
+        "muscle": "Rhomboids",
+        "percentage": 15
+      },
+      {
+        "muscle": "Trapezius",
+        "percentage": 15
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Advanced",
+    "variation": "A",
+    "restTimeSeconds": 510,
+    "defaultReps": 17,
+    "defaultWeight": 75,
+    "description": "Wide Grip Pullups is a compound pull exercise targeting Latissimus Dorsi.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "bench-press",
+    "exerciseName": "Bench Press",
+    "category": "Compound",
+    "movementPattern": "Push",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "Barbell",
+      "Bench"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Pectoralis Major",
+        "percentage": 85
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Triceps Brachii",
+        "percentage": 25
+      },
+      {
+        "muscle": "Anterior Deltoids",
+        "percentage": 30
+      },
+      {
+        "muscle": "Serratus Anterior",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A",
+    "restTimeSeconds": 540,
+    "defaultReps": 18,
+    "defaultWeight": 80,
+    "description": "Bench Press is a compound push exercise targeting Pectoralis Major.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "trx-reverse-flys",
+    "exerciseName": "TRX Reverse Flys",
+    "category": "Isolation",
+    "movementPattern": "Pull",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "TRX"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Rhomboids",
+        "percentage": 70
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Trapezius",
+        "percentage": 40
+      },
+      {
+        "muscle": "Rear Deltoids",
+        "percentage": 30
+      },
+      {
+        "muscle": "Core",
+        "percentage": 15
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A/B",
+    "restTimeSeconds": 570,
+    "defaultReps": 19,
+    "defaultWeight": 85,
+    "description": "TRX Reverse Flys is a isolation pull exercise targeting Rhomboids.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "tricep-extension",
+    "exerciseName": "Tricep Extension",
+    "category": "Isolation",
+    "movementPattern": "Push",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "Dumbbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Triceps Brachii",
+        "percentage": 85
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Anconeus",
+        "percentage": 30
+      }
+    ],
+    "difficultyLevel": "Beginner",
+    "variation": "A",
+    "restTimeSeconds": 600,
+    "defaultReps": 20,
+    "defaultWeight": 90,
+    "description": "Tricep Extension is a isolation push exercise targeting Triceps Brachii.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "trx-pushup",
+    "exerciseName": "TRX Pushup",
+    "category": "Compound",
+    "movementPattern": "Push",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "TRX"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Pectoralis Major",
+        "percentage": 80
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Triceps Brachii",
+        "percentage": 30
+      },
+      {
+        "muscle": "Anterior Deltoids",
+        "percentage": 25
+      },
+      {
+        "muscle": "Core",
+        "percentage": 25
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A",
+    "defaultReps": 21,
+    "defaultWeight": 95,
+    "description": "TRX Pushup is a compound push exercise targeting Pectoralis Major.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "incline-bench-press",
+    "exerciseName": "Incline Bench Press",
+    "category": "Compound",
+    "movementPattern": "Push",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "Barbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Pectoralis Major",
+        "percentage": 75
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Triceps Brachii",
+        "percentage": 25
+      },
+      {
+        "muscle": "Anterior Deltoids",
+        "percentage": 35
+      },
+      {
+        "muscle": "Serratus Anterior",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "B",
+    "defaultReps": 27,
+    "defaultWeight": 125,
+    "description": "Incline Bench Press is a compound push exercise targeting Pectoralis Major.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "shoulder-press",
+    "exerciseName": "Shoulder Press",
+    "category": "Compound",
+    "movementPattern": "Push",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "Barbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Deltoids",
+        "percentage": 80
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Triceps Brachii",
+        "percentage": 30
+      },
+      {
+        "muscle": "Trapezius",
+        "percentage": 20
+      },
+      {
+        "muscle": "Serratus Anterior",
+        "percentage": 15
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A/B",
+    "defaultReps": 28,
+    "defaultWeight": 130,
+    "description": "Shoulder Press is a compound push exercise targeting Deltoids.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "dips",
+    "exerciseName": "Dips",
+    "category": "Compound",
+    "movementPattern": "Push",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "Bodyweight"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Triceps Brachii",
+        "percentage": 70
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Pectoralis Major",
+        "percentage": 50
+      },
+      {
+        "muscle": "Anterior Deltoids",
+        "percentage": 23
+      },
+      {
+        "muscle": "Core",
+        "percentage": 8
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "B",
+    "defaultReps": 29,
+    "defaultWeight": 135,
+    "description": "Dips is a compound push exercise targeting Triceps Brachii.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "single-arm-bench",
+    "exerciseName": "Single Arm Bench",
+    "category": "Compound",
+    "movementPattern": "Push",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "Dumbbell",
+      "Bench"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Pectoralis Major",
+        "percentage": 80
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Triceps Brachii",
+        "percentage": 25
+      },
+      {
+        "muscle": "Anterior Deltoids",
+        "percentage": 25
+      },
+      {
+        "muscle": "Core",
+        "percentage": 20
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A/B",
+    "defaultReps": 22,
+    "defaultWeight": 100,
+    "description": "Single Arm Bench is a compound push exercise targeting Pectoralis Major.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "single-arm-incline",
+    "exerciseName": "Single Arm Incline",
+    "category": "Compound",
+    "movementPattern": "Push",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "Dumbbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Pectoralis Major",
+        "percentage": 75
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Triceps Brachii",
+        "percentage": 25
+      },
+      {
+        "muscle": "Anterior Deltoids",
+        "percentage": 30
+      },
+      {
+        "muscle": "Core",
+        "percentage": 20
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A/B",
+    "defaultReps": 23,
+    "defaultWeight": 105,
+    "description": "Single Arm Incline is a compound push exercise targeting Pectoralis Major.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "pullover",
+    "exerciseName": "Pullover",
+    "category": "Isolation",
+    "movementPattern": "Pull",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "Dumbbell",
+      "Bench"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Latissimus Dorsi",
+        "percentage": 65
+      },
+      {
+        "muscle": "Pectoralis Major",
+        "percentage": 35
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Triceps Brachii",
+        "percentage": 25
+      },
+      {
+        "muscle": "Serratus Anterior",
+        "percentage": 15
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A/B",
+    "defaultReps": 24,
+    "defaultWeight": 110,
+    "description": "Pullover is a isolation pull exercise targeting Latissimus Dorsi, Pectoralis Major.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "claps",
+    "exerciseName": "Claps",
+    "category": "Explosive",
+    "movementPattern": "Push",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "Bodyweight"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Pectoralis Major",
+        "percentage": 80
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Triceps Brachii",
+        "percentage": 20
+      },
+      {
+        "muscle": "Anterior Deltoids",
+        "percentage": 20
+      }
+    ],
+    "difficultyLevel": "Advanced",
+    "variation": "A/B",
+    "defaultReps": 25,
+    "defaultWeight": 115,
+    "description": "Claps is a explosive push exercise targeting Pectoralis Major.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "pushup",
+    "exerciseName": "Pushup",
+    "category": "Compound",
+    "movementPattern": "Push",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "Bodyweight"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Pectoralis Major",
+        "percentage": 80
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Triceps Brachii",
+        "percentage": 30
+      },
+      {
+        "muscle": "Anterior Deltoids",
+        "percentage": 25
+      },
+      {
+        "muscle": "Core",
+        "percentage": 15
+      }
+    ],
+    "difficultyLevel": "Beginner",
+    "variation": "A/B",
+    "defaultReps": 26,
+    "defaultWeight": 120,
+    "description": "Pushup is a compound push exercise targeting Pectoralis Major.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "kettlebell-halos",
+    "exerciseName": "Kettlebell Halos",
+    "category": "Functional",
+    "movementPattern": "Full Body",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "Kettlebell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Deltoids",
+        "percentage": 60
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Trapezius",
+        "percentage": 30
+      },
+      {
+        "muscle": "Triceps Brachii",
+        "percentage": 25
+      },
+      {
+        "muscle": "Core",
+        "percentage": 30
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 15
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A/B",
+    "defaultReps": 30,
+    "defaultWeight": 140,
+    "description": "Kettlebell Halos is a functional full body exercise targeting Deltoids.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "kettlebell-press",
+    "exerciseName": "Kettlebell Press",
+    "category": "Compound",
+    "movementPattern": "Push",
+    "workoutType": "ChestTriceps",
+    "equipmentType": [
+      "Kettlebell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Deltoids",
+        "percentage": 70
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Triceps Brachii",
+        "percentage": 40
+      },
+      {
+        "muscle": "Core",
+        "percentage": 35
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 15
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A/B",
+    "defaultReps": 31,
+    "defaultWeight": 145,
+    "description": "Kettlebell Press is a compound push exercise targeting Deltoids.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "goblet-squats",
+    "exerciseName": "Goblet Squats",
+    "category": "Compound",
+    "movementPattern": "Legs",
+    "workoutType": "Legs",
+    "equipmentType": [
+      "Kettlebell",
+      "Dumbbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Quadriceps",
+        "percentage": 57
+      },
+      {
+        "muscle": "Gluteus Maximus",
+        "percentage": 43
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Hamstrings",
+        "percentage": 20
+      },
+      {
+        "muscle": "Core",
+        "percentage": 25
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 5
+      }
+    ],
+    "difficultyLevel": "Beginner",
+    "variation": "A",
+    "defaultReps": 32,
+    "defaultWeight": 150,
+    "description": "Goblet Squats is a compound legs exercise targeting Quadriceps, Gluteus Maximus.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "dead-lifts",
+    "exerciseName": "Dead Lifts",
+    "category": "Compound",
+    "movementPattern": "Legs",
+    "workoutType": "Legs",
+    "equipmentType": [
+      "Barbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Gluteus Maximus",
+        "percentage": 56
+      },
+      {
+        "muscle": "Hamstrings",
+        "percentage": 44
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Erector Spinae",
+        "percentage": 42
+      },
+      {
+        "muscle": "Core",
+        "percentage": 21
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 17
+      }
+    ],
+    "difficultyLevel": "Advanced",
+    "variation": "A",
+    "defaultReps": 33,
+    "defaultWeight": 155,
+    "description": "Dead Lifts is a compound legs exercise targeting Gluteus Maximus, Hamstrings.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "calf-raises",
+    "exerciseName": "Calf Raises",
+    "category": "Isolation",
+    "movementPattern": "Legs",
+    "workoutType": "Legs",
+    "equipmentType": [
+      "Bodyweight"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Gastrocnemius",
+        "percentage": 53
+      },
+      {
+        "muscle": "Soleus",
+        "percentage": 47
+      }
+    ],
+    "difficultyLevel": "Beginner",
+    "variation": "A",
+    "defaultReps": 34,
+    "defaultWeight": 160,
+    "description": "Calf Raises is a isolation legs exercise targeting Gastrocnemius, Soleus.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "glute-bridges",
+    "exerciseName": "Glute Bridges",
+    "category": "Isolation",
+    "movementPattern": "Legs",
+    "workoutType": "Legs",
+    "equipmentType": [
+      "Bodyweight",
+      "Barbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Gluteus Maximus",
+        "percentage": 90
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Hamstrings",
+        "percentage": 40
+      },
+      {
+        "muscle": "Core",
+        "percentage": 20
+      },
+      {
+        "muscle": "Quadriceps",
+        "percentage": 10
+      }
+    ],
+    "difficultyLevel": "Beginner",
+    "variation": "B",
+    "defaultReps": 35,
+    "defaultWeight": 165,
+    "description": "Glute Bridges is a isolation legs exercise targeting Gluteus Maximus.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "kettlebell-swings",
+    "exerciseName": "Kettlebell Swings",
+    "category": "Compound",
+    "movementPattern": "Full Body",
+    "workoutType": "Legs",
+    "equipmentType": [
+      "Kettlebell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Gluteus Maximus",
+        "percentage": 53
+      },
+      {
+        "muscle": "Hamstrings",
+        "percentage": 47
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Core",
+        "percentage": 40
+      },
+      {
+        "muscle": "Shoulders",
+        "percentage": 15
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 15
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "A/B",
+    "defaultReps": 38,
+    "defaultWeight": 180,
+    "description": "Kettlebell Swings is a compound full body exercise targeting Gluteus Maximus, Hamstrings.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "box-step-ups",
+    "exerciseName": "Box Step-ups",
+    "category": "Compound",
+    "movementPattern": "Legs",
+    "workoutType": "Legs",
+    "equipmentType": [
+      "Plybox"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Quadriceps",
+        "percentage": 43
+      },
+      {
+        "muscle": "Gluteus Maximus",
+        "percentage": 57
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Hamstrings",
+        "percentage": 30
+      },
+      {
+        "muscle": "Erector Spinae",
+        "percentage": 15
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "B",
+    "defaultReps": 36,
+    "defaultWeight": 170,
+    "description": "Box Step-ups is a compound legs exercise targeting Quadriceps, Gluteus Maximus.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  },
+  {
+    "id": "stiff-legged-deadlifts",
+    "exerciseName": "Stiff Legged Deadlifts",
+    "category": "Compound",
+    "movementPattern": "Legs",
+    "workoutType": "Legs",
+    "equipmentType": [
+      "Barbell"
+    ],
+    "primaryMuscles": [
+      {
+        "muscle": "Hamstrings",
+        "percentage": 53
+      },
+      {
+        "muscle": "Gluteus Maximus",
+        "percentage": 47
+      }
+    ],
+    "secondaryMuscles": [
+      {
+        "muscle": "Erector Spinae",
+        "percentage": 50
+      },
+      {
+        "muscle": "Core",
+        "percentage": 25
+      },
+      {
+        "muscle": "Grip/Forearms",
+        "percentage": 15
+      }
+    ],
+    "difficultyLevel": "Intermediate",
+    "variation": "B",
+    "defaultReps": 37,
+    "defaultWeight": 175,
+    "description": "Stiff Legged Deadlifts is a compound legs exercise targeting Hamstrings, Gluteus Maximus.",
+    "formCues": [],
+    "contraindications": [],
+    "safetyNotes": []
+  }
+]

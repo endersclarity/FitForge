@@ -13,6 +13,7 @@ import workoutRoutes from "./workoutRoutes";
 import bodyStatsRoutes from "./bodyStatsRoutes";
 import progressRoutes from "./progressRoutes";
 import userPreferencesRoutes from "./userPreferencesRoutes";
+import exerciseRoutes from "./routes/exercises.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fitforge-secret-key";
 
@@ -177,30 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Exercise library routes
-  app.get("/api/exercises", async (req, res) => {
-    try {
-      const { enderExerciseDatabase } = await import("../scripts/ender-real-exercises");
-      
-      // Return all exercises with filtering options
-      const { category, workoutType, equipment } = req.query;
-      let exercises = enderExerciseDatabase;
-      
-      if (category) {
-        exercises = exercises.filter(ex => ex.category === category);
-      }
-      if (workoutType) {
-        exercises = exercises.filter(ex => ex.workoutType === workoutType);
-      }
-      if (equipment) {
-        exercises = exercises.filter(ex => ex.equipmentType === equipment);
-      }
-      
-      res.json(exercises);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
+  // Legacy exercise route handling moved to mounted router
 
   // Workout routes
   app.get("/api/workouts", async (req, res) => {
@@ -281,12 +259,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Exercise history endpoint for progressive overload
+  app.get("/api/exercises/:exerciseId/history", authenticateToken, async (req, res) => {
+    try {
+      const exerciseId = parseInt(req.params.exerciseId);
+      const userId = (req as any).userId;
+      
+      // Get exercise by weight (used as ID in the current structure)
+      const { enderExerciseDatabase } = await import("../scripts/ender-real-exercises");
+      const exercise = enderExerciseDatabase.find(ex => ex.weight === exerciseId);
+      
+      if (!exercise) {
+        return res.status(404).json({ message: "Exercise not found" });
+      }
+      
+      // Get user's workout sessions
+      const sessions = await storage.getWorkoutSessions(userId);
+      
+      // Filter sessions containing this exercise
+      const exerciseSessions = sessions
+        .filter(session => {
+          if (!session.exercises || !Array.isArray(session.exercises)) return false;
+          return session.exercises.some((ex: any) => ex.exerciseName === exercise.exerciseName);
+        })
+        .map(session => {
+          const exerciseData = (session.exercises as any[])?.find((ex: any) => ex.exerciseName === exercise.exerciseName);
+          if (!exerciseData) return null;
+          
+          return {
+            sessionId: session.id,
+            date: new Date(session.startTime),
+            sets: exerciseData.sets || [],
+            targetReps: exerciseData.targetReps || 8,
+            targetSets: exerciseData.targetSets || 3,
+            averageRPE: exerciseData.sets?.length > 0 
+              ? exerciseData.sets.reduce((sum: number, set: any) => sum + (set.rpe ?? 7), 0) / exerciseData.sets.length 
+              : undefined,
+            notes: exerciseData.notes
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => (b?.date?.getTime() || 0) - (a?.date?.getTime() || 0)) // Most recent first
+        .slice(0, 10); // Limit to last 10 sessions
+      
+      const exerciseHistory = {
+        exerciseId,
+        exerciseName: exercise.exerciseName,
+        exerciseType: exercise.category === 'strength' ? 'compound' : 'isolation',
+        category: exercise.category as 'strength' | 'hypertrophy' | 'endurance',
+        lastPerformed: exerciseSessions[0]?.date || new Date(),
+        sessions: exerciseSessions
+      };
+      
+      res.json(exerciseHistory);
+    } catch (error: any) {
+      console.error("Error fetching exercise history:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Workout session routes
   app.get("/api/workout-sessions", authenticateToken, async (req: any, res) => {
     try {
-      const sessions = await storage.getWorkoutSessions(req.userId);
-      res.json(sessions);
+      console.log("🔥 USING REAL DATA API ENDPOINT - NOT MOCK DATA!");
+      console.log("🔍 User ID:", req.userId, "Type:", typeof req.userId);
+      
+      // Import fileStorage for real user data
+      const { fileStorage } = await import("./fileStorage");
+      await fileStorage.initialize();
+      
+      // Get real workout sessions from user's JSON file
+      const realSessions = await fileStorage.getWorkoutSessions(req.userId.toString());
+      console.log("📊 Raw sessions from fileStorage:", realSessions.length, "sessions");
+      console.log("📋 First session:", realSessions[0] ? {
+        id: realSessions[0].id,
+        workoutType: realSessions[0].workoutType,
+        status: realSessions[0].status,
+        exercises: realSessions[0].exercises.map(ex => ex.exerciseName)
+      } : "No sessions found");
+      
+      // Convert fileStorage format to expected frontend format
+      const convertedSessions = realSessions.map(session => ({
+        id: parseInt(session.id.substring(0, 8), 16), // Convert UUID to number for compatibility
+        userId: parseInt(session.userId),
+        workoutTemplateId: null,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        duration: session.endTime ? 
+          Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000) : 0,
+        exercises: session.exercises.map(ex => ({
+          exerciseName: ex.exerciseName,
+          sets: ex.sets.map(set => ({
+            reps: set.reps,
+            weight: set.weight,
+            restTime: 60, // Default rest time
+            formScore: set.formScore || 8,
+            notes: set.notes
+          }))
+        })),
+        caloriesBurned: session.caloriesBurned,
+        notes: session.notes,
+        rating: session.rating || 5,
+        completionStatus: session.status,
+        createdAt: session.startTime,
+        workoutId: 1,
+        totalDuration: session.endTime ? 
+          Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000) : 0,
+        formScore: session.exercises.length > 0 ? 
+          session.exercises.reduce((sum, ex) => sum + (ex.formScore || 8), 0) / session.exercises.length : 8,
+        workoutType: session.workoutType
+      }));
+      
+      res.json(convertedSessions);
     } catch (error: any) {
+      console.error("Error fetching real workout sessions:", error);
       res.status(500).json({ message: error.message });
     }
   });
@@ -663,6 +749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/body-stats", bodyStatsRoutes);
   app.use("/api/progress", progressRoutes);
   app.use("/api/users", userPreferencesRoutes);
+  app.use("/api/exercises", exerciseRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

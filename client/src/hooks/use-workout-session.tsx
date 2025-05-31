@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { useOfflineWorkout } from "./use-offline-workout";
 
 export interface WorkoutSet {
   weight: number;
@@ -85,83 +86,72 @@ const WorkoutSessionContext = createContext<WorkoutSessionContextType | undefine
 
 export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<WorkoutSessionState | null>(null);
+  const offline = useOfflineWorkout();
 
   const startWorkout = useCallback(async (workoutType: string, exercises: WorkoutExercise[]) => {
     if (process.env.NODE_ENV !== 'production') {
-      console.log("💪💪💪 startWorkout CALLED!");
+      console.log("💪💪💪 OFFLINE-FIRST startWorkout CALLED!");
       console.log("💪 workoutType:", workoutType);
       console.log("💪 exercises:", exercises);
       console.log("💪 exercises length:", exercises.length);
     }
     
     try {
-      // Start workout session on backend
-      const response = await fetch('/api/workouts/start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          workoutType,
-          plannedExercises: exercises.map(ex => ex.name)
-        }),
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Backend session started:", result);
-        
-        const newSession: WorkoutSessionState = {
-          sessionId: result.sessionId,
-          startTime: new Date(result.startTime),
-          currentExerciseIndex: 0,
-          exercises: exercises.map(ex => ({
-            exerciseId: ex.id,
-            exerciseName: ex.name,
-            sets: [],
-            completed: false,
-            restTimeRemaining: ex.restTime
-          })),
-          status: "in_progress",
-          totalVolume: 0,
-          estimatedCalories: 0,
-          workoutType
+      // Check for existing offline session first (offline-first approach)
+      if (offline.activeSession && !offline.activeSession.isCompleted) {
+        const conflictData: SessionConflictData = {
+          sessionId: offline.activeSession.id,
+          sessionStartTime: offline.activeSession.startTime,
+          sessionExerciseCount: offline.activeSession.exercises.length,
+          canAbandon: true,
+          message: `You have an offline workout session in progress. Started: ${new Date(offline.activeSession.startTime).toLocaleString()}`
         };
-        
-        if (process.env.NODE_ENV !== 'production') {
-          console.log("💪 NEW SESSION CREATED:", newSession);
-        }
-        setSession(newSession);
-        if (process.env.NODE_ENV !== 'production') {
-          console.log("💪 SESSION STATE UPDATED");
-        }
-        
-        // Persist to localStorage for recovery
-        localStorage.setItem('activeWorkoutSession', JSON.stringify(newSession));
-        if (process.env.NODE_ENV !== 'production') {
-          console.log("💪 SESSION SAVED TO LOCALSTORAGE");
-          console.log("💪 startWorkout COMPLETED SUCCESSFULLY");
-        }
-      } else if (response.status === 409 /* Conflict */) {
-        // Session conflict - get details and throw for UI to handle
-        try {
-          const conflictData = await response.json();
-          console.log("Session conflict detected:", conflictData);
-          throw new SessionConflictError(conflictData);
-        } catch (jsonError) {
-          console.error("Failed to parse conflict response:", jsonError);
-          throw new Error('Session conflict detected but could not parse details');
-        }
-      } else {
-        const errorText = await response.text();
-        console.error("Failed to start workout on backend:", response.status, errorText);
-        throw new Error('Failed to start workout session');
+        throw new SessionConflictError(conflictData);
       }
+
+      // Start workout offline-first (immediate response)
+      const offlineSession = await offline.startWorkout(workoutType, exercises.map(ex => ex.name));
+      
+      if (!offlineSession) {
+        throw new Error('Failed to start offline workout session');
+      }
+
+      // Create frontend session state from offline session
+      const newSession: WorkoutSessionState = {
+        sessionId: offlineSession.id,
+        startTime: new Date(offlineSession.startTime),
+        currentExerciseIndex: 0,
+        exercises: exercises.map(ex => ({
+          exerciseId: ex.id,
+          exerciseName: ex.name,
+          sets: [],
+          completed: false,
+          restTimeRemaining: ex.restTime
+        })),
+        status: "in_progress",
+        totalVolume: 0,
+        estimatedCalories: 0,
+        workoutType
+      };
+      
+      if (process.env.NODE_ENV !== 'production') {
+        console.log("💪 OFFLINE-FIRST SESSION CREATED:", newSession);
+      }
+      setSession(newSession);
+      
+      // Still persist to localStorage for compatibility
+      localStorage.setItem('activeWorkoutSession', JSON.stringify(newSession));
+      
+      if (process.env.NODE_ENV !== 'production') {
+        console.log("💪 OFFLINE-FIRST startWorkout COMPLETED SUCCESSFULLY");
+        console.log("💪 Sync status:", offline.syncStatus);
+      }
+      
     } catch (error) {
-      console.error("Error starting workout:", error);
+      console.error("Error starting offline-first workout:", error);
       throw error; // Re-throw for UI to handle
     }
-  }, []);
+  }, [offline]);
 
   const pauseWorkout = useCallback(() => {
     if (session) {
@@ -189,33 +179,26 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       setSession(updatedSession);
       
       try {
-        // Complete workout on backend
-        const response = await fetch(`/api/workouts/${session.sessionId}/complete`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            rating: 5, // Default good rating
-            notes: `Workout completed via FitForge app. ${session.exercises.length} exercises, ${session.totalVolume} lbs total volume, ${session.estimatedCalories} calories burned.`
-          }),
-        });
+        // Complete workout offline-first (immediate local storage + background sync)
+        const success = await offline.completeWorkout(
+          5, // Default good rating
+          `Workout completed via FitForge app. ${session.exercises.length} exercises, ${session.totalVolume} lbs total volume, ${session.estimatedCalories} calories burned.`
+        );
         
-        if (response.ok) {
-          const result = await response.json();
-          console.log("Workout saved successfully:", result);
+        if (success) {
+          console.log("✅ Workout completed offline-first");
         } else {
-          console.error("Failed to save workout:", await response.text());
+          console.error("❌ Failed to complete workout offline");
         }
       } catch (error) {
-        console.error("Error saving workout:", error);
+        console.error("Error completing workout offline:", error);
         // Continue anyway - we don't want to block the UI
       }
       
       // Clear localStorage
       localStorage.removeItem('activeWorkoutSession');
     }
-  }, [session]);
+  }, [session, offline]);
 
   const logSet = useCallback(async (weight: number, reps: number, equipment: string) => {
     if (!session) return;
@@ -232,6 +215,7 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       volume
     };
 
+    // Update frontend session state immediately
     const updatedSession = { ...session };
     updatedSession.exercises[session.currentExerciseIndex].sets.push(newSet);
     updatedSession.totalVolume += volume;
@@ -242,36 +226,31 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
     setSession(updatedSession);
     localStorage.setItem('activeWorkoutSession', JSON.stringify(updatedSession));
 
-    // Log set to backend API
+    // Log set offline-first (immediate local storage + background sync)
     try {
-      const response = await fetch(`/api/workouts/${session.sessionId}/sets`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          exerciseId: currentExercise.exerciseId,
-          exerciseName: currentExercise.exerciseName,
+      const success = await offline.logSet(
+        currentExercise.exerciseId,
+        currentExercise.exerciseName,
+        {
           setNumber: newSet.setNumber,
           weight: weight,
           reps: reps,
           equipment: equipment,
           formScore: 8, // Default good form score
           notes: ""
-        }),
-      });
+        }
+      );
       
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Set logged to backend:", result);
+      if (success) {
+        console.log("✅ Set logged offline-first");
       } else {
-        console.error("Failed to log set to backend:", await response.text());
+        console.error("❌ Failed to log set offline");
       }
     } catch (error) {
-      console.error("Error logging set:", error);
+      console.error("Error logging set offline:", error);
       // Continue anyway - we don't want to block the UI
     }
-  }, [session]);
+  }, [session, offline]);
 
   const completeExercise = useCallback(() => {
     if (!session) return;
@@ -374,33 +353,22 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
 
   const abandonActiveSession = useCallback(async () => {
     try {
-      // Get active session first
-      const activeResponse = await fetch('/api/workouts/active');
-      if (activeResponse.ok) {
-        const activeSession = await activeResponse.json();
-        
-        // Abandon it
-        const abandonResponse = await fetch(`/api/workouts/${activeSession.id}/abandon`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (abandonResponse.ok) {
-          console.log('Active session abandoned successfully');
-          // Clear any local session
-          setSession(null);
-          localStorage.removeItem('activeWorkoutSession');
-        } else {
-          throw new Error('Failed to abandon active session');
-        }
+      // Abandon session offline-first
+      const success = await offline.abandonWorkout();
+      
+      if (success) {
+        console.log('✅ Active session abandoned offline-first');
+        // Clear any local session
+        setSession(null);
+        localStorage.removeItem('activeWorkoutSession');
+      } else {
+        throw new Error('Failed to abandon active session offline');
       }
     } catch (error) {
-      console.error('Error abandoning active session:', error);
+      console.error('Error abandoning active session offline:', error);
       throw error;
     }
-  }, []);
+  }, [offline]);
 
   const resumeActiveSession = useCallback(async () => {
     try {
