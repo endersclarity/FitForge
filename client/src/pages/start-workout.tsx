@@ -116,8 +116,8 @@ export default function StartWorkout() {
       const workoutExercises: WorkoutExercise[] = selectedExercises.map((exercise, index) => ({
         id: index + 1,
         name: exercise.exerciseName,
-        primaryMuscles: exercise.primaryMuscles.map(m => m.muscle),
-        secondaryMuscles: exercise.secondaryMuscles.map(m => m.muscle),
+        primaryMuscles: exercise.primaryMuscles?.map(m => m.muscle) || [],
+        secondaryMuscles: exercise.secondaryMuscles?.map(m => m.muscle) || [],
         equipment: exercise.equipment,
         restTime: exercise.restTime ? parseRestTimeToSeconds(exercise.restTime) : 60,
         difficulty: exercise.difficulty,
