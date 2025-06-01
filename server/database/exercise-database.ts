@@ -162,12 +162,12 @@ class ExerciseDatabase {
     return this.exercises.filter(exercise => {
       // Check primary muscles
       const hasPrimaryMatch = exercise.primaryMuscles.some(muscle => 
-        targetMuscles.includes(muscle.muscle as (typeof targetMuscles)[number])
+        (targetMuscles as unknown as string[]).includes(muscle.muscle)
       );
       
       // Check secondary muscles  
       const hasSecondaryMatch = exercise.secondaryMuscles?.some(muscle => 
-        targetMuscles.includes(muscle.muscle as (typeof targetMuscles)[number])
+        (targetMuscles as unknown as string[]).includes(muscle.muscle)
       ) || false;
       
       return hasPrimaryMatch || hasSecondaryMatch;

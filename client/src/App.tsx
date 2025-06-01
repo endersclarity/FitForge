@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import React from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -19,6 +20,7 @@ import Community from "@/pages/community";
 import Profile from "@/pages/profile";
 import Nutrition from "@/pages/nutrition";
 import StartWorkout from "@/pages/start-workout";
+// import WorkoutDetail from "@/pages/workout-detail";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -47,6 +49,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function Router() {
   const { user } = useAuth();
+  const [location] = useLocation();
+  
+  // Debug route changes
+  React.useEffect(() => {
+    console.log('🛣️ Route changed to:', location);
+  }, [location]);
   
   // Initialize data migration system on app startup
   useDataMigration({
@@ -108,6 +116,11 @@ function Router() {
             <Nutrition />
           </ProtectedRoute>
         </Route>
+        {/* <Route path="/workout/:id">
+          <ProtectedRoute>
+            <WorkoutDetail />
+          </ProtectedRoute>
+        </Route> */}
         <Route component={NotFound} />
       </Switch>
       

@@ -13,7 +13,7 @@ import workoutRoutes from "./workoutRoutes";
 import bodyStatsRoutes from "./bodyStatsRoutes";
 import progressRoutes from "./progressRoutes";
 import userPreferencesRoutes from "./userPreferencesRoutes";
-import exerciseRoutes from "./routes/exercises.js";
+import exerciseRoutes from "./routes/exercises";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fitforge-secret-key";
 

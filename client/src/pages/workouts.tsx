@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,11 +65,24 @@ export default function Workouts() {
 
   const handleStartWorkout = (workoutId: string) => {
     console.log('🎯 handleStartWorkout called with:', workoutId);
-    // Navigate to workout session with the selected workout type
     console.log('🧭 Navigating to:', `/start-workout?type=${workoutId}`);
-    setLocation(`/start-workout?type=${workoutId}`);
-    console.log('✅ setLocation called successfully');
+    console.log('📍 Current location before nav:', window.location.href);
+    
+    try {
+      // IMMEDIATE: Use direct browser navigation instead of wouter
+      // This bypasses any React Router issues
+      window.location.href = `/start-workout?type=${workoutId}`;
+      console.log('✅ Direct navigation triggered');
+    } catch (error) {
+      console.error('❌ Navigation error:', error);
+      alert(`Navigation failed. Please manually go to: /start-workout?type=${workoutId}`);
+    }
   };
+
+  // Test function to verify component is working
+  React.useEffect(() => {
+    console.log('🏋️ Workouts component mounted successfully');
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -91,11 +105,15 @@ export default function Workouts() {
             return (
               <Card 
                 key={workout.id}
-                className={`transition-all duration-200 cursor-pointer ${workout.color}`}
-                onClick={() => {
+                className={`transition-all duration-200 cursor-pointer hover:shadow-lg ${workout.color}`}
+                onClick={(e) => {
                   console.log('🖱️ Card clicked for workout:', workout.id);
+                  console.log('🖱️ Click event:', e.type);
+                  e.preventDefault();
                   handleStartWorkout(workout.id);
                 }}
+                onMouseDown={() => console.log('🖱️ Mouse down on card:', workout.id)}
+                onMouseUp={() => console.log('🖱️ Mouse up on card:', workout.id)}
               >
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
