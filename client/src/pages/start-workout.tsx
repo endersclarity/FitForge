@@ -36,13 +36,18 @@ export default function StartWorkout() {
   const urlParams = new URLSearchParams(window.location.search);
   const workoutType = urlParams.get('type') || '';
   
+  console.log('🔍 StartWorkout component loaded');
+  console.log('📍 Current URL:', window.location.href);
+  console.log('🎯 Workout type from URL:', workoutType);
+  console.log('🔗 URL params:', Object.fromEntries(urlParams));
+  
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
   const [workoutStarted, setWorkoutStarted] = useState(false);
   
   const { session } = useRealWorkoutSession();
 
-  // Fetch exercises from the API
-  const { data: exerciseResponse, isLoading } = useQuery({
+  // Fetch all exercises from the database
+  const { data: exerciseResponse, isLoading } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises"],
     select: (data: any) => {
       // Handle the nested API response structure
@@ -82,6 +87,14 @@ export default function StartWorkout() {
   // If we have an active session or workout has been started, show the WorkoutSession component
   if (session || workoutStarted) {
     return <WorkoutSession workoutType={workoutName} selectedExercises={selectedExerciseIds} />;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   if (!workoutType) {

@@ -65,9 +65,11 @@ export default function Workouts() {
 
   const handleStartWorkout = (workoutId: string) => {
     console.log('🎯 handleStartWorkout called with:', workoutId);
+    // Navigate to workout session with the selected workout type
     const targetUrl = `/start-workout?type=${workoutId}`;
     console.log('🧭 Navigating to:', targetUrl);
     setLocation(targetUrl);
+    console.log('✅ setLocation called successfully');
   };
 
   // Test function to verify component is working
