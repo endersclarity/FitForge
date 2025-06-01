@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useWorkoutSession } from "@/hooks/use-workout-session";
 
 export function LiveWorkoutSession() {
+  console.log('🏋️ LiveWorkoutSession component loading...');
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { 

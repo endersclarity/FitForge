@@ -43,6 +43,11 @@ export default function StartWorkout() {
   const urlParams = new URLSearchParams(window.location.search);
   const workoutType = urlParams.get('type') || '';
   
+  console.log('🔍 StartWorkout component loaded');
+  console.log('📍 Current URL:', window.location.href);
+  console.log('🎯 Workout type from URL:', workoutType);
+  console.log('🔗 URL params:', Object.fromEntries(urlParams));
+  
   // Fetch all exercises from the database
   const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises"],
@@ -132,7 +137,9 @@ export default function StartWorkout() {
       await startWorkout(workoutName, workoutExercises);
       
       // Navigate to live workout session
+      console.log('🚀 Starting workout navigation to /workout-session');
       setLocation('/workout-session');
+      console.log('✅ Workout session navigation called');
     } catch (error) {
       if (error instanceof SessionConflictError) {
         // Show session conflict dialog
@@ -168,7 +175,9 @@ export default function StartWorkout() {
     try {
       await resumeActiveSession();
       setSessionConflict(null);
+      console.log('🔄 Resuming session navigation to /workout-session');
       setLocation('/workout-session');
+      console.log('✅ Resume session navigation called');
     } catch (error) {
       console.error('Error resuming session:', error);
       alert('Failed to resume previous session. Please try again.');

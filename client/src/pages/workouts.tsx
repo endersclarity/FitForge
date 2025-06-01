@@ -63,8 +63,11 @@ export default function Workouts() {
   const [, setLocation] = useLocation();
 
   const handleStartWorkout = (workoutId: string) => {
+    console.log('🎯 handleStartWorkout called with:', workoutId);
     // Navigate to workout session with the selected workout type
+    console.log('🧭 Navigating to:', `/start-workout?type=${workoutId}`);
     setLocation(`/start-workout?type=${workoutId}`);
+    console.log('✅ setLocation called successfully');
   };
 
   return (
@@ -89,7 +92,10 @@ export default function Workouts() {
               <Card 
                 key={workout.id}
                 className={`transition-all duration-200 cursor-pointer ${workout.color}`}
-                onClick={() => handleStartWorkout(workout.id)}
+                onClick={() => {
+                  console.log('🖱️ Card clicked for workout:', workout.id);
+                  handleStartWorkout(workout.id);
+                }}
               >
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
@@ -134,6 +140,7 @@ export default function Workouts() {
 
                   <Button 
                     onClick={(e) => {
+                      console.log('🔘 Button clicked for workout:', workout.id);
                       e.stopPropagation();
                       handleStartWorkout(workout.id);
                     }}
