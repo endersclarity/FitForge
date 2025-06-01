@@ -8,13 +8,13 @@ import {
   searchExercises, 
   getWorkoutRecommendations,
   exerciseDatabase 
-} from '../database/exercise-database.js';
+} from '../database/exercise-database';
 import { 
   ExerciseQuerySchema, 
   WorkoutType, 
   EquipmentProfile, 
   DifficultyLevel 
-} from '../database/exercise-schema.js';
+} from '../database/exercise-schema';
 
 const router = express.Router();
 

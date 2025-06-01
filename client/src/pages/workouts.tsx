@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,9 +64,16 @@ export default function Workouts() {
   const [, setLocation] = useLocation();
 
   const handleStartWorkout = (workoutId: string) => {
-    // Navigate to workout session with the selected workout type
-    setLocation(`/start-workout?type=${workoutId}`);
+    console.log('🎯 handleStartWorkout called with:', workoutId);
+    const targetUrl = `/start-workout?type=${workoutId}`;
+    console.log('🧭 Navigating to:', targetUrl);
+    setLocation(targetUrl);
   };
+
+  // Test function to verify component is working
+  React.useEffect(() => {
+    console.log('🏋️ Workouts component mounted successfully');
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,8 +96,15 @@ export default function Workouts() {
             return (
               <Card 
                 key={workout.id}
-                className={`transition-all duration-200 cursor-pointer ${workout.color}`}
-                onClick={() => handleStartWorkout(workout.id)}
+                className={`transition-all duration-200 cursor-pointer hover:shadow-lg ${workout.color}`}
+                onClick={(e) => {
+                  console.log('🖱️ Card clicked for workout:', workout.id);
+                  console.log('🖱️ Click event:', e.type);
+                  e.preventDefault();
+                  handleStartWorkout(workout.id);
+                }}
+                onMouseDown={() => console.log('🖱️ Mouse down on card:', workout.id)}
+                onMouseUp={() => console.log('🖱️ Mouse up on card:', workout.id)}
               >
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
@@ -134,6 +149,7 @@ export default function Workouts() {
 
                   <Button 
                     onClick={(e) => {
+                      console.log('🔘 Button clicked for workout:', workout.id);
                       e.stopPropagation();
                       handleStartWorkout(workout.id);
                     }}

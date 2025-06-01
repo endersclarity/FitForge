@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useWorkoutSessionV2, useWorkoutProgress, useCurrentExercise } from "@/hooks/use-workout-session-v2";
+import { useRealWorkoutSession } from "@/hooks/use-real-workout-session";
 import { ExerciseSelector } from "./ExerciseSelector";
+import { RealSetLogger } from "./RealSetLogger";
 import { 
   Play, 
   Pause, 
@@ -14,101 +15,124 @@ import {
   CheckCircle,
   Plus,
   Minus,
-  RotateCcw
+  RotateCcw,
+  Dumbbell
 } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 
 interface WorkoutSessionProps {
-  onSelectExercises?: () => void;
+  workoutType?: string;
+  selectedExercises?: string[];
 }
 
-export function WorkoutSession({ onSelectExercises }: WorkoutSessionProps) {
+export function WorkoutSession({ workoutType = "Custom Workout", selectedExercises = [] }: WorkoutSessionProps) {
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   
   const {
     session,
-    startWorkout,
-    pauseWorkout,
-    resumeWorkout,
-    completeWorkout,
-    resetWorkout,
-    isWorkoutActive,
-  } = useWorkoutSessionV2();
-  
-  const progress = useWorkoutProgress();
-  const currentExercise = useCurrentExercise();
+    isLoading,
+    startSession,
+    logSet,
+    completeSession,
+    sessionProgress,
+    error
+  } = useRealWorkoutSession();
+
+  // Handle loading and error states
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Dumbbell 
+            aria-label="Loading workout session"
+            role="status"
+            className="w-12 h-12 mx-auto mb-4 animate-pulse" 
+          />
+          <p className="text-lg">Loading workout session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-red-600 mb-4">Error: {error}</p>
+          <Button onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // Show exercise selector if requested
   if (showExerciseSelector) {
     return (
-      <ExerciseSelector onBack={() => setShowExerciseSelector(false)} />
+      <ExerciseSelector 
+        onBack={() => setShowExerciseSelector(false)} 
+      />
     );
   }
 
-  // If no workout has been started, show the start screen
-  if (session.status === 'not_started') {
+  // If no session exists, show start screen
+  if (!session) {
     return (
       <div className="min-h-screen bg-background">
         <section className="bg-gradient-to-r from-primary/10 via-accent/5 to-secondary/10 py-12">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-4xl font-bold mb-4">Ready to Start Your Workout?</h1>
             <p className="text-xl text-muted-foreground mb-8">
-              Choose your exercises and start tracking your progress
+              Begin tracking your {workoutType} session
             </p>
             
-            {session.exercises.length === 0 ? (
-              <div className="space-y-4">
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                <h3 className="text-lg font-semibold mb-4">Selected Exercises</h3>
+                {selectedExercises.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedExercises.map((exerciseId, index) => (
+                      <div key={exerciseId} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                        <span className="font-medium">Exercise {index + 1}</span>
+                        <Badge variant="secondary">Ready</Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No exercises selected yet</p>
+                )}
+              </div>
+              
+              <div className="flex gap-4 justify-center">
                 <Button 
-                  onClick={() => setShowExerciseSelector(true)}
+                  onClick={() => startSession(workoutType, selectedExercises)}
                   size="lg" 
                   className="gradient-bg text-white font-semibold"
+                  disabled={selectedExercises.length === 0}
+                >
+                  <Play className="w-5 h-5 mr-2" />
+                  Start Workout
+                </Button>
+                <Button 
+                  onClick={() => setShowExerciseSelector(true)}
+                  variant="outline"
+                  size="lg"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   Select Exercises
                 </Button>
-                <p className="text-sm text-muted-foreground">
-                  Add exercises to your workout before starting
-                </p>
               </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-                  <h3 className="text-lg font-semibold mb-4">Workout Preview</h3>
-                  <div className="space-y-2">
-                    {session.exercises.map((exercise, index) => (
-                      <div key={exercise.exerciseId} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                        <span className="font-medium">{exercise.exerciseName}</span>
-                        <Badge variant="secondary">{exercise.exercise.difficulty}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="flex gap-4 justify-center">
-                  <Button 
-                    onClick={startWorkout}
-                    size="lg" 
-                    className="gradient-bg text-white font-semibold"
-                  >
-                    <Play className="w-5 h-5 mr-2" />
-                    Start Workout
-                  </Button>
-                  <Button 
-                    onClick={() => setShowExerciseSelector(true)}
-                    variant="outline"
-                    size="lg"
-                  >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Add More Exercises
-                  </Button>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </section>
       </div>
     );
   }
+
+  // Get current exercise for focused logging
+  const currentExercise = session.exercises?.[currentExerciseIndex];
 
   // Active workout interface
   return (
@@ -122,33 +146,21 @@ export function WorkoutSession({ onSelectExercises }: WorkoutSessionProps) {
                 {session.status === 'paused' && <Pause className="w-6 h-6 mr-2 text-orange-500" />}
                 {session.status === 'in_progress' && <Play className="w-6 h-6 mr-2 text-green-500" />}
                 {session.status === 'completed' && <CheckCircle className="w-6 h-6 mr-2 text-green-600" />}
-                Workout {session.status === 'completed' ? 'Complete' : 'in Progress'}
+                {session.workoutType} Session
               </h1>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center">
                   <Timer className="w-4 h-4 mr-1" />
-                  {formatDuration(progress.duration)}
+                  {sessionProgress?.duration ? formatDuration(sessionProgress.duration) : "00:00"}
                 </span>
-                <span>{progress.completedExercises}/{progress.totalExercises} exercises</span>
-                <span>{progress.completedSets} sets completed</span>
+                <span>{sessionProgress?.completedSets || 0} sets completed</span>
+                <span>Volume: {Math.round(session.totalVolume || 0)} lbs</span>
               </div>
             </div>
             
             <div className="flex gap-2">
-              {session.status === 'in_progress' && (
-                <Button onClick={pauseWorkout} variant="outline">
-                  <Pause className="w-4 h-4 mr-2" />
-                  Pause
-                </Button>
-              )}
-              {session.status === 'paused' && (
-                <Button onClick={resumeWorkout} className="bg-green-500 hover:bg-green-600">
-                  <Play className="w-4 h-4 mr-2" />
-                  Resume
-                </Button>
-              )}
               <Button 
-                onClick={completeWorkout}
+                onClick={() => completeSession()}
                 className="bg-blue-500 hover:bg-blue-600"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
@@ -161,15 +173,15 @@ export function WorkoutSession({ onSelectExercises }: WorkoutSessionProps) {
           <div className="mt-4">
             <div className="flex justify-between text-sm mb-2">
               <span>Workout Progress</span>
-              <span>{Math.round(progress.progressPercentage)}%</span>
+              <span>{Math.round(sessionProgress?.progressPercentage || 0)}%</span>
             </div>
-            <Progress value={progress.progressPercentage} className="h-2" />
+            <Progress value={sessionProgress?.progressPercentage || 0} className="h-2" />
           </div>
         </div>
       </section>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Current Exercise Card */}
+        {/* Current Exercise Card with Set Logger */}
         {currentExercise && (
           <Card className="mb-6 border-2 border-primary/20">
             <CardHeader>
@@ -181,87 +193,97 @@ export function WorkoutSession({ onSelectExercises }: WorkoutSessionProps) {
                   </Badge>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  Exercise {session.currentExerciseIndex + 1} of {session.exercises.length}
+                  Exercise {currentExerciseIndex + 1} of {session.exercises?.length || 0}
                 </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-3 gap-4">
+              {/* Exercise Details */}
+              <div className="grid md:grid-cols-3 gap-4 mb-6">
                 <div>
-                  <h4 className="font-semibold mb-2">Exercise Info</h4>
+                  <h4 className="font-semibold mb-2">Target</h4>
                   <div className="space-y-1 text-sm">
-                    <div>Category: {currentExercise.exercise.category}</div>
-                    <div>Difficulty: {currentExercise.exercise.difficulty}</div>
-                    <div>Equipment: {currentExercise.exercise.equipment.join(", ")}</div>
+                    <div>Sets: {currentExercise.targetSets || 3}</div>
+                    <div>Reps: {currentExercise.targetReps || 12}</div>
+                    <div>Weight: {currentExercise.targetWeight || 0} lbs</div>
                   </div>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold mb-2">Primary Muscles</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {currentExercise.exercise.primaryMuscles.map((muscle, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {muscle.muscle}
-                      </Badge>
-                    ))}
+                  <h4 className="font-semibold mb-2">Progress</h4>
+                  <div className="space-y-1 text-sm">
+                    <div>Sets: {currentExercise.sets?.length || 0}/{currentExercise.targetSets || 3}</div>
+                    <div>Completed: {currentExercise.sets?.filter(s => s.completed).length || 0}</div>
                   </div>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold mb-2">Sets Completed</h4>
+                  <h4 className="font-semibold mb-2">Volume</h4>
                   <div className="text-2xl font-bold text-primary">
-                    {currentExercise.sets.length}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {currentExercise.sets.filter(set => set.completed).length} completed
+                    {currentExercise.sets?.reduce((total, set) => 
+                      total + (set.completed ? (set.weight * set.reps) : 0), 0) || 0} lbs
                   </div>
                 </div>
               </div>
-              
-              {/* Sets Log */}
-              {currentExercise.sets.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="font-semibold mb-2">Sets Logged</h4>
-                  <div className="space-y-2">
-                    {currentExercise.sets.map((set, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                        <span>Set {set.setNumber}</span>
-                        <span className="font-mono">{set.weight} lbs × {set.reps} reps</span>
-                        {set.completed && <CheckCircle className="w-4 h-4 text-green-500" />}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+
+              {/* Real Set Logger */}
+              <RealSetLogger 
+                exerciseId={currentExercise.exerciseId}
+                exerciseName={currentExercise.exerciseName}
+                sessionId={session.id}
+                currentSets={currentExercise.sets || []}
+                targetSets={currentExercise.targetSets || 3}
+                onSetLogged={(setData) => {
+                  logSet(currentExercise.exerciseId, setData);
+                }}
+              />
+
+              {/* Navigation buttons */}
+              <div className="flex justify-between mt-6">
+                <Button 
+                  onClick={() => setCurrentExerciseIndex(Math.max(0, currentExerciseIndex - 1))}
+                  disabled={currentExerciseIndex === 0}
+                  variant="outline"
+                >
+                  Previous Exercise
+                </Button>
+                <Button 
+                  onClick={() => setCurrentExerciseIndex(Math.min((session.exercises?.length || 1) - 1, currentExerciseIndex + 1))}
+                  disabled={currentExerciseIndex >= (session.exercises?.length || 1) - 1}
+                  variant="outline"
+                >
+                  Next Exercise
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Exercise List */}
+        {/* Exercise Overview */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>All Exercises</span>
-              <Button onClick={() => setShowExerciseSelector(true)} variant="outline" size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Exercise
-              </Button>
+              <span>Workout Overview</span>
+              <Badge variant="outline">{session.exercises?.length || 0} exercises</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {session.exercises.map((exercise, index) => {
-                const isCurrent = index === session.currentExerciseIndex;
-                const isCompleted = exercise.completedAt;
+              {session.exercises?.map((exercise, index) => {
+                const isCurrent = index === currentExerciseIndex;
+                const completedSets = exercise.sets?.filter(s => s.completed).length || 0;
+                const totalSets = exercise.targetSets || 3;
+                const isCompleted = completedSets >= totalSets;
                 
                 return (
                   <div 
                     key={exercise.exerciseId}
-                    className={`p-4 border rounded-lg transition-colors ${
+                    className={`p-4 border rounded-lg transition-colors cursor-pointer ${
                       isCurrent ? 'border-primary bg-primary/5' : 
                       isCompleted ? 'border-green-200 bg-green-50 dark:bg-green-900/20' :
                       'border-gray-200 hover:border-gray-300'
                     }`}
+                    onClick={() => setCurrentExerciseIndex(index)}
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -271,41 +293,31 @@ export function WorkoutSession({ onSelectExercises }: WorkoutSessionProps) {
                           {isCompleted && <CheckCircle className="w-4 h-4 ml-2 text-green-500" />}
                         </h4>
                         <p className="text-sm text-muted-foreground">
-                          {exercise.exercise.category} • {exercise.exercise.difficulty}
+                          {completedSets}/{totalSets} sets completed
                         </p>
                       </div>
                       
                       <div className="text-right">
-                        <div className="text-lg font-bold">{exercise.sets.length}</div>
-                        <div className="text-sm text-muted-foreground">sets</div>
+                        <div className="text-lg font-bold">
+                          {exercise.sets?.reduce((total, set) => 
+                            total + (set.completed ? (set.weight * set.reps) : 0), 0) || 0}
+                        </div>
+                        <div className="text-sm text-muted-foreground">lbs volume</div>
                       </div>
                     </div>
                   </div>
                 );
-              })}
+              }) || []}
             </div>
             
-            {session.exercises.length === 0 && (
+            {(!session.exercises || session.exercises.length === 0) && (
               <div className="text-center py-8 text-muted-foreground">
                 <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No exercises added yet</p>
-                <p className="text-sm">Click "Add Exercise" to get started</p>
+                <p>No exercises in this session</p>
               </div>
             )}
           </CardContent>
         </Card>
-
-        {/* Workout Controls */}
-        <div className="mt-6 flex justify-center gap-4">
-          <Button 
-            onClick={resetWorkout} 
-            variant="outline"
-            className="text-red-600 border-red-200 hover:bg-red-50"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reset Workout
-          </Button>
-        </div>
       </div>
     </div>
   );

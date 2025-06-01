@@ -1,119 +1,99 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 
-interface WorkoutSet {
+interface SetLog {
   setNumber: number;
   weight: number;
   reps: number;
-  equipment?: string;
+  completed: boolean;
+  restTimeSeconds?: number;
+  rpe?: number;
+  notes?: string;
+  timestamp: Date;
+}
+
+interface ExerciseLog {
+  exerciseId: string;
+  exerciseName: string;
+  sets: SetLog[];
+  targetSets: number;
+  targetReps: number;
+  targetWeight: number;
   formScore?: number;
   notes?: string;
 }
 
-interface ExerciseSession {
-  exerciseId: number;
-  exerciseName: string;
-  sets: WorkoutSet[];
-  currentSet: number;
-  targetSets: number;
-  restTimeRemaining: number;
-}
-
-interface WorkoutSessionState {
-  sessionId: string | null;
-  startTime: Date | null;
+interface WorkoutSession {
+  id: string | number;
+  userId: number;
   workoutType: string;
-  exercises: ExerciseSession[];
-  currentExerciseIndex: number;
-  status: 'idle' | 'in_progress' | 'completed';
+  startTime: string;
+  endTime?: string;
+  status: 'in_progress' | 'completed' | 'paused';
+  exercises: ExerciseLog[];
   totalVolume: number;
+  totalDuration?: number;
+  notes?: string;
 }
 
-interface WorkoutSessionContextType {
-  session: WorkoutSessionState;
-  startWorkout: (workoutType: string, exercises: any[]) => Promise<void>;
-  logSet: (weight: number, reps: number, equipment?: string, formScore?: number, notes?: string) => Promise<void>;
-  completeExercise: () => void;
-  completeWorkout: (rating?: number, notes?: string) => Promise<void>;
-  abandonWorkout: () => Promise<void>;
-  goToNextExercise: () => void;
-  goToPreviousExercise: () => void;
-  updateRestTime: (seconds: number) => void;
-  isLoading: boolean;
+interface SessionProgress {
+  duration: number;
+  completedSets: number;
+  totalSets: number;
+  progressPercentage: number;
 }
 
-const WorkoutSessionContext = createContext<WorkoutSessionContextType | null>(null);
-
-export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
+export function useRealWorkoutSession() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
-  const [session, setSession] = useState<WorkoutSessionState>({
-    sessionId: null,
-    startTime: null,
-    workoutType: '',
-    exercises: [],
-    currentExerciseIndex: 0,
-    status: 'idle',
-    totalVolume: 0,
-  });
+  const [session, setSession] = useState<WorkoutSession | null>(null);
+  const [sessionProgress, setSessionProgress] = useState<SessionProgress | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Check for active workout on mount
-  const { data: activeWorkout } = useQuery({
-    queryKey: ['activeWorkout'],
-    queryFn: async () => {
-      const response = await fetch('/api/workouts/active');
-      if (response.status === 404) return null;
-      if (!response.ok) throw new Error('Failed to fetch active workout');
-      return response.json();
-    },
-  });
-
-  // Handle active workout restoration
+  // Update session progress calculation
   useEffect(() => {
-    if (activeWorkout) {
-      // Restore active workout session
-      setSession({
-        sessionId: activeWorkout.id,
-        startTime: new Date(activeWorkout.startTime),
-        workoutType: activeWorkout.workoutType,
-        exercises: activeWorkout.exercises.map((ex: any) => ({
-          exerciseId: ex.exerciseId,
-          exerciseName: ex.exerciseName,
-          sets: ex.sets,
-          currentSet: ex.sets.length + 1,
-          targetSets: 3, // Default
-          restTimeRemaining: 0,
-        })),
-        currentExerciseIndex: 0,
-        status: 'in_progress',
-        totalVolume: activeWorkout.totalVolume,
+    if (session) {
+      const totalSets = session.exercises.reduce((sum, ex) => sum + ex.targetSets, 0);
+      const completedSets = session.exercises.reduce((sum, ex) => 
+        sum + ex.sets.filter(set => set.completed).length, 0);
+      
+      const startTime = new Date(session.startTime);
+      const now = new Date();
+      const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000 / 60); // minutes
+      
+      setSessionProgress({
+        duration,
+        completedSets,
+        totalSets,
+        progressPercentage: totalSets > 0 ? (completedSets / totalSets) * 100 : 0
       });
     }
-  }, [activeWorkout]);
+  }, [session]);
 
-  // Start workout mutation
-  const startWorkoutMutation = useMutation({
-    mutationFn: async ({ workoutType, plannedExercises }: { workoutType: string; plannedExercises?: string[] }) => {
-      const response = await fetch('/api/workouts/start', {
+  // Start session mutation
+  const startSessionMutation = useMutation({
+    mutationFn: async ({ workoutType, exerciseIds }: { workoutType: string; exerciseIds?: string[] }) => {
+      const response = await fetch('/api/workout-sessions/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workoutType, plannedExercises }),
+        body: JSON.stringify({ workoutType, exerciseIds }),
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to start workout');
+        throw new Error(error.message || 'Failed to start workout session');
       }
       return response.json();
     },
     onSuccess: (data, variables) => {
       toast({
         title: "Workout Started! 💪",
-        description: `Let's crush this ${variables.workoutType} workout!`,
+        description: `Let's crush this ${variables.workoutType} session!`,
       });
     },
     onError: (error: Error) => {
+      setError(error.message);
       toast({
         title: "Failed to start workout",
         description: error.message,
@@ -127,22 +107,18 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
     mutationFn: async ({ 
       sessionId, 
       exerciseId, 
-      exerciseName, 
+      setNumber,
       setData 
     }: { 
-      sessionId: string; 
-      exerciseId: number; 
-      exerciseName: string; 
-      setData: WorkoutSet;
+      sessionId: string | number; 
+      exerciseId: string; 
+      setNumber: number;
+      setData: Partial<SetLog>;
     }) => {
-      const response = await fetch(`/api/workouts/${sessionId}/sets`, {
-        method: 'POST',
+      const response = await fetch(`/api/workout-sessions/${sessionId}/exercises/${exerciseId}/sets/${setNumber}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          exerciseId,
-          exerciseName,
-          ...setData,
-        }),
+        body: JSON.stringify(setData),
       });
       if (!response.ok) {
         const error = await response.json();
@@ -151,16 +127,18 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       return response.json();
     },
     onSuccess: (data) => {
-      setSession(prev => ({
-        ...prev,
-        totalVolume: data.totalVolume,
-      }));
       toast({
         title: "Set logged! 🎯",
-        description: `Total volume: ${data.totalVolume.toFixed(0)}kg`,
+        description: `Total volume: ${Math.round(data.progressUpdate?.totalVolume || 0)} lbs`,
       });
+      
+      // Refetch session data to get updated state
+      if (session) {
+        fetchSessionProgress(session.id);
+      }
     },
     onError: (error: Error) => {
+      setError(error.message);
       toast({
         title: "Failed to log set",
         description: error.message,
@@ -169,19 +147,19 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // Complete workout mutation
-  const completeWorkoutMutation = useMutation({
+  // Complete session mutation
+  const completeSessionMutation = useMutation({
     mutationFn: async ({ 
       sessionId, 
       rating, 
       notes 
     }: { 
-      sessionId: string; 
+      sessionId: string | number; 
       rating?: number; 
       notes?: string;
     }) => {
-      const response = await fetch(`/api/workouts/${sessionId}/complete`, {
-        method: 'PUT',
+      const response = await fetch(`/api/workout-sessions/${sessionId}/complete`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating, notes }),
       });
@@ -195,34 +173,19 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       const { summary } = data;
       toast({
         title: "Workout Complete! 🏆",
-        description: `${summary.duration}min • ${summary.totalVolume}kg • ${summary.caloriesBurned}cal burned`,
+        description: `${summary.duration}min • ${Math.round(summary.totalVolume)} lbs • ${summary.caloriesBurned}cal burned`,
       });
-      
-      if (summary.personalRecords.length > 0) {
-        setTimeout(() => {
-          toast({
-            title: "New Personal Records! 🎊",
-            description: summary.personalRecords.join(', '),
-          });
-        }, 1000);
-      }
       
       // Reset session
-      setSession({
-        sessionId: null,
-        startTime: null,
-        workoutType: '',
-        exercises: [],
-        currentExerciseIndex: 0,
-        status: 'idle',
-        totalVolume: 0,
-      });
+      setSession(null);
+      setSessionProgress(null);
       
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['workoutHistory'] });
       queryClient.invalidateQueries({ queryKey: ['progressMetrics'] });
     },
     onError: (error: Error) => {
+      setError(error.message);
       toast({
         title: "Failed to complete workout",
         description: error.message,
@@ -231,176 +194,129 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // Abandon workout mutation
-  const abandonWorkoutMutation = useMutation({
-    mutationFn: async (sessionId: string) => {
-      const response = await fetch(`/api/workouts/${sessionId}/abandon`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to abandon workout');
+  // Fetch session progress
+  const fetchSessionProgress = useCallback(async (sessionId: string | number) => {
+    try {
+      const response = await fetch(`/api/workout-sessions/${sessionId}/progress`);
+      if (response.ok) {
+        const progressData = await response.json();
+        setSessionProgress({
+          duration: progressData.duration,
+          completedSets: progressData.completedSets,
+          totalSets: progressData.totalSets,
+          progressPercentage: progressData.totalSets > 0 ? 
+            (progressData.completedSets / progressData.totalSets) * 100 : 0
+        });
       }
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Workout abandoned",
-        description: "Better luck next time! 💪",
-      });
+    } catch (err) {
+      console.error('Failed to fetch session progress:', err);
+    }
+  }, []);
+
+  // API functions
+  const startSession = useCallback(async (workoutType: string, exerciseIds?: string[]) => {
+    try {
+      const result = await startSessionMutation.mutateAsync({ workoutType, exerciseIds });
       
-      // Reset session
-      setSession({
-        sessionId: null,
-        startTime: null,
-        workoutType: '',
-        exercises: [],
-        currentExerciseIndex: 0,
-        status: 'idle',
+      // Create session object with basic structure
+      const newSession: WorkoutSession = {
+        id: result.sessionId,
+        userId: 1, // Auto-assigned for testing
+        workoutType,
+        startTime: result.startTime,
+        status: 'in_progress',
+        exercises: result.exercises || [],
         totalVolume: 0,
-      });
-    },
-  });
-
-  const startWorkout = useCallback(async (workoutType: string, exercises: any[]) => {
-    const result = await startWorkoutMutation.mutateAsync({ workoutType });
-    
-    setSession({
-      sessionId: result.sessionId,
-      startTime: new Date(result.startTime),
-      workoutType,
-      exercises: exercises.map((ex, index) => ({
-        exerciseId: ex.id,
-        exerciseName: ex.name,
-        sets: [],
-        currentSet: 1,
-        targetSets: 3,
-        restTimeRemaining: 0,
-      })),
-      currentExerciseIndex: 0,
-      status: 'in_progress',
-      totalVolume: 0,
-    });
-  }, [startWorkoutMutation]);
-
-  const logSet = useCallback(async (
-    weight: number, 
-    reps: number, 
-    equipment?: string, 
-    formScore?: number, 
-    notes?: string
-  ) => {
-    if (!session.sessionId || session.currentExerciseIndex < 0) return;
-    
-    const currentExercise = session.exercises[session.currentExerciseIndex];
-    const setData: WorkoutSet = {
-      setNumber: currentExercise.currentSet,
-      weight,
-      reps,
-      equipment,
-      formScore,
-      notes,
-    };
-    
-    await logSetMutation.mutateAsync({
-      sessionId: session.sessionId,
-      exerciseId: currentExercise.exerciseId,
-      exerciseName: currentExercise.exerciseName,
-      setData,
-    });
-    
-    // Update local state
-    setSession(prev => {
-      const newExercises = [...prev.exercises];
-      newExercises[prev.currentExerciseIndex].sets.push(setData);
-      newExercises[prev.currentExerciseIndex].currentSet++;
-      return {
-        ...prev,
-        exercises: newExercises,
       };
-    });
+      
+      setSession(newSession);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }, [startSessionMutation]);
+
+  const logSet = useCallback(async (exerciseId: string, setData: Partial<SetLog>) => {
+    if (!session) {
+      setError('No active session');
+      return;
+    }
+
+    try {
+      const exercise = session.exercises.find(ex => ex.exerciseId === exerciseId);
+      const setNumber = (exercise?.sets.length || 0) + 1;
+      
+      await logSetMutation.mutateAsync({
+        sessionId: session.id,
+        exerciseId,
+        setNumber,
+        setData
+      });
+
+      // Update local session state
+      setSession(prev => {
+        if (!prev) return prev;
+        
+        const updatedExercises = prev.exercises.map(ex => {
+          if (ex.exerciseId === exerciseId) {
+            const newSet: SetLog = {
+              setNumber,
+              weight: setData.weight || 0,
+              reps: setData.reps || 0,
+              completed: setData.completed || true,
+              timestamp: new Date(),
+              ...setData
+            };
+            return {
+              ...ex,
+              sets: [...ex.sets, newSet]
+            };
+          }
+          return ex;
+        });
+
+        return {
+          ...prev,
+          exercises: updatedExercises
+        };
+      });
+
+      setError(null);
+    } catch (err: any) {
+      setError(err.message);
+    }
   }, [session, logSetMutation]);
 
-  const completeExercise = useCallback(() => {
-    if (session.currentExerciseIndex < session.exercises.length - 1) {
-      goToNextExercise();
+  const completeSession = useCallback(async (rating?: number, notes?: string) => {
+    if (!session) {
+      setError('No active session');
+      return;
     }
-  }, [session]);
 
-  const completeWorkout = useCallback(async (rating?: number, notes?: string) => {
-    if (!session.sessionId) return;
-    
-    await completeWorkoutMutation.mutateAsync({
-      sessionId: session.sessionId,
-      rating,
-      notes,
-    });
-  }, [session.sessionId, completeWorkoutMutation]);
-
-  const abandonWorkout = useCallback(async () => {
-    if (!session.sessionId) return;
-    
-    await abandonWorkoutMutation.mutateAsync(session.sessionId);
-  }, [session.sessionId, abandonWorkoutMutation]);
-
-  const goToNextExercise = useCallback(() => {
-    setSession(prev => ({
-      ...prev,
-      currentExerciseIndex: Math.min(prev.currentExerciseIndex + 1, prev.exercises.length - 1),
-    }));
-  }, []);
-
-  const goToPreviousExercise = useCallback(() => {
-    setSession(prev => ({
-      ...prev,
-      currentExerciseIndex: Math.max(prev.currentExerciseIndex - 1, 0),
-    }));
-  }, []);
-
-  const updateRestTime = useCallback((seconds: number) => {
-    setSession(prev => {
-      const newExercises = [...prev.exercises];
-      if (prev.currentExerciseIndex >= 0 && prev.currentExerciseIndex < newExercises.length) {
-        newExercises[prev.currentExerciseIndex].restTimeRemaining = seconds;
-      }
-      return {
-        ...prev,
-        exercises: newExercises,
-      };
-    });
-  }, []);
+    try {
+      await completeSessionMutation.mutateAsync({
+        sessionId: session.id,
+        rating,
+        notes
+      });
+      setError(null);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }, [session, completeSessionMutation]);
 
   const isLoading = 
-    startWorkoutMutation.isPending || 
+    startSessionMutation.isPending || 
     logSetMutation.isPending || 
-    completeWorkoutMutation.isPending ||
-    abandonWorkoutMutation.isPending;
+    completeSessionMutation.isPending;
 
-  return (
-    <WorkoutSessionContext.Provider
-      value={{
-        session,
-        startWorkout,
-        logSet,
-        completeExercise,
-        completeWorkout,
-        abandonWorkout,
-        goToNextExercise,
-        goToPreviousExercise,
-        updateRestTime,
-        isLoading,
-      }}
-    >
-      {children}
-    </WorkoutSessionContext.Provider>
-  );
-}
-
-export function useRealWorkoutSession() {
-  const context = useContext(WorkoutSessionContext);
-  if (!context) {
-    throw new Error('useRealWorkoutSession must be used within WorkoutSessionProvider');
-  }
-  return context;
+  return {
+    session,
+    sessionProgress,
+    isLoading,
+    error,
+    startSession,
+    logSet,
+    completeSession,
+  };
 }
