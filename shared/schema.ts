@@ -32,15 +32,17 @@ export const workouts = pgTable("workouts", {
 export const workoutSessions = pgTable("workout_sessions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  workoutId: integer("workout_id").references(() => workouts.id).notNull(),
+  workoutId: integer("workout_id").references(() => workouts.id),
+  workoutType: text("workout_type").notNull(), // Custom workout type
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time"),
   totalDuration: integer("total_duration"), // in minutes
+  totalVolume: real("total_volume").notNull().default(0), // weight × reps total
   caloriesBurned: integer("calories_burned"),
   formScore: real("form_score"), // 0-100
   notes: text("notes"),
-  exercises: jsonb("exercises"), // detailed exercise performance data
-  completionStatus: text("completion_status").notNull().default("in_progress"), // in_progress, completed, paused
+  exercises: jsonb("exercises").notNull(), // ExerciseLog[] - detailed exercise performance data
+  status: text("status").notNull().default("in_progress"), // in_progress, completed, paused
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -160,6 +162,63 @@ export type InsertWorkout = z.infer<typeof insertWorkoutSchema>;
 export type Workout = typeof workouts.$inferSelect;
 export type InsertWorkoutSession = z.infer<typeof insertWorkoutSessionSchema>;
 export type WorkoutSession = typeof workoutSessions.$inferSelect;
+
+// Enhanced workout logging interfaces for real data architecture
+export interface ExerciseLog {
+  exerciseId: string;
+  exerciseName: string;
+  sets: SetLog[];
+  targetSets: number;
+  targetReps: number;
+  targetWeight: number;
+  formScore?: number;
+  notes?: string;
+}
+
+export interface SetLog {
+  setNumber: number;
+  weight: number;
+  reps: number;
+  completed: boolean;
+  restTimeSeconds?: number;
+  rpe?: number; // Rate of Perceived Exertion (1-10)
+  notes?: string;
+  timestamp: Date;
+}
+
+// Workout session schema with enhanced structure
+export const WorkoutSessionSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  workoutType: z.string(),
+  startTime: z.date(),
+  endTime: z.date().optional(),
+  status: z.enum(['in_progress', 'completed', 'paused']),
+  exercises: z.array(z.object({
+    exerciseId: z.string(),
+    exerciseName: z.string(),
+    sets: z.array(z.object({
+      setNumber: z.number(),
+      weight: z.number(),
+      reps: z.number(),
+      completed: z.boolean(),
+      restTimeSeconds: z.number().optional(),
+      rpe: z.number().min(1).max(10).optional(),
+      notes: z.string().optional(),
+      timestamp: z.date()
+    })),
+    targetSets: z.number(),
+    targetReps: z.number(),
+    targetWeight: z.number(),
+    formScore: z.number().min(0).max(100).optional(),
+    notes: z.string().optional()
+  })),
+  totalVolume: z.number(),
+  duration: z.number().optional(),
+  notes: z.string().optional()
+});
+
+export type WorkoutSessionWithLogs = z.infer<typeof WorkoutSessionSchema>;
 export type InsertUserStats = z.infer<typeof insertUserStatsSchema>;
 export type UserStats = typeof userStats.$inferSelect;
 export type InsertAchievement = z.infer<typeof insertAchievementSchema>;

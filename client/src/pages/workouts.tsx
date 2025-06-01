@@ -65,18 +65,9 @@ export default function Workouts() {
 
   const handleStartWorkout = (workoutId: string) => {
     console.log('🎯 handleStartWorkout called with:', workoutId);
-    console.log('🧭 Navigating to:', `/start-workout?type=${workoutId}`);
-    console.log('📍 Current location before nav:', window.location.href);
-    
-    try {
-      // IMMEDIATE: Use direct browser navigation instead of wouter
-      // This bypasses any React Router issues
-      window.location.href = `/start-workout?type=${workoutId}`;
-      console.log('✅ Direct navigation triggered');
-    } catch (error) {
-      console.error('❌ Navigation error:', error);
-      alert(`Navigation failed. Please manually go to: /start-workout?type=${workoutId}`);
-    }
+    const targetUrl = `/start-workout?type=${workoutId}`;
+    console.log('🧭 Navigating to:', targetUrl);
+    setLocation(targetUrl);
   };
 
   // Test function to verify component is working

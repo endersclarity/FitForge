@@ -30,6 +30,12 @@ export interface IStorage {
   getWorkoutSession(id: number): Promise<WorkoutSession | undefined>;
   createWorkoutSession(session: InsertWorkoutSession): Promise<WorkoutSession>;
   updateWorkoutSession(id: number, updates: Partial<InsertWorkoutSession>): Promise<WorkoutSession | undefined>;
+  
+  // Enhanced workout logging methods
+  saveWorkoutSession(session: any): Promise<WorkoutSession>;
+  updateSetLog(sessionId: number, exerciseId: string, setNumber: number, setData: any): Promise<boolean>;
+  getUserWorkoutHistory(userId: number, limit?: number): Promise<WorkoutSession[]>;
+  getExercisePersonalRecords(userId: number, exerciseId: string): Promise<any[]>;
 
   // User stats methods
   getUserStats(userId: number, limit?: number): Promise<UserStats[]>;
@@ -488,13 +494,16 @@ export class MemStorage implements IStorage {
       ...session, 
       id, 
       createdAt: new Date(),
+      workoutId: session.workoutId || null,
+      workoutType: session.workoutType || "custom",
       exercises: session.exercises || null,
       endTime: session.endTime || null,
       totalDuration: session.totalDuration || null,
+      totalVolume: session.totalVolume || 0,
       caloriesBurned: session.caloriesBurned || null,
       formScore: session.formScore || null,
       notes: session.notes || null,
-      completionStatus: session.completionStatus || "in_progress"
+      status: session.status || "in_progress"
     };
     this.workoutSessions.set(id, newSession);
     return newSession;
@@ -507,6 +516,111 @@ export class MemStorage implements IStorage {
     const updatedSession = { ...session, ...updates };
     this.workoutSessions.set(id, updatedSession);
     return updatedSession;
+  }
+
+  // Enhanced workout logging methods for real data architecture
+  async saveWorkoutSession(sessionData: any): Promise<WorkoutSession> {
+    return this.createWorkoutSession(sessionData);
+  }
+
+  async updateSetLog(sessionId: number, exerciseId: string, setNumber: number, setData: any): Promise<boolean> {
+    const session = this.workoutSessions.get(sessionId);
+    if (!session) return false;
+
+    // Parse current exercises
+    const exercises = Array.isArray(session.exercises) ? session.exercises as any[] : [];
+    
+    // Find the exercise to update
+    const exerciseIndex = exercises.findIndex((ex: any) => ex.exerciseId === exerciseId);
+    if (exerciseIndex === -1) return false;
+
+    // Update the specific set
+    const exercise = exercises[exerciseIndex];
+    if (!exercise.sets) exercise.sets = [];
+    
+    const setIndex = exercise.sets.findIndex((set: any) => set.setNumber === setNumber);
+    if (setIndex === -1) {
+      // Add new set
+      exercise.sets.push({
+        setNumber,
+        weight: setData.weight,
+        reps: setData.reps,
+        completed: setData.completed,
+        timestamp: new Date(),
+        restTimeSeconds: setData.restTimeSeconds,
+        rpe: setData.rpe,
+        notes: setData.notes
+      });
+    } else {
+      // Update existing set
+      exercise.sets[setIndex] = {
+        ...exercise.sets[setIndex],
+        weight: setData.weight,
+        reps: setData.reps,
+        completed: setData.completed,
+        timestamp: new Date(),
+        restTimeSeconds: setData.restTimeSeconds,
+        rpe: setData.rpe,
+        notes: setData.notes
+      };
+    }
+
+    // Calculate total volume for the session
+    let totalVolume = 0;
+    exercises.forEach((ex: any) => {
+      if (ex.sets) {
+        ex.sets.forEach((set: any) => {
+          if (set.completed) {
+            totalVolume += (set.weight || 0) * (set.reps || 0);
+          }
+        });
+      }
+    });
+
+    // Update the session
+    const updatedSession = {
+      ...session,
+      exercises: exercises as any,
+      totalVolume
+    };
+
+    this.workoutSessions.set(sessionId, updatedSession);
+    return true;
+  }
+
+  async getUserWorkoutHistory(userId: number, limit = 50): Promise<WorkoutSession[]> {
+    return Array.from(this.workoutSessions.values())
+      .filter(session => session.userId === userId && session.status === 'completed')
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit);
+  }
+
+  async getExercisePersonalRecords(userId: number, exerciseId: string): Promise<any[]> {
+    const userSessions = await this.getUserWorkoutHistory(userId);
+    const records: any[] = [];
+
+    userSessions.forEach(session => {
+      if (Array.isArray(session.exercises)) {
+        const exercises = session.exercises as any[];
+        exercises.forEach((exercise: any) => {
+          if (exercise.exerciseId === exerciseId && exercise.sets) {
+            exercise.sets.forEach((set: any) => {
+              if (set.completed) {
+                records.push({
+                  weight: set.weight,
+                  reps: set.reps,
+                  volume: (set.weight || 0) * (set.reps || 0),
+                  date: session.startTime,
+                  sessionId: session.id
+                });
+              }
+            });
+          }
+        });
+      }
+    });
+
+    return records.sort((a, b) => b.volume - a.volume);
   }
 
   // User stats methods

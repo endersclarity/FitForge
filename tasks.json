@@ -1,0 +1,330 @@
+{
+  "project": "FitForge Workout Logging Flow",
+  "branch": "feature/workout-logging-flow", 
+  "generated": "2025-06-01T00:45:32Z",
+  "source": "BRANCH_README.md via fresh context parsing",
+  
+  "phase_1_database_foundation": {
+    "timeline": "Days 1-2",
+    "priority": "Critical Path",
+    "tasks": {
+      "db-01": {
+        "id": "db-01",
+        "title": "Update workout session schema in shared/schema.ts",
+        "description": "Implement enhanced exercise logging structure including ExerciseLog and SetLog interfaces",
+        "files": ["shared/schema.ts"],
+        "priority": "high",
+        "estimated_hours": 3,
+        "acceptance_criteria": [
+          "WorkoutSession interface includes exercises array of ExerciseLog",
+          "ExerciseLog interface has sets array of SetLog entries",
+          "SetLog interface captures weight, reps, completion, timestamp",
+          "All interfaces are properly typed with Zod validation schemas",
+          "TypeScript compilation passes without errors"
+        ],
+        "technical_notes": "Use existing schema as base, extend with workout-specific logging structures from branch spec"
+      },
+      "db-02": {
+        "id": "db-02", 
+        "title": "Implement set logging data storage in server/storage.ts",
+        "description": "Add methods for saving weight/reps/completion data with user association",
+        "files": ["server/storage.ts"],
+        "priority": "high",
+        "estimated_hours": 4,
+        "acceptance_criteria": [
+          "saveWorkoutSession() method stores complete session data",
+          "updateSetLog() method updates individual set data",
+          "getUserWorkoutHistory() method retrieves user's sessions",
+          "Data stored in data/users/{userId}/workouts/ directory",
+          "Proper error handling and data validation"
+        ],
+        "technical_notes": "Extend existing file storage system, maintain JSON structure for user data"
+      },
+      "db-03": {
+        "id": "db-03",
+        "title": "Create POST /api/workout-sessions/start endpoint",
+        "description": "Initialize new workout sessions with exercise templates",
+        "files": ["server/workoutRoutes.ts", "server/routes.ts"],
+        "priority": "high",
+        "estimated_hours": 3,
+        "acceptance_criteria": [
+          "Endpoint accepts workoutType and exerciseIds in request body",
+          "Returns sessionId and exercise templates",
+          "Creates new session record in user's data directory",
+          "Validates user authentication and exercise IDs",
+          "Proper HTTP status codes and error responses"
+        ],
+        "technical_notes": "Follow existing API patterns, integrate with Universal Exercise Database"
+      },
+      "db-04": {
+        "id": "db-04",
+        "title": "Implement PATCH /api/workout-sessions/:id/exercises/:exerciseId/sets endpoint",
+        "description": "Log individual exercise sets with real-time updates",
+        "files": ["server/workoutRoutes.ts"],
+        "priority": "high", 
+        "estimated_hours": 4,
+        "acceptance_criteria": [
+          "Endpoint accepts weight, reps, completed in request body",
+          "Updates specific set in workout session data",
+          "Returns success status and progress update",
+          "Validates session ownership and exercise existence",
+          "Atomic updates to prevent data corruption"
+        ],
+        "technical_notes": "Critical for real-time workout logging, must be performant and reliable"
+      }
+    }
+  },
+
+  "phase_2_live_workout_session": {
+    "timeline": "Days 3-4",
+    "priority": "Core Feature",
+    "tasks": {
+      "live-01": {
+        "id": "live-01",
+        "title": "Build live workout session component",
+        "description": "Create WorkoutSession.tsx with real-time set logging interface",
+        "files": ["client/src/components/workout/WorkoutSession.tsx"],
+        "priority": "high",
+        "estimated_hours": 6,
+        "acceptance_criteria": [
+          "Component displays current exercise and set information",
+          "Real-time progress tracking through workout session",
+          "Navigation between exercises within session",
+          "Integration with workout session API endpoints",
+          "Responsive design for mobile and desktop use"
+        ],
+        "technical_notes": "Main component for live workout experience, use existing UI components from ui/ directory"
+      },
+      "live-02": {
+        "id": "live-02",
+        "title": "Create RealSetLogger component",
+        "description": "Build component for capturing actual weight/reps input with validation",
+        "files": ["client/src/components/workout/RealSetLogger.tsx"],
+        "priority": "high",
+        "estimated_hours": 4,
+        "acceptance_criteria": [
+          "Input fields for weight and reps with proper validation",
+          "Immediate persistence to backend on set completion",
+          "Visual feedback for successful saves",
+          "Optimistic UI updates while saving",
+          "Error handling for network failures"
+        ],
+        "technical_notes": "Core data entry component, must be reliable and user-friendly"
+      },
+      "live-03": {
+        "id": "live-03",
+        "title": "Implement exercise timer and rest period management",
+        "description": "Add timer functionality with user-configurable intervals",
+        "files": ["client/src/components/workout/WorkoutSession.tsx"],
+        "priority": "medium",
+        "estimated_hours": 3,
+        "acceptance_criteria": [
+          "Countdown timer for rest periods between sets",
+          "Configurable rest time based on exercise type",
+          "Audio/visual notifications when rest period ends",
+          "Pause/resume functionality",
+          "Integration with set completion workflow"
+        ],
+        "technical_notes": "Enhance user experience, not critical path but valuable for workout flow"
+      },
+      "live-04": {
+        "id": "live-04",
+        "title": "Create POST /api/workout-sessions/:id/complete endpoint",
+        "description": "Finish workouts with summary data and session statistics",
+        "files": ["server/workoutRoutes.ts"],
+        "priority": "high",
+        "estimated_hours": 3,
+        "acceptance_criteria": [
+          "Endpoint accepts optional rating and notes",
+          "Calculates workout statistics (duration, volume, etc.)",
+          "Returns complete session data and summary",
+          "Updates session status to 'completed'",
+          "Triggers any post-workout data processing"
+        ],
+        "technical_notes": "Critical for completing workout flow and generating progress data"
+      }
+    }
+  },
+
+  "phase_3_data_integration": {
+    "timeline": "Days 5-6", 
+    "priority": "Data Pipeline",
+    "tasks": {
+      "data-01": {
+        "id": "data-01",
+        "title": "Build useWorkoutSession hook",
+        "description": "Create hook for managing live session state and API communication",
+        "files": ["client/src/hooks/use-workout-session.tsx"],
+        "priority": "high",
+        "estimated_hours": 4,
+        "acceptance_criteria": [
+          "Hook manages workout session state and current exercise",
+          "logSet() function with optimistic updates",
+          "completeWorkout() function with proper state cleanup",
+          "Error handling and retry logic",
+          "TypeScript types for all hook functions"
+        ],
+        "technical_notes": "Central state management for workout session, follow existing hook patterns"
+      },
+      "data-02": {
+        "id": "data-02",
+        "title": "Implement GET /api/users/:userId/workout-history endpoint",
+        "description": "Retrieve user's historical workout data for progress tracking",
+        "files": ["server/workoutRoutes.ts"],
+        "priority": "medium",
+        "estimated_hours": 2,
+        "acceptance_criteria": [
+          "Returns paginated list of user's completed workouts",
+          "Includes workout statistics and exercise summaries",
+          "Supports filtering by date range and workout type",
+          "Proper caching for performance",
+          "Validates user access permissions"
+        ],
+        "technical_notes": "Required for progress charts and historical analysis"
+      },
+      "data-03": {
+        "id": "data-03",
+        "title": "Connect progress charts to real workout data",
+        "description": "Replace mock data in progress.tsx with actual logged workout data",
+        "files": ["client/src/pages/progress.tsx"],
+        "priority": "high",
+        "estimated_hours": 5,
+        "acceptance_criteria": [
+          "All charts display data from user's actual workouts",
+          "Volume progression shows real weight × reps calculations", 
+          "Strength trends based on personal records",
+          "'No data' states for users without workout history",
+          "Clear formulas showing how metrics are calculated"
+        ],
+        "technical_notes": "Critical for demonstrating real data architecture, must remove all mock data"
+      },
+      "data-04": {
+        "id": "data-04",
+        "title": "Create personal records tracking endpoint",
+        "description": "GET /api/exercises/:exerciseId/personal-records for user PRs",
+        "files": ["server/workoutRoutes.ts"],
+        "priority": "medium",
+        "estimated_hours": 3,
+        "acceptance_criteria": [
+          "Returns user's best performances for specific exercise",
+          "Tracks max weight, max reps, max volume",
+          "Includes timestamps and workout context",
+          "Efficient calculation from workout history",
+          "Supports different PR categories (1RM, volume, etc.)"
+        ],
+        "technical_notes": "Enables progress tracking and goal setting features"
+      }
+    }
+  },
+
+  "phase_4_ux_polish": {
+    "timeline": "Day 7",
+    "priority": "User Experience",
+    "tasks": {
+      "ux-01": {
+        "id": "ux-01",
+        "title": "Update workouts page navigation flow",
+        "description": "Smooth transition from exercise selection to live workout session",
+        "files": ["client/src/pages/workouts.tsx"],
+        "priority": "medium",
+        "estimated_hours": 3,
+        "acceptance_criteria": [
+          "Seamless navigation from workouts page to live session",
+          "Proper state management during transitions",
+          "Back navigation preserves user selections",
+          "Loading states during session initialization",
+          "Breadcrumb navigation for user orientation"
+        ],
+        "technical_notes": "Improve overall user experience and workflow clarity"
+      },
+      "ux-02": {
+        "id": "ux-02",
+        "title": "Implement workout completion summary view",
+        "description": "Display logged data and session statistics after workout completion",
+        "files": ["client/src/components/workout/WorkoutSummary.tsx"],
+        "priority": "medium",
+        "estimated_hours": 3,
+        "acceptance_criteria": [
+          "Shows all exercises completed with set details",
+          "Displays workout statistics (duration, volume, PRs)",
+          "Option to add notes or rating to completed workout",
+          "Share workout results functionality",
+          "Navigation to progress page to see updated charts"
+        ],
+        "technical_notes": "Provides closure to workout experience and motivates continued use"
+      },
+      "ux-03": {
+        "id": "ux-03",
+        "title": "Remove all mock/fake workout data",
+        "description": "Replace with 'No data' states that guide users to log their first workout",
+        "files": ["client/src/pages/progress.tsx", "client/src/components/dashboard-overview.tsx"],
+        "priority": "high",
+        "estimated_hours": 2,
+        "acceptance_criteria": [
+          "No mock data anywhere in the application",
+          "Clear 'No data' states with actionable guidance",
+          "Call-to-action buttons leading to workout logging",
+          "Progressive disclosure as users add more workout data",
+          "Transparent formula explanations for all metrics"
+        ],
+        "technical_notes": "Critical for real data architecture compliance, must be thorough"
+      }
+    }
+  },
+
+  "critical_path_summary": {
+    "must_complete_tasks": [
+      "db-01: Update workout session schema",
+      "db-02: Implement set logging storage", 
+      "db-03: Create workout start endpoint",
+      "live-01: Build live workout session component",
+      "live-02: Create set logging component",
+      "data-01: Build workout session hook",
+      "data-03: Connect progress charts to real data",
+      "ux-03: Remove all mock data"
+    ],
+    "dependencies": {
+      "db-01": [],
+      "db-02": ["db-01"],
+      "db-03": ["db-01", "db-02"],
+      "live-01": ["db-03"],
+      "live-02": ["db-03", "live-01"],
+      "data-01": ["db-03", "db-04"],
+      "data-03": ["data-01", "data-02"],
+      "ux-03": ["data-03"]
+    }
+  },
+
+  "testing_checklist": [
+    "New user creates first workout session",
+    "User logs multiple exercises with different set counts", 
+    "Workout completion saves all data correctly",
+    "Progress charts populate from logged workout data",
+    "Personal records update automatically",
+    "Navigation flow works smoothly throughout",
+    "Error handling for network issues during logging",
+    "Data persistence across browser sessions",
+    "No mock data visible anywhere in application"
+  ],
+
+  "merge_requirements": {
+    "functional": [
+      "Complete end-to-end workout logging flow operational",
+      "All workout data persists in database correctly",
+      "Progress metrics calculated from real logged data",
+      "Universal Exercise Database integration functional"
+    ],
+    "technical": [
+      "TypeScript compilation passes with zero errors",
+      "All API endpoints respond with proper status codes",
+      "Database schema supports complete feature set",
+      "Performance acceptable for large workout sessions"
+    ],
+    "quality": [
+      "Navigation flow is intuitive and smooth",
+      "Data entry forms are user-friendly and validated",
+      "Error handling covers edge cases",
+      "No mock/fake data remains in application"
+    ]
+  }
+}

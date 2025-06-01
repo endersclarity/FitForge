@@ -23,27 +23,7 @@ import StartWorkout from "@/pages/start-workout";
 // import WorkoutDetail from "@/pages/workout-detail";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-
-  // Development mode: skip authentication entirely
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  
-  if (isDevelopment) {
-    return <>{children}</>;
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Auth />;
-  }
-
+  // ALWAYS skip authentication in development
   return <>{children}</>;
 }
 

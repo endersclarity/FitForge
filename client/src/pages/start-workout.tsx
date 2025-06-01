@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { ArrowLeft, Dumbbell, Clock, Target, Plus, Minus, Play } from "lucide-react";
+import { WorkoutSession } from "@/components/workout/WorkoutSession";
+import { useRealWorkoutSession } from "@/hooks/use-real-workout-session";
 
 interface Exercise {
   exerciseName: string;
@@ -34,9 +36,10 @@ export default function StartWorkout() {
   const urlParams = new URLSearchParams(window.location.search);
   const workoutType = urlParams.get('type') || '';
   
-  const [selectedExercises, setSelectedExercises] = useState<WorkoutExercise[]>([]);
+  const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
   const [workoutStarted, setWorkoutStarted] = useState(false);
-  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+  
+  const { session } = useRealWorkoutSession();
 
   // Fetch exercises from the API
   const { data: exerciseResponse, isLoading } = useQuery({
@@ -59,20 +62,12 @@ export default function StartWorkout() {
 
   // Auto-select exercises when they load
   useEffect(() => {
-    if (availableExercises.length > 0 && selectedExercises.length === 0) {
-      const defaultExercises = availableExercises.slice(0, 6).map(exercise => ({
-        ...exercise,
-        selectedWeight: typeof exercise.weight === 'number' ? exercise.weight : 50,
-        targetReps: exercise.reps || 10,
-        sets: [
-          { reps: 0, weight: typeof exercise.weight === 'number' ? exercise.weight : 50, completed: false },
-          { reps: 0, weight: typeof exercise.weight === 'number' ? exercise.weight : 50, completed: false },
-          { reps: 0, weight: typeof exercise.weight === 'number' ? exercise.weight : 50, completed: false }
-        ]
-      }));
-      setSelectedExercises(defaultExercises);
+    if (availableExercises.length > 0 && selectedExerciseIds.length === 0) {
+      const defaultExerciseIds = availableExercises.slice(0, 6).map((exercise, index) => 
+        `${exercise.exerciseName}-${index}`);
+      setSelectedExerciseIds(defaultExerciseIds);
     }
-  }, [availableExercises]);
+  }, [availableExercises, selectedExerciseIds.length]);
 
   const workoutTypeNames: Record<string, string> = {
     'abs': 'Abs & Core',
@@ -83,6 +78,11 @@ export default function StartWorkout() {
   };
 
   const workoutName = workoutTypeNames[workoutType] || 'Unknown Workout';
+
+  // If we have an active session or workout has been started, show the WorkoutSession component
+  if (session || workoutStarted) {
+    return <WorkoutSession workoutType={workoutName} selectedExercises={selectedExerciseIds} />;
+  }
 
   if (!workoutType) {
     return (
@@ -108,130 +108,17 @@ export default function StartWorkout() {
     );
   }
 
-  const updateExerciseWeight = (exerciseIndex: number, weight: number) => {
-    setSelectedExercises(prev => prev.map((exercise, index) => 
-      index === exerciseIndex 
-        ? { ...exercise, selectedWeight: weight, sets: exercise.sets.map(set => ({ ...set, weight })) }
-        : exercise
-    ));
-  };
-
-  const updateSetReps = (exerciseIndex: number, setIndex: number, reps: number) => {
-    setSelectedExercises(prev => prev.map((exercise, index) => 
-      index === exerciseIndex 
-        ? { 
-            ...exercise, 
-            sets: exercise.sets.map((set, sIndex) => 
-              sIndex === setIndex ? { ...set, reps, completed: reps > 0 } : set
-            )
-          }
-        : exercise
-    ));
+  const toggleExerciseSelection = (exerciseId: string) => {
+    setSelectedExerciseIds(prev => 
+      prev.includes(exerciseId) 
+        ? prev.filter(id => id !== exerciseId)
+        : [...prev, exerciseId]
+    );
   };
 
   const startWorkoutSession = () => {
     setWorkoutStarted(true);
-    setCurrentExerciseIndex(0);
   };
-
-  const completeSet = (exerciseIndex: number, setIndex: number) => {
-    setSelectedExercises(prev => prev.map((exercise, index) => 
-      index === exerciseIndex 
-        ? { 
-            ...exercise, 
-            sets: exercise.sets.map((set, sIndex) => 
-              sIndex === setIndex ? { ...set, completed: true } : set
-            )
-          }
-        : exercise
-    ));
-  };
-
-  if (workoutStarted) {
-    const currentExercise = selectedExercises[currentExerciseIndex];
-    if (!currentExercise) {
-      return (
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold mb-4">🎉 Workout Complete!</h1>
-            <p className="mb-4">Great job completing your {workoutName} workout!</p>
-            <Button onClick={() => window.location.href = '/workouts'}>
-              Back to Workouts
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold">{currentExercise.exerciseName}</h1>
-            <p className="text-muted-foreground">Exercise {currentExerciseIndex + 1} of {selectedExercises.length}</p>
-          </div>
-
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                {currentExercise.sets.map((set, setIndex) => (
-                  <div key={setIndex} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <span className="font-semibold">Set {setIndex + 1}</span>
-                      <div className="flex items-center space-x-2">
-                        <Input 
-                          type="number"
-                          value={set.reps}
-                          onChange={(e) => updateSetReps(currentExerciseIndex, setIndex, parseInt(e.target.value) || 0)}
-                          className="w-20"
-                          placeholder="Reps"
-                        />
-                        <span>reps @</span>
-                        <Input 
-                          type="number"
-                          value={set.weight}
-                          onChange={(e) => {
-                            const weight = parseInt(e.target.value) || 0;
-                            updateExerciseWeight(currentExerciseIndex, weight);
-                          }}
-                          className="w-20"
-                          placeholder="Weight"
-                        />
-                        <span>lbs</span>
-                      </div>
-                    </div>
-                    <Button 
-                      onClick={() => completeSet(currentExerciseIndex, setIndex)}
-                      variant={set.completed ? "secondary" : "default"}
-                      disabled={set.reps === 0}
-                    >
-                      {set.completed ? "✓ Done" : "Complete"}
-                    </Button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-between mt-6">
-                <Button 
-                  variant="outline"
-                  onClick={() => setCurrentExerciseIndex(Math.max(0, currentExerciseIndex - 1))}
-                  disabled={currentExerciseIndex === 0}
-                >
-                  Previous Exercise
-                </Button>
-                <Button 
-                  onClick={() => setCurrentExerciseIndex(currentExerciseIndex + 1)}
-                  disabled={!currentExercise.sets.every(set => set.completed)}
-                >
-                  {currentExerciseIndex === selectedExercises.length - 1 ? "Finish Workout" : "Next Exercise"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -252,7 +139,7 @@ export default function StartWorkout() {
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-2">Start {workoutName}</h1>
             <p className="text-muted-foreground">
-              {selectedExercises.length} exercises selected
+              {selectedExerciseIds.length} exercises selected
             </p>
           </div>
         </div>
@@ -260,46 +147,67 @@ export default function StartWorkout() {
 
       {/* Exercise Selection */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {selectedExercises.length > 0 ? (
+        {availableExercises.length > 0 ? (
           <div className="space-y-4">
-            {selectedExercises.map((exercise, index) => (
-              <Card key={index}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold">{exercise.exerciseName}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {exercise.primaryMuscles.map(m => m.muscle).join(", ")}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm">Weight:</span>
-                        <Input 
-                          type="number"
-                          value={exercise.selectedWeight}
-                          onChange={(e) => updateExerciseWeight(index, parseInt(e.target.value) || 0)}
-                          className="w-20"
-                        />
-                        <span className="text-sm">lbs</span>
-                      </div>
-                      <Badge>{exercise.sets.length} sets</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            <div className="text-center pt-6">
-              <Button 
-                size="lg" 
-                onClick={startWorkoutSession}
-                className="gradient-bg px-8 py-3"
-              >
-                <Play className="w-5 h-5 mr-2" />
-                Start Workout Session
-              </Button>
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-semibold mb-2">Select Exercises</h2>
+              <p className="text-muted-foreground">
+                {selectedExerciseIds.length} exercises selected
+              </p>
             </div>
+
+            {availableExercises.map((exercise, index) => {
+              const exerciseId = `${exercise.exerciseName}-${index}`;
+              const isSelected = selectedExerciseIds.includes(exerciseId);
+              
+              return (
+                <Card 
+                  key={index}
+                  className={`cursor-pointer transition-colors ${
+                    isSelected ? 'border-primary bg-primary/5' : 'hover:border-gray-300'
+                  }`}
+                  onClick={() => toggleExerciseSelection(exerciseId)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold">{exercise.exerciseName}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {exercise.primaryMuscles.map(m => m.muscle).join(", ")}
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                          <Badge variant="outline">{exercise.category}</Badge>
+                          <Badge variant="outline">{exercise.equipmentType}</Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        {typeof exercise.weight === 'number' && (
+                          <div className="text-sm text-muted-foreground">
+                            {exercise.weight} lbs
+                          </div>
+                        )}
+                        <Badge variant={isSelected ? "default" : "secondary"}>
+                          {isSelected ? "Selected" : "Select"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+
+            {selectedExerciseIds.length > 0 && (
+              <div className="text-center pt-6">
+                <Button 
+                  size="lg" 
+                  onClick={startWorkoutSession}
+                  className="gradient-bg px-8 py-3"
+                >
+                  <Play className="w-5 h-5 mr-2" />
+                  Start Workout Session
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-12">

@@ -10,6 +10,7 @@ import {
   insertChallengeParticipationSchema, insertSocialPostSchema
 } from "@shared/schema";
 import workoutRoutes from "./workoutRoutes";
+import workoutSessionRoutes from "./workoutSessionRoutes";
 import bodyStatsRoutes from "./bodyStatsRoutes";
 import progressRoutes from "./progressRoutes";
 import userPreferencesRoutes from "./userPreferencesRoutes";
@@ -746,6 +747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Mount real data routes
   app.use("/api/workouts", workoutRoutes);
+  app.use("/api/workout-sessions", workoutSessionRoutes);
   app.use("/api/body-stats", bodyStatsRoutes);
   app.use("/api/progress", progressRoutes);
   app.use("/api/users", userPreferencesRoutes);
