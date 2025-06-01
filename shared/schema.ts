@@ -214,7 +214,7 @@ export const WorkoutSessionSchema = z.object({
     notes: z.string().optional()
   })),
   totalVolume: z.number(),
-  duration: z.number().optional(),
+  totalDuration: z.number().optional(),
   notes: z.string().optional()
 });
 

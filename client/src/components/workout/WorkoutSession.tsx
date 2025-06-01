@@ -44,7 +44,11 @@ export function WorkoutSession({ workoutType = "Custom Workout", selectedExercis
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Dumbbell className="w-12 h-12 mx-auto mb-4 animate-pulse" />
+          <Dumbbell 
+            aria-label="Loading workout session"
+            role="status"
+            className="w-12 h-12 mx-auto mb-4 animate-pulse" 
+          />
           <p className="text-lg">Loading workout session...</p>
         </div>
       </div>

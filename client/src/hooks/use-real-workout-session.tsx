@@ -33,7 +33,7 @@ interface WorkoutSession {
   status: 'in_progress' | 'completed' | 'paused';
   exercises: ExerciseLog[];
   totalVolume: number;
-  duration?: number;
+  totalDuration?: number;
   notes?: string;
 }
 

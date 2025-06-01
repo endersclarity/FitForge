@@ -53,11 +53,11 @@ export function RealSetLogger({
     if (lastSet && !weight) {
       setWeight(lastSet.weight.toString());
     }
-  }, [currentSets, weight]);
+  }, [currentSets]);
   
   // Rest timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (isResting && restSecondsLeft > 0) {
       interval = setInterval(() => {
         setRestSecondsLeft(prev => {

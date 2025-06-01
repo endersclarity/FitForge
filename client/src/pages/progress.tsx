@@ -24,7 +24,7 @@ export default function Progress() {
               <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-full flex items-center justify-center">
                 <Activity className="w-6 h-6 text-primary" />
               </div>
-              <div className="text-2xl font-bold text-primary mb-1">1</div>
+              <div className="text-2xl font-bold text-muted-foreground mb-1">--</div>
               <p className="text-sm text-muted-foreground">Total Workouts</p>
             </CardContent>
           </Card>
@@ -34,7 +34,7 @@ export default function Progress() {
               <div className="w-12 h-12 mx-auto mb-3 bg-accent/10 rounded-full flex items-center justify-center">
                 <Target className="w-6 h-6 text-accent" />
               </div>
-              <div className="text-2xl font-bold text-accent mb-1">0</div>
+              <div className="text-2xl font-bold text-muted-foreground mb-1">--</div>
               <p className="text-sm text-muted-foreground">lbs Total Volume</p>
             </CardContent>
           </Card>
@@ -44,7 +44,7 @@ export default function Progress() {
               <div className="w-12 h-12 mx-auto mb-3 bg-secondary/10 rounded-full flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-secondary" />
               </div>
-              <div className="text-2xl font-bold text-secondary mb-1">35</div>
+              <div className="text-2xl font-bold text-muted-foreground mb-1">--</div>
               <p className="text-sm text-muted-foreground">Calories Burned</p>
             </CardContent>
           </Card>
