@@ -18,6 +18,7 @@
     "prestart": "npm run build-all",
     "start": "NODE_ENV=production node dist/server/index.js",
     "check": "tsc",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
