@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from "@/hooks/use-supabase-auth";
 import { WorkoutSessionProvider } from "@/hooks/use-workout-session";
 import { useDataMigration, MigrationStatus } from "@/hooks/use-data-migration";
 import { Navigation } from "@/components/navigation";
-// import { LiveWorkoutSession } from "@/components/live-workout-session";
+import { LiveWorkoutSession } from "@/components/live-workout-session";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Auth from "@/pages/auth";
@@ -21,7 +21,8 @@ import NewGoal from "@/pages/new-goal";
 import Community from "@/pages/community";
 import Profile from "@/pages/profile";
 import Nutrition from "@/pages/nutrition";
-// import StartWorkout from "@/pages/start-workout";
+import Exercises from "@/pages/exercises";
+import StartWorkout from "@/pages/start-workout";
 import TestSupabase from "@/pages/test-supabase";
 // import WorkoutDetail from "@/pages/workout-detail";
 
@@ -81,14 +82,19 @@ function Router() {
             <Workouts />
           </ProtectedRoute>
         </Route>
-        {/* <Route path="/start-workout">
+        <Route path="/start-workout">
           <ProtectedRoute>
             <StartWorkout />
           </ProtectedRoute>
-        </Route> */}
+        </Route>
         <Route path="/progress">
           <ProtectedRoute>
             <Progress />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/exercises">
+          <ProtectedRoute>
+            <Exercises />
           </ProtectedRoute>
         </Route>
         <Route path="/goals">
@@ -106,11 +112,11 @@ function Router() {
             <Community />
           </ProtectedRoute>
         </Route>
-        {/* <Route path="/workout-session">
+        <Route path="/workout-session">
           <ProtectedRoute>
             <LiveWorkoutSession />
           </ProtectedRoute>
-        </Route> */}
+        </Route>
         <Route path="/profile">
           <ProtectedRoute>
             <Profile />

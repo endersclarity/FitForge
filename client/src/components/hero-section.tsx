@@ -47,16 +47,14 @@ export function HeroSection() {
                   <Link href="/auth">
                     <Button className="btn-primary">Start Your Journey</Button>
                   </Link>
-                  <Button 
-                    variant="outline" 
-                    className="btn-secondary"
-                    onClick={() => {
-                      // TODO: Implement demo video modal
-                      alert("Demo video coming soon! For now, create a free account to explore.");
-                    }}
-                  >
-                    Watch Demo
-                  </Button>
+                  <Link href="/workouts">
+                    <Button 
+                      variant="outline" 
+                      className="btn-secondary"
+                    >
+                      Explore Workouts
+                    </Button>
+                  </Link>
                 </>
               )}
             </div>

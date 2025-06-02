@@ -13,7 +13,8 @@ import {
   Activity, 
   Trophy,
   Calendar,
-  Edit
+  Edit,
+  Scale
 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +30,17 @@ export default function Profile() {
     email: '',
     height: '',
     weight: ''
+  });
+  const [bodyMetricsForm, setBodyMetricsForm] = useState({
+    weight: '',
+    height: '',
+    bodyFat: '',
+    chest: '',
+    waist: '',
+    hips: '',
+    biceps: '',
+    thighs: '',
+    calves: ''
   });
   const [goalsForm, setGoalsForm] = useState({
     weeklyWorkouts: 4,
@@ -230,10 +242,10 @@ export default function Profile() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="height">Height (cm)</Label>
+                  <Label htmlFor="height">Height (inches)</Label>
                   <Input 
                     id="height" 
-                    value={isEditing ? profileForm.height : '170'} 
+                    value={isEditing ? profileForm.height : '67'} 
                     disabled={!isEditing}
                     type="number"
                     onChange={(e) => setProfileForm(prev => ({ ...prev, height: e.target.value }))}
@@ -313,6 +325,158 @@ export default function Profile() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Body Metrics */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Scale className="w-5 h-5 mr-2 text-purple-500" />
+              Body Metrics
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Basic Measurements */}
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm text-muted-foreground">Basic Measurements</h4>
+                <div>
+                  <Label htmlFor="metric-weight">Weight (lbs)</Label>
+                  <Input 
+                    id="metric-weight" 
+                    value={isEditing ? bodyMetricsForm.weight : (userStats?.weight || '')} 
+                    disabled={!isEditing}
+                    type="number"
+                    placeholder="Enter weight"
+                    onChange={(e) => setBodyMetricsForm(prev => ({ ...prev, weight: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="metric-height">Height (inches)</Label>
+                  <Input 
+                    id="metric-height" 
+                    value={isEditing ? bodyMetricsForm.height : ''} 
+                    disabled={!isEditing}
+                    type="number"
+                    placeholder="Enter height"
+                    onChange={(e) => setBodyMetricsForm(prev => ({ ...prev, height: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="body-fat">Body Fat %</Label>
+                  <Input 
+                    id="body-fat" 
+                    value={isEditing ? bodyMetricsForm.bodyFat : ''} 
+                    disabled={!isEditing}
+                    type="number"
+                    placeholder="Enter body fat %"
+                    onChange={(e) => setBodyMetricsForm(prev => ({ ...prev, bodyFat: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* Circumference Measurements */}
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm text-muted-foreground">Circumference (inches)</h4>
+                <div>
+                  <Label htmlFor="chest">Chest</Label>
+                  <Input 
+                    id="chest" 
+                    value={isEditing ? bodyMetricsForm.chest : ''} 
+                    disabled={!isEditing}
+                    type="number"
+                    placeholder="Chest measurement"
+                    onChange={(e) => setBodyMetricsForm(prev => ({ ...prev, chest: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="waist">Waist</Label>
+                  <Input 
+                    id="waist" 
+                    value={isEditing ? bodyMetricsForm.waist : ''} 
+                    disabled={!isEditing}
+                    type="number"
+                    placeholder="Waist measurement"
+                    onChange={(e) => setBodyMetricsForm(prev => ({ ...prev, waist: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="hips">Hips</Label>
+                  <Input 
+                    id="hips" 
+                    value={isEditing ? bodyMetricsForm.hips : ''} 
+                    disabled={!isEditing}
+                    type="number"
+                    placeholder="Hips measurement"
+                    onChange={(e) => setBodyMetricsForm(prev => ({ ...prev, hips: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* Muscle Measurements */}
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm text-muted-foreground">Muscle Groups (inches)</h4>
+                <div>
+                  <Label htmlFor="biceps">Biceps</Label>
+                  <Input 
+                    id="biceps" 
+                    value={isEditing ? bodyMetricsForm.biceps : ''} 
+                    disabled={!isEditing}
+                    type="number"
+                    placeholder="Biceps measurement"
+                    onChange={(e) => setBodyMetricsForm(prev => ({ ...prev, biceps: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="thighs">Thighs</Label>
+                  <Input 
+                    id="thighs" 
+                    value={isEditing ? bodyMetricsForm.thighs : ''} 
+                    disabled={!isEditing}
+                    type="number"
+                    placeholder="Thighs measurement"
+                    onChange={(e) => setBodyMetricsForm(prev => ({ ...prev, thighs: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="calves">Calves</Label>
+                  <Input 
+                    id="calves" 
+                    value={isEditing ? bodyMetricsForm.calves : ''} 
+                    disabled={!isEditing}
+                    type="number"
+                    placeholder="Calves measurement"
+                    onChange={(e) => setBodyMetricsForm(prev => ({ ...prev, calves: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {isEditing && (
+              <div className="mt-6 text-center">
+                <Button 
+                  className="gradient-bg"
+                  onClick={() => {
+                    toast({
+                      title: "Body Metrics Updated!",
+                      description: "Your measurements have been saved.",
+                    });
+                    setIsEditing(false);
+                  }}
+                >
+                  Save Body Metrics
+                </Button>
+              </div>
+            )}
+
+            {!isEditing && (
+              <div className="mt-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Track your body composition changes over time. Click "Edit Profile" to update measurements.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Statistics Overview */}
         <Card className="mt-8">

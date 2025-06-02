@@ -1,8 +1,59 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Activity, Target, Calendar } from "lucide-react";
+import { TrendingUp, Activity, Target, Calendar, Weight, ChevronDown, ChevronUp, Dumbbell, Clock } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { WorkoutSession } from "@shared/schema";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export default function Progress() {
+  const [expandedSession, setExpandedSession] = useState<number | null>(null);
+  
+  // Fetch real workout data
+  const { data: workoutSessions = [], isLoading } = useQuery<WorkoutSession[]>({
+    queryKey: ["/api/workout-sessions"],
+  });
+
+  // Calculate real statistics
+  const totalWorkouts = workoutSessions.length;
+  
+  const totalVolume = workoutSessions.reduce((total, session) => {
+    return total + (session.totalVolume || 0);
+  }, 0);
+  
+  const totalCalories = workoutSessions.reduce((total, session) => {
+    // Estimate: 0.1 calories per pound lifted
+    return total + (session.totalVolume || 0) * 0.1;
+  }, 0);
+  
+  const currentStreak = calculateStreak(workoutSessions);
+  
+  function calculateStreak(sessions: WorkoutSession[]): number {
+    if (sessions.length === 0) return 0;
+    
+    const sortedSessions = [...sessions].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let i = 0; i < sortedSessions.length; i++) {
+      const sessionDate = new Date(sortedSessions[i].createdAt);
+      sessionDate.setHours(0, 0, 0, 0);
+      
+      const daysDiff = Math.floor((today.getTime() - sessionDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff === streak) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    
+    return streak;
+  }
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -24,7 +75,7 @@ export default function Progress() {
               <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-full flex items-center justify-center">
                 <Activity className="w-6 h-6 text-primary" />
               </div>
-              <div className="text-2xl font-bold text-muted-foreground mb-1">--</div>
+              <div className="text-2xl font-bold mb-1">{totalWorkouts || 0}</div>
               <p className="text-sm text-muted-foreground">Total Workouts</p>
             </CardContent>
           </Card>
@@ -34,7 +85,7 @@ export default function Progress() {
               <div className="w-12 h-12 mx-auto mb-3 bg-accent/10 rounded-full flex items-center justify-center">
                 <Target className="w-6 h-6 text-accent" />
               </div>
-              <div className="text-2xl font-bold text-muted-foreground mb-1">--</div>
+              <div className="text-2xl font-bold mb-1">{totalVolume.toLocaleString() || 0}</div>
               <p className="text-sm text-muted-foreground">lbs Total Volume</p>
             </CardContent>
           </Card>
@@ -44,8 +95,8 @@ export default function Progress() {
               <div className="w-12 h-12 mx-auto mb-3 bg-secondary/10 rounded-full flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-secondary" />
               </div>
-              <div className="text-2xl font-bold text-muted-foreground mb-1">--</div>
-              <p className="text-sm text-muted-foreground">Calories Burned</p>
+              <div className="text-2xl font-bold mb-1">{Math.round(totalCalories) || 0}</div>
+              <p className="text-sm text-muted-foreground">Est. Calories Burned</p>
             </CardContent>
           </Card>
 
@@ -54,11 +105,121 @@ export default function Progress() {
               <div className="w-12 h-12 mx-auto mb-3 bg-green-500/10 rounded-full flex items-center justify-center">
                 <Calendar className="w-6 h-6 text-green-500" />
               </div>
-              <div className="text-2xl font-bold text-green-500 mb-1">✓</div>
-              <p className="text-sm text-muted-foreground">Real Data Only</p>
+              <div className="text-2xl font-bold text-green-500 mb-1">{currentStreak}</div>
+              <p className="text-sm text-muted-foreground">Day Streak</p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Workout History */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Calendar className="w-5 h-5 mr-2 text-primary" />
+              Workout History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading workout history...</p>
+              </div>
+            ) : workoutSessions.length === 0 ? (
+              <div className="text-center py-8">
+                <Activity className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-2">No workout history yet</p>
+                <p className="text-sm text-muted-foreground">
+                  Complete your first workout to start building your history
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {[...workoutSessions]
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .map((session) => {
+                    const sessionDate = new Date(session.createdAt);
+                    const isExpanded = expandedSession === session.id;
+                    const exercises = Array.isArray(session.exercises) ? session.exercises : [];
+                    const exerciseCount = exercises.length;
+                    const totalSets = exercises.reduce((sum: number, ex: {sets?: any[]}) => sum + (ex.sets?.length || 0), 0);
+                    
+                    return (
+                      <Card key={session.id} className="overflow-hidden">
+                        <div 
+                          className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => setExpandedSession(isExpanded ? null : session.id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-semibold">
+                                  {session.workoutType ? 
+                                    session.workoutType.replace(/([A-Z])/g, ' $1').trim() : 
+                                    'Workout Session'}
+                                </h4>
+                                {session.status === 'completed' && (
+                                  <Badge variant="secondary" className="text-xs">Completed</Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-4 h-4" />
+                                  {sessionDate.toLocaleDateString()}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-4 h-4" />
+                                  {session.totalDuration || 0} min
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Dumbbell className="w-4 h-4" />
+                                  {exerciseCount} exercises
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Weight className="w-4 h-4" />
+                                  {session.totalVolume?.toLocaleString() || 0} lbs
+                                </span>
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="sm">
+                              {isExpanded ? <ChevronUp /> : <ChevronDown />}
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {isExpanded && exercises.length > 0 && (
+                          <div className="border-t bg-muted/20 p-4">
+                            <h5 className="font-medium mb-3">Exercise Details</h5>
+                            <div className="space-y-3">
+                              {exercises.map((exercise: {exerciseName: string, sets?: {weight: number, reps: number}[]}, index: number) => (
+                                <div key={index} className="bg-background rounded-lg p-3">
+                                  <h6 className="font-medium mb-2">{exercise.exerciseName}</h6>
+                                  <div className="grid grid-cols-4 gap-2 text-sm">
+                                    <div className="text-muted-foreground">Set</div>
+                                    <div className="text-muted-foreground">Weight</div>
+                                    <div className="text-muted-foreground">Reps</div>
+                                    <div className="text-muted-foreground">Volume</div>
+                                    {exercise.sets?.map((set: {weight: number, reps: number}, setIndex: number) => (
+                                      <React.Fragment key={setIndex}>
+                                        <div>{setIndex + 1}</div>
+                                        <div>{set.weight} lbs</div>
+                                        <div>{set.reps}</div>
+                                        <div>{set.weight * set.reps} lbs</div>
+                                      </React.Fragment>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Progress Message */}
         <Card className="mt-8">
@@ -68,10 +229,12 @@ export default function Progress() {
           <CardContent className="text-center py-8">
             <TrendingUp className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground mb-4">
-              Complete more workouts to see detailed progress analytics and charts
+              {totalWorkouts === 0 
+                ? "Start your first workout to begin tracking progress"
+                : "Your progress is being tracked! Charts coming soon."}
             </p>
             <p className="text-sm text-muted-foreground">
-              All data shown is from your actual workout sessions - no mock data
+              Formula: Volume = Sets × Reps × Weight | Calories ≈ Volume × 0.1
             </p>
           </CardContent>
         </Card>

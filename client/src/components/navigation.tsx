@@ -23,6 +23,7 @@ export function Navigation() {
   const navItems = [
     { path: "/dashboard", label: "Dashboard" },
     { path: "/workouts", label: "Workouts" },
+    { path: "/exercises", label: "Exercises" },
     { path: "/start-workout", label: "Start Workout" },
     { path: "/goals", label: "Goals" },
     { path: "/progress", label: "Progress" },
