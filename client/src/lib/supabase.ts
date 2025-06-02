@@ -1,0 +1,405 @@
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables')
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  }
+})
+
+// Database type definitions
+export type Profile = {
+  id: string
+  username: string | null
+  email: string | null
+  full_name: string | null
+  created_at: string
+  updated_at: string
+  preferred_units: 'imperial' | 'metric'
+  timezone: string
+  fitness_level: 'beginner' | 'intermediate' | 'advanced'
+  age: number | null
+  height_cm: number | null
+  current_weight_lbs: number | null
+  target_weight_lbs: number | null
+  activity_level: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
+  profile_visibility: 'public' | 'friends' | 'private'
+}
+
+export type Exercise = {
+  id: string
+  exercise_name: string
+  category: string
+  movement_pattern: string | null
+  workout_type: string
+  equipment_type: string[]
+  difficulty_level: 'beginner' | 'intermediate' | 'advanced'
+  variation: string | null
+  default_reps: number
+  default_weight_lbs: number
+  rest_time_seconds: number
+  description: string | null
+  form_cues: string[] | null
+  contraindications: string[] | null
+  safety_notes: string[] | null
+  created_at: string
+  updated_at: string
+}
+
+export type WorkoutSession = {
+  id: string
+  user_id: string
+  start_time: string
+  end_time: string | null
+  total_duration_seconds: number | null
+  workout_type: string | null
+  session_name: string | null
+  notes: string | null
+  total_volume_lbs: number
+  calories_burned: number | null
+  average_heart_rate: number | null
+  completion_status: 'in_progress' | 'completed' | 'cancelled'
+  user_rating: number | null
+  created_at: string
+  updated_at: string
+}
+
+export type WorkoutExercise = {
+  id: string
+  workout_session_id: string
+  exercise_id: string
+  user_id: string
+  exercise_order: number
+  exercise_notes: string | null
+  total_volume_lbs: number
+  total_sets_completed: number
+  average_form_score: number | null
+  rest_time_seconds: number[] | null
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type WorkoutSet = {
+  id: string
+  workout_exercise_id: string
+  user_id: string
+  set_number: number
+  reps: number
+  weight_lbs: number
+  form_score: number | null
+  perceived_exertion: number | null
+  is_completed: boolean
+  is_personal_record: boolean
+  equipment_used: string | null
+  started_at: string | null
+  completed_at: string | null
+  rest_time_after_seconds: number | null
+  created_at: string
+  updated_at: string
+}
+
+export type PersonalRecord = {
+  id: string
+  user_id: string
+  exercise_id: string
+  record_type: 'max_weight' | 'max_reps' | 'max_volume' | 'max_one_rep_max'
+  weight_lbs: number | null
+  reps: number | null
+  volume_lbs: number | null
+  one_rep_max_lbs: number | null
+  workout_session_id: string | null
+  workout_set_id: string | null
+  achieved_at: string
+  previous_value: number | null
+  improvement_percentage: number | null
+  created_at: string
+}
+
+export type UserAchievement = {
+  id: string
+  user_id: string
+  achievement_id: string
+  current_progress: number
+  target_progress: number
+  is_completed: boolean
+  unlocked_at: string | null
+  workout_session_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type BodyStats = {
+  id: string
+  user_id: string
+  weight_lbs: number | null
+  body_fat_percentage: number | null
+  muscle_mass_lbs: number | null
+  chest_inches: number | null
+  waist_inches: number | null
+  hips_inches: number | null
+  bicep_inches: number | null
+  thigh_inches: number | null
+  photo_urls: string[] | null
+  measured_at: string
+  notes: string | null
+  created_at: string
+}
+
+// Database helpers
+export const db = {
+  // Profiles
+  async getProfile(userId: string): Promise<Profile | null> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async updateProfile(userId: string, updates: Partial<Profile>): Promise<Profile> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // Exercises
+  async getExercises(): Promise<Exercise[]> {
+    const { data, error } = await supabase
+      .from('exercises')
+      .select('*')
+      .order('exercise_name')
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getExercisesByWorkoutType(workoutType: string): Promise<Exercise[]> {
+    const { data, error } = await supabase
+      .from('exercises')
+      .select('*')
+      .eq('workout_type', workoutType)
+      .order('exercise_name')
+    
+    if (error) throw error
+    return data || []
+  },
+
+  // Workout Sessions
+  async createWorkoutSession(session: Omit<WorkoutSession, 'id' | 'created_at' | 'updated_at'>): Promise<WorkoutSession> {
+    const { data, error } = await supabase
+      .from('workout_sessions')
+      .insert(session)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async getWorkoutSession(sessionId: string): Promise<WorkoutSession | null> {
+    const { data, error } = await supabase
+      .from('workout_sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async getUserWorkoutSessions(userId: string, limit = 50): Promise<WorkoutSession[]> {
+    const { data, error } = await supabase
+      .from('workout_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('start_time', { ascending: false })
+      .limit(limit)
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async updateWorkoutSession(sessionId: string, updates: Partial<WorkoutSession>): Promise<WorkoutSession> {
+    const { data, error } = await supabase
+      .from('workout_sessions')
+      .update(updates)
+      .eq('id', sessionId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // Workout Exercises
+  async createWorkoutExercise(exercise: Omit<WorkoutExercise, 'id' | 'created_at' | 'updated_at'>): Promise<WorkoutExercise> {
+    const { data, error } = await supabase
+      .from('workout_exercises')
+      .insert(exercise)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async getWorkoutExercises(sessionId: string): Promise<WorkoutExercise[]> {
+    const { data, error } = await supabase
+      .from('workout_exercises')
+      .select('*')
+      .eq('workout_session_id', sessionId)
+      .order('exercise_order')
+    
+    if (error) throw error
+    return data || []
+  },
+
+  // Workout Sets
+  async createWorkoutSet(set: Omit<WorkoutSet, 'id' | 'created_at' | 'updated_at'>): Promise<WorkoutSet> {
+    const { data, error } = await supabase
+      .from('workout_sets')
+      .insert(set)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async updateWorkoutSet(setId: string, updates: Partial<WorkoutSet>): Promise<WorkoutSet> {
+    const { data, error } = await supabase
+      .from('workout_sets')
+      .update(updates)
+      .eq('id', setId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async getWorkoutSets(exerciseId: string): Promise<WorkoutSet[]> {
+    const { data, error } = await supabase
+      .from('workout_sets')
+      .select('*')
+      .eq('workout_exercise_id', exerciseId)
+      .order('set_number')
+    
+    if (error) throw error
+    return data || []
+  },
+
+  // Personal Records
+  async getPersonalRecords(userId: string, exerciseId?: string): Promise<PersonalRecord[]> {
+    let query = supabase
+      .from('personal_records')
+      .select('*')
+      .eq('user_id', userId)
+    
+    if (exerciseId) {
+      query = query.eq('exercise_id', exerciseId)
+    }
+    
+    const { data, error } = await query.order('achieved_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  // Body Stats
+  async createBodyStats(stats: Omit<BodyStats, 'id' | 'created_at'>): Promise<BodyStats> {
+    const { data, error } = await supabase
+      .from('body_stats')
+      .insert(stats)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async getUserBodyStats(userId: string, limit = 50): Promise<BodyStats[]> {
+    const { data, error } = await supabase
+      .from('body_stats')
+      .select('*')
+      .eq('user_id', userId)
+      .order('measured_at', { ascending: false })
+      .limit(limit)
+    
+    if (error) throw error
+    return data || []
+  }
+}
+
+// Real-time subscriptions
+export const subscribeToWorkoutSession = (sessionId: string, callback: (payload: any) => void) => {
+  return supabase
+    .channel(`workout-session-${sessionId}`)
+    .on('postgres_changes', 
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'workout_sessions',
+        filter: `id=eq.${sessionId}`
+      }, 
+      callback
+    )
+    .on('postgres_changes', 
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'workout_exercises',
+        filter: `workout_session_id=eq.${sessionId}`
+      }, 
+      callback
+    )
+    .on('postgres_changes', 
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'workout_sets',
+        filter: `workout_exercise_id=in.(select id from workout_exercises where workout_session_id = '${sessionId}')`
+      }, 
+      callback
+    )
+    .subscribe()
+}
+
+export const subscribeToUserPersonalRecords = (userId: string, callback: (payload: any) => void) => {
+  return supabase
+    .channel(`user-prs-${userId}`)
+    .on('postgres_changes', 
+      { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'personal_records',
+        filter: `user_id=eq.${userId}`
+      }, 
+      callback
+    )
+    .subscribe()
+}

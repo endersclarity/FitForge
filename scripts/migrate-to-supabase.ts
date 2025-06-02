@@ -14,7 +14,7 @@
 import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../client/src/lib/supabase';
+// Remove type import that doesn't exist yet
 
 // Configuration
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
@@ -27,7 +27,7 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 // Create Supabase client with service role (bypasses RLS)
-const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 interface ExerciseData {
   id: string;

@@ -1,322 +1,279 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, useCallback } from 'react'
+import { useAuth } from '@/hooks/use-supabase-auth'
+import { workoutService } from '@/services/supabase-workout-service'
+import type { WorkoutSession, WorkoutExercise, WorkoutSet, Exercise } from '@/lib/supabase'
 
-interface SetLog {
-  setNumber: number;
-  weight: number;
-  reps: number;
-  completed: boolean;
-  restTimeSeconds?: number;
-  rpe?: number;
-  notes?: string;
-  timestamp: Date;
+interface WorkoutExerciseWithDetails extends WorkoutExercise {
+  exercise: Exercise
+  sets: WorkoutSet[]
 }
 
-interface ExerciseLog {
-  exerciseId: string;
-  exerciseName: string;
-  sets: SetLog[];
-  targetSets: number;
-  targetReps: number;
-  targetWeight: number;
-  formScore?: number;
-  notes?: string;
+interface WorkoutSessionData {
+  session: WorkoutSession | null
+  exercises: WorkoutExerciseWithDetails[]
 }
 
-interface WorkoutSession {
-  id: string | number;
-  userId: number;
-  workoutType: string;
-  startTime: string;
-  endTime?: string;
-  status: 'in_progress' | 'completed' | 'paused';
-  exercises: ExerciseLog[];
-  totalVolume: number;
-  totalDuration?: number;
-  notes?: string;
-}
-
-interface SessionProgress {
-  duration: number;
-  completedSets: number;
-  totalSets: number;
-  progressPercentage: number;
-}
-
-export function useRealWorkoutSession() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export function useRealWorkoutSession(sessionId: string | null) {
+  const { user } = useAuth()
+  const [workoutData, setWorkoutData] = useState<WorkoutSessionData>({
+    session: null,
+    exercises: []
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [personalRecords, setPersonalRecords] = useState<string[]>([]) // IDs of sets that are PRs
   
-  const [session, setSession] = useState<WorkoutSession | null>(null);
-  const [sessionProgress, setSessionProgress] = useState<SessionProgress | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // Real-time subscription
+  const [subscription, setSubscription] = useState<any>(null)
 
-  // Update session progress calculation
-  useEffect(() => {
-    if (session) {
-      const totalSets = session.exercises.reduce((sum, ex) => sum + ex.targetSets, 0);
-      const completedSets = session.exercises.reduce((sum, ex) => 
-        sum + ex.sets.filter(set => set.completed).length, 0);
-      
-      const startTime = new Date(session.startTime);
-      const now = new Date();
-      const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000 / 60); // minutes
-      
-      setSessionProgress({
-        duration,
-        completedSets,
-        totalSets,
-        progressPercentage: totalSets > 0 ? (completedSets / totalSets) * 100 : 0
-      });
-    }
-  }, [session]);
+  // Load workout data
+  const loadWorkoutData = useCallback(async () => {
+    if (!sessionId || !user) return
 
-  // Start session mutation
-  const startSessionMutation = useMutation({
-    mutationFn: async ({ workoutType, exerciseIds }: { workoutType: string; exerciseIds?: string[] }) => {
-      const response = await fetch('/api/workout-sessions/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workoutType, exerciseIds }),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to start workout session');
-      }
-      return response.json();
-    },
-    onSuccess: (data, variables) => {
-      toast({
-        title: "Workout Started! 💪",
-        description: `Let's crush this ${variables.workoutType} session!`,
-      });
-    },
-    onError: (error: Error) => {
-      setError(error.message);
-      toast({
-        title: "Failed to start workout",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+    setLoading(true)
+    setError(null)
 
-  // Log set mutation
-  const logSetMutation = useMutation({
-    mutationFn: async ({ 
-      sessionId, 
-      exerciseId, 
-      setNumber,
-      setData 
-    }: { 
-      sessionId: string | number; 
-      exerciseId: string; 
-      setNumber: number;
-      setData: Partial<SetLog>;
-    }) => {
-      const response = await fetch(`/api/workout-sessions/${sessionId}/exercises/${exerciseId}/sets/${setNumber}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(setData),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to log set');
-      }
-      return response.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Set logged! 🎯",
-        description: `Total volume: ${Math.round(data.progressUpdate?.totalVolume || 0)} lbs`,
-      });
-      
-      // Refetch session data to get updated state
-      if (session) {
-        fetchSessionProgress(session.id);
-      }
-    },
-    onError: (error: Error) => {
-      setError(error.message);
-      toast({
-        title: "Failed to log set",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Complete session mutation
-  const completeSessionMutation = useMutation({
-    mutationFn: async ({ 
-      sessionId, 
-      rating, 
-      notes 
-    }: { 
-      sessionId: string | number; 
-      rating?: number; 
-      notes?: string;
-    }) => {
-      const response = await fetch(`/api/workout-sessions/${sessionId}/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rating, notes }),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to complete workout');
-      }
-      return response.json();
-    },
-    onSuccess: (data) => {
-      const { summary } = data;
-      toast({
-        title: "Workout Complete! 🏆",
-        description: `${summary.duration}min • ${Math.round(summary.totalVolume)} lbs • ${summary.caloriesBurned}cal burned`,
-      });
-      
-      // Reset session
-      setSession(null);
-      setSessionProgress(null);
-      
-      // Invalidate queries
-      queryClient.invalidateQueries({ queryKey: ['workoutHistory'] });
-      queryClient.invalidateQueries({ queryKey: ['progressMetrics'] });
-    },
-    onError: (error: Error) => {
-      setError(error.message);
-      toast({
-        title: "Failed to complete workout",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Fetch session progress
-  const fetchSessionProgress = useCallback(async (sessionId: string | number) => {
     try {
-      const response = await fetch(`/api/workout-sessions/${sessionId}/progress`);
-      if (response.ok) {
-        const progressData = await response.json();
-        setSessionProgress({
-          duration: progressData.duration,
-          completedSets: progressData.completedSets,
-          totalSets: progressData.totalSets,
-          progressPercentage: progressData.totalSets > 0 ? 
-            (progressData.completedSets / progressData.totalSets) * 100 : 0
-        });
+      const data = await workoutService.getWorkoutSession(sessionId)
+      if (data) {
+        setWorkoutData(data)
       }
-    } catch (err) {
-      console.error('Failed to fetch session progress:', err);
-    }
-  }, []);
-
-  // API functions
-  const startSession = useCallback(async (workoutType: string, exerciseIds?: string[]) => {
-    try {
-      const result = await startSessionMutation.mutateAsync({ workoutType, exerciseIds });
-      
-      // Create session object with basic structure
-      const newSession: WorkoutSession = {
-        id: result.sessionId,
-        userId: 1, // Auto-assigned for testing
-        workoutType,
-        startTime: result.startTime,
-        status: 'in_progress',
-        exercises: result.exercises || [],
-        totalVolume: 0,
-      };
-      
-      setSession(newSession);
-      setError(null);
     } catch (err: any) {
-      setError(err.message);
+      console.error('Error loading workout data:', err)
+      setError(err.message || 'Failed to load workout data')
+    } finally {
+      setLoading(false)
     }
-  }, [startSessionMutation]);
+  }, [sessionId, user])
 
-  const logSet = useCallback(async (exerciseId: string, setData: Partial<SetLog>) => {
-    if (!session) {
-      setError('No active session');
-      return;
+  // Set up real-time subscription
+  useEffect(() => {
+    if (!sessionId || !user) return
+
+    // Subscribe to workout updates
+    const channel = workoutService.subscribeToWorkoutSession(sessionId, (payload) => {
+      console.log('Real-time workout update:', payload)
+      
+      // Reload data when changes occur
+      loadWorkoutData()
+    })
+
+    setSubscription(channel)
+
+    // Also subscribe to personal records for notifications
+    const prChannel = workoutService.subscribeToPersonalRecords(user.id, (payload) => {
+      console.log('New personal record:', payload)
+      
+      if (payload.eventType === 'INSERT') {
+        // Show notification for new PR
+        setPersonalRecords(prev => [...prev, payload.new.workout_set_id])
+        
+        // Could dispatch a toast notification here
+        console.log(`🎉 New ${payload.new.record_type} PR!`)
+      }
+    })
+
+    // Cleanup function
+    return () => {
+      if (channel) {
+        channel.unsubscribe()
+      }
+      if (prChannel) {
+        prChannel.unsubscribe()
+      }
     }
+  }, [sessionId, user, loadWorkoutData])
+
+  // Load initial data
+  useEffect(() => {
+    loadWorkoutData()
+  }, [loadWorkoutData])
+
+  // Start a new workout
+  const startWorkout = useCallback(async (workoutType: string, exerciseIds: string[], sessionName?: string) => {
+    if (!user) throw new Error('User not authenticated')
+
+    setLoading(true)
+    setError(null)
 
     try {
-      const exercise = session.exercises.find(ex => ex.exerciseId === exerciseId);
-      const setNumber = (exercise?.sets.length || 0) + 1;
-      
-      await logSetMutation.mutateAsync({
-        sessionId: session.id,
+      const result = await workoutService.startWorkout({
+        workoutType,
+        exerciseIds,
+        sessionName
+      })
+
+      setWorkoutData({
+        session: result.session,
+        exercises: result.exercises.map(ex => ({
+          ...ex,
+          sets: []
+        }))
+      })
+
+      return result.session
+    } catch (err: any) {
+      console.error('Error starting workout:', err)
+      setError(err.message || 'Failed to start workout')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [user])
+
+  // Log a set
+  const logSet = useCallback(async (
+    exerciseId: string,
+    setNumber: number,
+    reps: number,
+    weight: number,
+    formScore?: number,
+    perceivedExertion?: number,
+    equipment?: string
+  ) => {
+    if (!workoutData.session || !user) throw new Error('No active workout session')
+
+    try {
+      const set = await workoutService.logSet({
+        sessionId: workoutData.session.id,
         exerciseId,
         setNumber,
-        setData
-      });
+        reps,
+        weight,
+        formScore,
+        perceivedExertion,
+        equipment
+      })
 
-      // Update local session state
-      setSession(prev => {
-        if (!prev) return prev;
-        
-        const updatedExercises = prev.exercises.map(ex => {
-          if (ex.exerciseId === exerciseId) {
-            const newSet: SetLog = {
-              setNumber,
-              weight: setData.weight || 0,
-              reps: setData.reps || 0,
-              completed: setData.completed || true,
-              timestamp: new Date(),
-              ...setData
-            };
+      // Optimistically update local state
+      setWorkoutData(prev => ({
+        ...prev,
+        exercises: prev.exercises.map(ex => {
+          if (ex.exercise_id === exerciseId) {
             return {
               ...ex,
-              sets: [...ex.sets, newSet]
-            };
+              sets: [...ex.sets, set].sort((a, b) => a.set_number - b.set_number),
+              total_sets_completed: ex.total_sets_completed + 1,
+              total_volume_lbs: ex.total_volume_lbs + (weight * reps)
+            }
           }
-          return ex;
-        });
+          return ex
+        })
+      }))
 
-        return {
-          ...prev,
-          exercises: updatedExercises
-        };
-      });
-
-      setError(null);
+      return set
     } catch (err: any) {
-      setError(err.message);
+      console.error('Error logging set:', err)
+      setError(err.message || 'Failed to log set')
+      throw err
     }
-  }, [session, logSetMutation]);
+  }, [workoutData.session, user])
 
-  const completeSession = useCallback(async (rating?: number, notes?: string) => {
-    if (!session) {
-      setError('No active session');
-      return;
-    }
+  // Complete workout
+  const completeWorkout = useCallback(async (rating?: number, notes?: string) => {
+    if (!workoutData.session) throw new Error('No active workout session')
+
+    setLoading(true)
+    setError(null)
 
     try {
-      await completeSessionMutation.mutateAsync({
-        sessionId: session.id,
+      const completedSession = await workoutService.completeWorkout({
+        sessionId: workoutData.session.id,
         rating,
         notes
-      });
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
-    }
-  }, [session, completeSessionMutation]);
+      })
 
-  const isLoading = 
-    startSessionMutation.isPending || 
-    logSetMutation.isPending || 
-    completeSessionMutation.isPending;
+      setWorkoutData(prev => ({
+        ...prev,
+        session: completedSession
+      }))
+
+      return completedSession
+    } catch (err: any) {
+      console.error('Error completing workout:', err)
+      setError(err.message || 'Failed to complete workout')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [workoutData.session])
+
+  // Cancel workout
+  const cancelWorkout = useCallback(async () => {
+    if (!workoutData.session) throw new Error('No active workout session')
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const cancelledSession = await workoutService.cancelWorkout(workoutData.session.id)
+      
+      setWorkoutData(prev => ({
+        ...prev,
+        session: cancelledSession
+      }))
+
+      return cancelledSession
+    } catch (err: any) {
+      console.error('Error cancelling workout:', err)
+      setError(err.message || 'Failed to cancel workout')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [workoutData.session])
+
+  // Calculate workout statistics
+  const workoutStats = {
+    totalSets: workoutData.exercises.reduce((total, ex) => total + ex.sets.length, 0),
+    completedSets: workoutData.exercises.reduce((total, ex) => total + ex.sets.filter(set => set.is_completed).length, 0),
+    totalVolume: workoutData.exercises.reduce((total, ex) => total + ex.total_volume_lbs, 0),
+    duration: workoutData.session?.total_duration_seconds || 0,
+    personalRecords: personalRecords.length,
+    isComplete: workoutData.session?.completion_status === 'completed',
+    isInProgress: workoutData.session?.completion_status === 'in_progress',
+    isCancelled: workoutData.session?.completion_status === 'cancelled'
+  }
+
+  // Get exercise by ID
+  const getExercise = useCallback((exerciseId: string) => {
+    return workoutData.exercises.find(ex => ex.exercise_id === exerciseId)
+  }, [workoutData.exercises])
+
+  // Get sets for an exercise
+  const getExerciseSets = useCallback((exerciseId: string) => {
+    const exercise = getExercise(exerciseId)
+    return exercise?.sets || []
+  }, [getExercise])
+
+  // Check if a set is a personal record
+  const isPersonalRecord = useCallback((setId: string) => {
+    return personalRecords.includes(setId)
+  }, [personalRecords])
 
   return {
-    session,
-    sessionProgress,
-    isLoading,
+    // Data
+    session: workoutData.session,
+    exercises: workoutData.exercises,
+    
+    // State
+    loading,
     error,
-    startSession,
+    
+    // Actions
+    startWorkout,
     logSet,
-    completeSession,
-  };
+    completeWorkout,
+    cancelWorkout,
+    refreshData: loadWorkoutData,
+    
+    // Helpers
+    workoutStats,
+    getExercise,
+    getExerciseSets,
+    isPersonalRecord,
+    
+    // Real-time status
+    isConnected: !!subscription,
+  }
 }

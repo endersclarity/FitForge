@@ -67,15 +67,18 @@ Deploy FitForge to Digital Ocean App Platform for production hosting with:
 6. Upload `.do/app.yaml` as app spec
 7. Review and create
 
-### 3. Configure Environment Variables
+### 3. Environment Variables (Pre-configured)
 
-In Digital Ocean dashboard, set these secrets:
+The `.do/app.yaml` already includes the necessary environment variables:
 
 ```env
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key-here
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+NODE_ENV=production
+PORT=5000
+VITE_SUPABASE_URL=https://qobrbjpsbwwumzkphlns.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
+
+**Note**: These are already configured in the deployment specification.
 
 ### 4. Set Up Custom Domain (Optional)
 

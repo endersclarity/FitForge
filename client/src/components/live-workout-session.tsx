@@ -259,7 +259,7 @@ export function LiveWorkoutSession() {
                   <div className="text-xs text-muted-foreground">Duration</div>
                 </div>
                 <Button 
-                  onClick={endWorkout}
+                  onClick={() => endWorkout()}
                   variant="destructive"
                   size="sm"
                 >

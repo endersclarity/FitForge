@@ -6,11 +6,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { ArrowLeft, Dumbbell, Clock, Target, Plus, Minus, Play } from "lucide-react";
 import { WorkoutSession } from "@/components/workout/WorkoutSession";
-import { useRealWorkoutSession } from "@/hooks/use-real-workout-session";
+import { useWorkoutSession } from "@/hooks/use-workout-session";
+import { workoutService } from "@/services/supabase-workout-service";
+import { useAuth } from "@/hooks/use-supabase-auth";
+import type { Exercise } from "@/lib/supabase";
 
-interface Exercise {
+// Legacy Exercise interface for compatibility with existing UI
+interface LegacyExercise {
   exerciseName: string;
-  equipmentType: string;
+  equipmentType: string[];
   category: string;
   workoutType: string;
   variation: string;
@@ -21,7 +25,8 @@ interface Exercise {
   secondaryMuscles: Array<{ muscle: string; percentage: number }>;
 }
 
-interface WorkoutExercise extends Exercise {
+interface WorkoutExercise extends LegacyExercise {
+  id: string;
   selectedWeight: number;
   targetReps: number;
   sets: Array<{
@@ -36,43 +41,51 @@ export default function StartWorkout() {
   const urlParams = new URLSearchParams(window.location.search);
   const workoutType = urlParams.get('type') || '';
   
-  console.log('🔍 StartWorkout component loaded');
+  console.log('🔍 StartWorkout component loaded with Supabase');
   console.log('📍 Current URL:', window.location.href);
   console.log('🎯 Workout type from URL:', workoutType);
   console.log('🔗 URL params:', Object.fromEntries(urlParams));
   
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
   const [workoutStarted, setWorkoutStarted] = useState(false);
-  
-  const { session } = useRealWorkoutSession();
+  const { user } = useAuth();
+  const { session, startWorkout, loading: sessionLoading, error } = useWorkoutSession();
 
-  // Fetch all exercises from the database
-  const { data: exerciseResponse, isLoading } = useQuery<Exercise[]>({
-    queryKey: ["/api/exercises"],
-    select: (data: any) => {
-      // Handle the nested API response structure
-      if (data?.success && data?.data?.exercises) {
-        return data.data.exercises;
-      }
-      return data || [];
-    }
+  // Fetch exercises from Supabase by workout type
+  const { data: supabaseExercises, isLoading } = useQuery<Exercise[]>({
+    queryKey: ["supabase-exercises", workoutType],
+    queryFn: async () => {
+      if (!workoutType) return [];
+      return await workoutService.getExercisesByType(workoutType);
+    },
+    enabled: !!workoutType
   });
-  
-  const allExercises: Exercise[] = exerciseResponse || [];
 
-  // Filter exercises by workout type
-  const availableExercises = allExercises.filter(exercise => 
-    exercise.workoutType.toLowerCase() === workoutType.toLowerCase()
-  );
+  // Convert Supabase exercises to legacy format for UI compatibility
+  const allExercises: LegacyExercise[] = (supabaseExercises || []).map(exercise => ({
+    exerciseName: exercise.exercise_name,
+    equipmentType: exercise.equipment_type || [],
+    category: exercise.category,
+    workoutType: exercise.workout_type || workoutType,
+    variation: exercise.variation || '',
+    weight: exercise.default_weight_lbs || 0,
+    restTime: `${exercise.rest_time_seconds || 60}s`,
+    reps: exercise.default_reps || 10,
+    primaryMuscles: [], // Would need to fetch from exercise_primary_muscles table
+    secondaryMuscles: [] // Would need to fetch from exercise_secondary_muscles table
+  }));
+
+  // Available exercises (already filtered by workout type from Supabase)
+  const availableExercises = allExercises;
 
   // Auto-select exercises when they load
   useEffect(() => {
-    if (availableExercises.length > 0 && selectedExerciseIds.length === 0) {
-      const defaultExerciseIds = availableExercises.slice(0, 6).map((exercise, index) => 
-        `${exercise.exerciseName}-${index}`);
+    if (availableExercises.length > 0 && selectedExerciseIds.length === 0 && supabaseExercises) {
+      // Use the actual Supabase exercise IDs for selection
+      const defaultExerciseIds = supabaseExercises.slice(0, 6).map(exercise => exercise.id);
       setSelectedExerciseIds(defaultExerciseIds);
     }
-  }, [availableExercises, selectedExerciseIds.length]);
+  }, [availableExercises, selectedExerciseIds.length, supabaseExercises]);
 
   const workoutTypeNames: Record<string, string> = {
     'abs': 'Abs & Core',
@@ -129,8 +142,43 @@ export default function StartWorkout() {
     );
   };
 
-  const startWorkoutSession = () => {
-    setWorkoutStarted(true);
+  const startWorkoutSession = async () => {
+    if (!user) {
+      alert('Please sign in to start a workout');
+      return;
+    }
+
+    if (selectedExerciseIds.length === 0) {
+      alert('Please select at least one exercise');
+      return;
+    }
+
+    try {
+      console.log('🚀 Starting workout with Supabase...');
+      console.log('Selected exercise IDs:', selectedExerciseIds);
+
+      // Create legacy exercise objects for the workout session
+      const selectedExercises = selectedExerciseIds
+        .map(id => supabaseExercises?.find(ex => ex.id === id))
+        .filter(Boolean)
+        .map(exercise => ({
+          id: exercise!.id,
+          name: exercise!.exercise_name,
+          primaryMuscles: [], // TODO: Fetch from muscles tables
+          secondaryMuscles: [],
+          equipment: exercise!.equipment_type || [],
+          restTime: exercise!.rest_time_seconds || 60,
+          difficulty: exercise!.difficulty_level || 'beginner',
+          workoutType: exercise!.workout_type || workoutType
+        }));
+
+      await startWorkout(workoutType, selectedExercises);
+      setWorkoutStarted(true);
+      console.log('✅ Workout started successfully');
+    } catch (error) {
+      console.error('❌ Failed to start workout:', error);
+      alert(error instanceof Error ? error.message : 'Failed to start workout');
+    }
   };
 
   return (
@@ -169,13 +217,13 @@ export default function StartWorkout() {
               </p>
             </div>
 
-            {availableExercises.map((exercise, index) => {
-              const exerciseId = `${exercise.exerciseName}-${index}`;
+            {supabaseExercises?.map((exercise, index) => {
+              const exerciseId = exercise.id;
               const isSelected = selectedExerciseIds.includes(exerciseId);
               
               return (
                 <Card 
-                  key={index}
+                  key={exercise.id}
                   className={`cursor-pointer transition-colors ${
                     isSelected ? 'border-primary bg-primary/5' : 'hover:border-gray-300'
                   }`}
@@ -184,19 +232,21 @@ export default function StartWorkout() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold">{exercise.exerciseName}</h3>
+                        <h3 className="font-semibold">{exercise.exercise_name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {exercise.primaryMuscles.map(m => m.muscle).join(", ")}
+                          {exercise.category} • {exercise.difficulty_level}
                         </p>
                         <div className="flex gap-2 mt-2">
                           <Badge variant="outline">{exercise.category}</Badge>
-                          <Badge variant="outline">{exercise.equipmentType}</Badge>
+                          {exercise.equipment_type?.map((eq, idx) => (
+                            <Badge key={idx} variant="outline">{eq}</Badge>
+                          ))}
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        {typeof exercise.weight === 'number' && (
+                        {exercise.default_weight_lbs && (
                           <div className="text-sm text-muted-foreground">
-                            {exercise.weight} lbs
+                            {exercise.default_weight_lbs} lbs
                           </div>
                         )}
                         <Badge variant={isSelected ? "default" : "secondary"}>
@@ -214,22 +264,47 @@ export default function StartWorkout() {
                 <Button 
                   size="lg" 
                   onClick={startWorkoutSession}
+                  disabled={sessionLoading || !user}
                   className="gradient-bg px-8 py-3"
                 >
-                  <Play className="w-5 h-5 mr-2" />
-                  Start Workout Session
+                  {sessionLoading ? (
+                    <>
+                      <div className="w-5 h-5 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Starting...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-5 h-5 mr-2" />
+                      Start Workout Session
+                    </>
+                  )}
                 </Button>
+                {!user && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Please sign in to start a workout
+                  </p>
+                )}
+                {error && (
+                  <p className="text-sm text-red-500 mt-2">
+                    {error}
+                  </p>
+                )}
               </div>
             )}
           </div>
         ) : (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">
-              No exercises found for {workoutName}
+              {isLoading 
+                ? `Loading ${workoutName} exercises from Supabase...`
+                : `No exercises found for ${workoutName} in Supabase database`
+              }
             </p>
-            <Button onClick={() => window.location.href = '/workouts'}>
-              Choose Different Workout
-            </Button>
+            {!isLoading && (
+              <Button onClick={() => window.location.href = '/workouts'}>
+                Choose Different Workout
+              </Button>
+            )}
           </div>
         )}
       </div>

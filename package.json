@@ -13,7 +13,7 @@
     "build": "vite build",
     "build-electron": "npm run build && electron-builder",
     "dist": "npm run build && electron-builder --publish=never",
-    "start": "NODE_ENV=production node dist/index.js",
+    "start": "NODE_ENV=production tsx server/index.ts",
     "check": "tsc",
     "test": "vitest",
     "test:ui": "vitest --ui",
