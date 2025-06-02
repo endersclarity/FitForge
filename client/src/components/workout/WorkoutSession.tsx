@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useRealWorkoutSession } from "@/hooks/use-real-workout-session";
+import { useWorkoutSession } from "@/hooks/use-workout-session";
 import { ExerciseSelector } from "./ExerciseSelector";
 import { RealSetLogger } from "./RealSetLogger";
 import { 
@@ -31,16 +31,15 @@ export function WorkoutSession({ workoutType = "Custom Workout", selectedExercis
   
   const {
     session,
-    isLoading,
-    startSession,
+    loading,
+    startWorkout,
     logSet,
-    completeSession,
-    sessionProgress,
+    endWorkout,
     error
-  } = useRealWorkoutSession();
+  } = useWorkoutSession();
 
   // Handle loading and error states
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -107,7 +106,7 @@ export function WorkoutSession({ workoutType = "Custom Workout", selectedExercis
               
               <div className="flex gap-4 justify-center">
                 <Button 
-                  onClick={() => startSession(workoutType, selectedExercises)}
+                  onClick={() => startWorkout(workoutType, selectedExercises.map(id => ({ id, name: `Exercise ${id}`, primaryMuscles: [], secondaryMuscles: [], equipment: [], restTime: 60, difficulty: 'medium', workoutType })))}
                   size="lg" 
                   className="gradient-bg text-white font-semibold"
                   disabled={selectedExercises.length === 0}
@@ -151,16 +150,16 @@ export function WorkoutSession({ workoutType = "Custom Workout", selectedExercis
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center">
                   <Timer className="w-4 h-4 mr-1" />
-                  {sessionProgress?.duration ? formatDuration(sessionProgress.duration) : "00:00"}
+                  {session?.startTime ? formatDuration(Date.now() - session.startTime.getTime()) : "00:00"}
                 </span>
-                <span>{sessionProgress?.completedSets || 0} sets completed</span>
+                <span>{session?.exercises?.reduce((total, ex) => total + ex.sets.length, 0) || 0} sets completed</span>
                 <span>Volume: {Math.round(session.totalVolume || 0)} lbs</span>
               </div>
             </div>
             
             <div className="flex gap-2">
               <Button 
-                onClick={() => completeSession()}
+                onClick={() => endWorkout()}
                 className="bg-blue-500 hover:bg-blue-600"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
@@ -173,9 +172,9 @@ export function WorkoutSession({ workoutType = "Custom Workout", selectedExercis
           <div className="mt-4">
             <div className="flex justify-between text-sm mb-2">
               <span>Workout Progress</span>
-              <span>{Math.round(sessionProgress?.progressPercentage || 0)}%</span>
+              <span>{Math.round((session?.exercises?.filter(ex => ex.completed).length || 0) / (session?.exercises?.length || 1) * 100)}%</span>
             </div>
-            <Progress value={sessionProgress?.progressPercentage || 0} className="h-2" />
+            <Progress value={(session?.exercises?.filter(ex => ex.completed).length || 0) / (session?.exercises?.length || 1) * 100} className="h-2" />
           </div>
         </div>
       </section>
@@ -203,17 +202,17 @@ export function WorkoutSession({ workoutType = "Custom Workout", selectedExercis
                 <div>
                   <h4 className="font-semibold mb-2">Target</h4>
                   <div className="space-y-1 text-sm">
-                    <div>Sets: {currentExercise.targetSets || 3}</div>
-                    <div>Reps: {currentExercise.targetReps || 12}</div>
-                    <div>Weight: {currentExercise.targetWeight || 0} lbs</div>
+                    <div>Sets: 3</div>
+                    <div>Reps: 12</div>
+                    <div>Weight: 0 lbs</div>
                   </div>
                 </div>
                 
                 <div>
                   <h4 className="font-semibold mb-2">Progress</h4>
                   <div className="space-y-1 text-sm">
-                    <div>Sets: {currentExercise.sets?.length || 0}/{currentExercise.targetSets || 3}</div>
-                    <div>Completed: {currentExercise.sets?.filter(s => s.completed).length || 0}</div>
+                    <div>Sets: {currentExercise.sets?.length || 0}/3</div>
+                    <div>Completed: {currentExercise.sets?.length || 0}</div>
                   </div>
                 </div>
                 
@@ -221,7 +220,7 @@ export function WorkoutSession({ workoutType = "Custom Workout", selectedExercis
                   <h4 className="font-semibold mb-2">Volume</h4>
                   <div className="text-2xl font-bold text-primary">
                     {currentExercise.sets?.reduce((total, set) => 
-                      total + (set.completed ? (set.weight * set.reps) : 0), 0) || 0} lbs
+                      total + (set.weight * set.reps), 0) || 0} lbs
                   </div>
                 </div>
               </div>
@@ -230,11 +229,11 @@ export function WorkoutSession({ workoutType = "Custom Workout", selectedExercis
               <RealSetLogger 
                 exerciseId={currentExercise.exerciseId}
                 exerciseName={currentExercise.exerciseName}
-                sessionId={session.id}
+                sessionId={session.sessionId}
                 currentSets={currentExercise.sets || []}
-                targetSets={currentExercise.targetSets || 3}
+                targetSets={3}
                 onSetLogged={(setData) => {
-                  logSet(currentExercise.exerciseId, setData);
+                  logSet(setData.weight, setData.reps, setData.equipment || 'bodyweight');
                 }}
               />
 
@@ -271,8 +270,8 @@ export function WorkoutSession({ workoutType = "Custom Workout", selectedExercis
             <div className="space-y-3">
               {session.exercises?.map((exercise, index) => {
                 const isCurrent = index === currentExerciseIndex;
-                const completedSets = exercise.sets?.filter(s => s.completed).length || 0;
-                const totalSets = exercise.targetSets || 3;
+                const completedSets = exercise.sets?.length || 0;
+                const totalSets = 3;
                 const isCompleted = completedSets >= totalSets;
                 
                 return (
@@ -300,7 +299,7 @@ export function WorkoutSession({ workoutType = "Custom Workout", selectedExercis
                       <div className="text-right">
                         <div className="text-lg font-bold">
                           {exercise.sets?.reduce((total, set) => 
-                            total + (set.completed ? (set.weight * set.reps) : 0), 0) || 0}
+                            total + (set.weight * set.reps), 0) || 0}
                         </div>
                         <div className="text-sm text-muted-foreground">lbs volume</div>
                       </div>

@@ -1,0 +1,77 @@
+# Digital Ocean App Platform Configuration for FitForge
+# Production-ready fitness ecosystem with Supabase integration
+
+name: fitforge-production
+region: nyc
+
+# Unified Node.js application (React frontend + Express backend)
+services:
+  - name: fitforge-app
+    source_dir: /
+    github:
+      repo: endersclarity/FitForge
+      branch: master
+      deploy_on_push: true
+    build_command: |
+      npm ci --production=false &&
+      npm run build-all &&
+      npm run check
+    run_command: npm start
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 5000
+    
+    # Health check
+    health_check:
+      http_path: "/"
+      initial_delay_seconds: 90
+      period_seconds: 30
+      timeout_seconds: 10
+      success_threshold: 1
+      failure_threshold: 3
+    
+    # Auto-scaling for production load
+    autoscaling:
+      min_instance_count: 1
+      max_instance_count: 3
+      metrics:
+        cpu:
+          percent: 75
+    
+    # Environment variables
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "5000"
+      - key: VITE_SUPABASE_URL
+        value: "https://your-project-id.supabase.co"
+        scope: BUILD_TIME
+      - key: VITE_SUPABASE_ANON_KEY
+        value: "your-anon-key-from-supabase-dashboard"
+        scope: BUILD_TIME
+
+    routes:
+      - path: /
+        preserve_path_prefix: true
+
+# Database (using Supabase cloud - no local database needed)
+# All data persistence handled by Supabase PostgreSQL
+
+# Alerts for production monitoring
+alerts:
+  - rule: DEPLOYMENT_FAILED
+    disabled: false
+  - rule: DOMAIN_FAILED
+    disabled: false
+  - rule: CPU_UTILIZATION
+    disabled: false
+    value: 80
+    operator: GREATER_THAN
+    window: TEN_MINUTES
+  - rule: MEM_UTILIZATION
+    disabled: false
+    value: 85
+    operator: GREATER_THAN
+    window: TEN_MINUTES
