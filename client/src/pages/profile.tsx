@@ -14,9 +14,7 @@ import {
   Trophy,
   Calendar,
   Edit,
-  Ruler,
-  Scale,
-  TrendingUp
+  Scale
 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -244,10 +242,10 @@ export default function Profile() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="height">Height (cm)</Label>
+                  <Label htmlFor="height">Height (inches)</Label>
                   <Input 
                     id="height" 
-                    value={isEditing ? profileForm.height : '170'} 
+                    value={isEditing ? profileForm.height : '67'} 
                     disabled={!isEditing}
                     type="number"
                     onChange={(e) => setProfileForm(prev => ({ ...prev, height: e.target.value }))}

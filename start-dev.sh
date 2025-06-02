@@ -2,7 +2,17 @@
 # PERMANENT FIX for WSL dev server access from Windows
 
 # Get WSL IP
-WSL_IP=$(ip addr show eth0 | grep "inet " | awk '{print $2}' | cut -d/ -f1)
+WSL_IP=$(ip addr show eth0 2>/dev/null | grep "inet " | awk '{print $2}' | cut -d/ -f1)
+
+if [ -z "$WSL_IP" ]; then
+  echo "⚠️  Warning: Could not detect WSL IP address"
+  echo "🔍 Available interfaces:"
+  ip addr show | grep -E "^[0-9]+:" | awk '{print $2}' | tr -d ':'
+  echo ""
+  echo "📝 Starting server on localhost only..."
+  npm run dev
+  exit 1
+fi
 
 echo "=========================================="
 echo "🚀 Starting FitForge Development Server"

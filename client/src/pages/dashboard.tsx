@@ -288,7 +288,7 @@ export default function Dashboard() {
                       const isToday = sessionDate.toDateString() === new Date().toDateString();
                       const exercises = Array.isArray(session.exercises) ? session.exercises : [];
                       const exerciseCount = exercises.length;
-                      const totalSets = exercises.reduce((sum: number, ex: any) => sum + (ex.sets?.length || 0), 0);
+                      const totalSets = exercises.reduce((sum: number, ex: {sets?: any[]}) => sum + (ex.sets?.length || 0), 0);
                       
                       return (
                         <div key={session.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
@@ -356,7 +356,7 @@ export default function Dashboard() {
               <CardContent>
                 {achievements.length > 0 ? (
                   <div className="space-y-4">
-                    {achievements.slice(0, 3).map((achievement: any) => (
+                    {achievements.slice(0, 3).map((achievement: CalculatedAchievement) => (
                       <div key={achievement.id} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg">
                         <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center flex-shrink-0">
                           {achievement.icon ? (

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, Dumbbell, Target, Users, ChevronRight, Activity, Clock } from "lucide-react";
+import { Search, Filter, Dumbbell, Target, ChevronRight, Activity } from "lucide-react";
 import type { Exercise } from "@/lib/supabase";
 
 interface ExerciseWithDetails {
@@ -94,9 +94,9 @@ export default function Exercises() {
         return false;
       }
 
-      // Difficulty filter
-      const difficulty = exercise.difficultyLevel || exercise.difficulty;
-      if (selectedDifficulty !== "all" && difficulty !== selectedDifficulty) {
+      // Difficulty filter (case-insensitive)
+      const difficulty = (exercise.difficultyLevel || exercise.difficulty || '').toLowerCase();
+      if (selectedDifficulty !== "all" && difficulty !== selectedDifficulty.toLowerCase()) {
         return false;
       }
 

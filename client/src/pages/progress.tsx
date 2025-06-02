@@ -142,7 +142,7 @@ export default function Progress() {
                     const isExpanded = expandedSession === session.id;
                     const exercises = Array.isArray(session.exercises) ? session.exercises : [];
                     const exerciseCount = exercises.length;
-                    const totalSets = exercises.reduce((sum: number, ex: any) => sum + (ex.sets?.length || 0), 0);
+                    const totalSets = exercises.reduce((sum: number, ex: {sets?: any[]}) => sum + (ex.sets?.length || 0), 0);
                     
                     return (
                       <Card key={session.id} className="overflow-hidden">
@@ -191,7 +191,7 @@ export default function Progress() {
                           <div className="border-t bg-muted/20 p-4">
                             <h5 className="font-medium mb-3">Exercise Details</h5>
                             <div className="space-y-3">
-                              {exercises.map((exercise: any, index: number) => (
+                              {exercises.map((exercise: {exerciseName: string, sets?: {weight: number, reps: number}[]}, index: number) => (
                                 <div key={index} className="bg-background rounded-lg p-3">
                                   <h6 className="font-medium mb-2">{exercise.exerciseName}</h6>
                                   <div className="grid grid-cols-4 gap-2 text-sm">
@@ -199,7 +199,7 @@ export default function Progress() {
                                     <div className="text-muted-foreground">Weight</div>
                                     <div className="text-muted-foreground">Reps</div>
                                     <div className="text-muted-foreground">Volume</div>
-                                    {exercise.sets?.map((set: any, setIndex: number) => (
+                                    {exercise.sets?.map((set: {weight: number, reps: number}, setIndex: number) => (
                                       <React.Fragment key={setIndex}>
                                         <div>{setIndex + 1}</div>
                                         <div>{set.weight} lbs</div>
