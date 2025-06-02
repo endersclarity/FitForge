@@ -3,11 +3,15 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+// For production demo, use fallback values if environment variables are missing
+const fallbackUrl = 'https://demo.supabase.co'
+const fallbackKey = 'demo-anon-key'
+
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+  console.warn('Missing Supabase environment variables - using demo mode')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(supabaseUrl || fallbackUrl, supabaseAnonKey || fallbackKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -235,10 +239,25 @@ export type GoalCheckIn = {
   created_at: string
 }
 
+// Check if we're in demo mode
+const isDemoMode = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY
+
+// Helper to handle demo mode gracefully
+const handleDemoMode = <T>(fallbackValue: T) => {
+  if (isDemoMode) {
+    console.warn('Database operation called in demo mode - returning fallback value')
+    return Promise.resolve(fallbackValue)
+  }
+  return null
+}
+
 // Database helpers
 export const db = {
   // Profiles
   async getProfile(userId: string): Promise<Profile | null> {
+    const demo = handleDemoMode(null)
+    if (demo) return demo
+    
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -263,6 +282,9 @@ export const db = {
 
   // Exercises
   async getExercises(): Promise<Exercise[]> {
+    const demo = handleDemoMode([])
+    if (demo) return demo
+    
     const { data, error } = await supabase
       .from('exercises')
       .select('*')

@@ -31,7 +31,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [location] = useLocation();
   
   // Debug route changes
@@ -52,6 +52,18 @@ function Router() {
       console.error('❌ Data migration failed:', error);
     }
   });
+
+  // Show loading screen while auth is initializing
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading FitForge...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -134,14 +146,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <AuthProvider>
-          <WorkoutSessionProvider>
-            <TooltipProvider>
-              <Toaster />
+        <TooltipProvider>
+          <Toaster />
+          <AuthProvider>
+            <WorkoutSessionProvider>
               <Router />
-            </TooltipProvider>
-          </WorkoutSessionProvider>
-        </AuthProvider>
+            </WorkoutSessionProvider>
+          </AuthProvider>
+        </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
