@@ -10,7 +10,7 @@ static_sites:
     source_dir: /
     github:
       repo: endersclarity/FitForge
-      branch: main
+      branch: master
       deploy_on_push: true
     build_command: |
       npm ci &&
