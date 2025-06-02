@@ -21,6 +21,7 @@ import NewGoal from "@/pages/new-goal";
 import Community from "@/pages/community";
 import Profile from "@/pages/profile";
 import Nutrition from "@/pages/nutrition";
+import Exercises from "@/pages/exercises";
 import StartWorkout from "@/pages/start-workout";
 import TestSupabase from "@/pages/test-supabase";
 // import WorkoutDetail from "@/pages/workout-detail";
@@ -89,6 +90,11 @@ function Router() {
         <Route path="/progress">
           <ProtectedRoute>
             <Progress />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/exercises">
+          <ProtectedRoute>
+            <Exercises />
           </ProtectedRoute>
         </Route>
         <Route path="/goals">

@@ -1,255 +1,100 @@
 {
   "tasks": [
     {
-      "id": "goals-db-schema-1",
-      "title": "Design user_goals table schema for Supabase",
-      "description": "Create comprehensive database schema for user_goals table including goal types (weight_loss, strength_gain, body_composition), target values, deadlines, progress tracking, and RLS policies for user data isolation",
+      "id": "fix-5-exercise-browser",
+      "title": "Create Exercise Database Browser Page",
+      "description": "Build a dedicated page where users can browse all 38 exercises with search and filter functionality",
       "priority": "high",
-      "status": "completed",
-      "category": "database",
+      "status": "todo",
+      "category": "frontend",
+      "estimatedHours": 4,
+      "dependencies": [],
+      "acceptanceCriteria": [
+        "Create /exercises route and page component",
+        "Display all 38 exercises in a grid/list view",
+        "Implement search by exercise name",
+        "Add filters for muscle group, equipment, difficulty",
+        "Create exercise detail modal showing full information",
+        "Mobile responsive design"
+      ],
+      "branch": "fix/production-deployment-broken",
+      "day": 1
+    },
+    {
+      "id": "fix-7-workout-history",
+      "title": "Add Workout History View",
+      "description": "Create a section to view past workout sessions with details",
+      "priority": "high",
+      "status": "todo",
+      "category": "frontend",
       "estimatedHours": 3,
       "dependencies": [],
       "acceptanceCriteria": [
-        "user_goals table created in Supabase with proper column types",
-        "RLS policies implemented for user data isolation",
-        "Goal types enum defined (weight_loss, strength_gain, body_composition)",
-        "Foreign key relationships to users table established",
-        "Indexes created for performance on user_id and goal_type"
+        "Add workout history section to dashboard or create dedicated page",
+        "Fetch and display workout sessions from API",
+        "Show workout date, exercises, sets, total volume",
+        "Expandable details for each session",
+        "Sorted by date (newest first)",
+        "Handle empty state for new users"
       ],
-      "branch": "feature/user-goals-system",
+      "branch": "fix/production-deployment-broken",
       "day": 1
     },
     {
-      "id": "goals-db-crud-2",
-      "title": "Implement goal CRUD operations in Supabase service",
-      "description": "Create TypeScript service functions for goal creation, reading, updating, and deletion with proper error handling and type safety",
+      "id": "fix-10-body-metrics",
+      "title": "Implement Body Metrics Input",
+      "description": "Add forms for users to track weight, measurements, and body composition",
       "priority": "high",
-      "status": "completed",
-      "category": "backend",
-      "estimatedHours": 4,
-      "dependencies": ["goals-db-schema-1"],
-      "acceptanceCriteria": [
-        "createGoal function with Zod validation",
-        "getUserGoals function with filtering and sorting",
-        "updateGoal function with partial updates",
-        "deleteGoal function with cascade handling",
-        "All functions have proper TypeScript types and error handling"
-      ],
-      "branch": "feature/user-goals-system",
-      "day": 1
-    },
-    {
-      "id": "goals-types-3",
-      "title": "Define TypeScript interfaces for goal system",
-      "description": "Create comprehensive TypeScript type definitions for goals, progress tracking, and calculation results to match database schema",
-      "priority": "high",
-      "status": "completed",
-      "category": "types",
-      "estimatedHours": 2,
-      "dependencies": ["goals-db-schema-1"],
-      "acceptanceCriteria": [
-        "Goal interface with all required properties",
-        "GoalType enum (weight_loss, strength_gain, body_composition)",
-        "ProgressCalculation interface for formula results",
-        "GoalFormData interface for UI form validation",
-        "Export types from main lib/supabase.ts file"
-      ],
-      "branch": "feature/user-goals-system",
-      "day": 1
-    },
-    {
-      "id": "goals-forms-4",
-      "title": "Build goal setting React forms with validation",
-      "description": "Create user-friendly forms for setting weight loss, strength gain, and body composition goals with date pickers and real-time validation",
-      "priority": "high",
-      "status": "completed",
+      "status": "todo",
       "category": "frontend",
       "estimatedHours": 5,
-      "dependencies": ["goals-types-3", "goals-db-crud-2"],
+      "dependencies": [],
       "acceptanceCriteria": [
-        "GoalForm component with goal type selection",
-        "Weight loss form with target weight and deadline",
-        "Strength gain form with exercise and target weight/reps",
-        "Body composition form with target body fat percentage",
-        "Zod validation with helpful error messages",
-        "Date picker integration with react-day-picker"
+        "Add body metrics section to profile page",
+        "Create weight input form with date",
+        "Add body measurements form (chest, waist, arms)",
+        "Connect to /api/body-stats endpoint",
+        "Show current vs starting metrics",
+        "Display weight progress chart"
       ],
-      "branch": "feature/user-goals-system",
+      "branch": "fix/production-deployment-broken",
       "day": 2
     },
     {
-      "id": "goals-progress-engine-5",
-      "title": "Implement progress calculation engine with transparent formulas",
-      "description": "Create calculation engine that computes goal progress with transparent formulas showing data sources and methodology",
-      "priority": "high",
-      "status": "completed",
-      "category": "backend",
-      "estimatedHours": 4,
-      "dependencies": ["goals-db-crud-2"],
-      "acceptanceCriteria": [
-        "calculateGoalProgress function with formula transparency",
-        "Weight loss progress: (start_weight - current_weight) / (start_weight - target_weight) * 100",
-        "Strength progress based on workout session data",
-        "Body composition progress calculation",
-        "Data source attribution: 'Based on X workouts since Y date'",
-        "Handle edge cases: no progress data, goal achieved, etc."
-      ],
-      "branch": "feature/user-goals-system",
-      "day": 2
-    },
-    {
-      "id": "goals-dashboard-6",
-      "title": "Create goal progress dashboard UI component",
-      "description": "Build visual dashboard showing goal progress with charts, percentages, and milestone tracking using real user data",
+      "id": "fix-9-achievements",
+      "title": "Implement Basic Achievements System",
+      "description": "Create simple achievements to motivate users or hide the empty section",
       "priority": "medium",
-      "status": "completed",
-      "category": "frontend",
-      "estimatedHours": 6,
-      "dependencies": ["goals-progress-engine-5", "goals-forms-4"],
-      "acceptanceCriteria": [
-        "GoalDashboard component with progress overview",
-        "Individual goal cards with progress bars and percentages",
-        "Chart visualization using recharts library",
-        "Formula display showing calculation methodology",
-        "Data source information for transparency",
-        "Milestone indicators and achievement badges"
-      ],
-      "branch": "feature/user-goals-system",
-      "day": 2
-    },
-    {
-      "id": "goals-navigation-7",
-      "title": "Add goals navigation and routing",
-      "description": "Integrate goal system into main navigation and create proper routing for goal management pages",
-      "priority": "medium",
-      "status": "completed",
+      "status": "todo",
       "category": "frontend",
       "estimatedHours": 2,
-      "dependencies": ["goals-dashboard-6"],
+      "dependencies": [],
       "acceptanceCriteria": [
-        "Goals link added to main navigation menu",
-        "Route configuration for /goals and /goals/new",
-        "Breadcrumb navigation within goal system",
-        "Back navigation from goal forms to dashboard",
-        "Proper page titles and meta information"
+        "Define 5-10 basic achievements",
+        "Create achievement checking logic",
+        "Update UI to show earned achievements",
+        "OR hide empty achievements section"
       ],
-      "branch": "feature/user-goals-system",
-      "day": 3
-    },
-    {
-      "id": "goals-integration-8",
-      "title": "Integrate goal progress with existing workout data",
-      "description": "Connect goal progress calculations with existing workout sessions and exercise data for meaningful progress tracking",
-      "priority": "high",
-      "status": "completed",
-      "category": "integration",
-      "estimatedHours": 4,
-      "dependencies": ["goals-progress-engine-5"],
-      "acceptanceCriteria": [
-        "Link strength goals to workout exercise data",
-        "Calculate progress from actual logged sets and reps",
-        "Weight goals integrate with user profile weight tracking",
-        "Body composition goals connect to body stats (when available)",
-        "Real-time progress updates when new workouts are logged",
-        "Historical progress timeline based on workout dates"
-      ],
-      "branch": "feature/user-goals-system",
-      "day": 3
-    },
-    {
-      "id": "goals-missing-data-9",
-      "title": "Handle missing data scenarios gracefully",
-      "description": "Implement clear UI for cases when users haven't entered enough data for meaningful progress calculations",
-      "priority": "medium",
-      "status": "completed",
-      "category": "frontend",
-      "estimatedHours": 3,
-      "dependencies": ["goals-dashboard-6"],
-      "acceptanceCriteria": [
-        "Empty state UI for users with no goals set",
-        "Insufficient data warnings with clear next steps",
-        "Onboarding flow for first-time goal setting",
-        "Helpful tips for data entry to enable progress tracking",
-        "Link to relevant data entry forms (weight, workouts, etc.)",
-        "Progress calculation requirements clearly explained"
-      ],
-      "branch": "feature/user-goals-system",
-      "day": 3
-    },
-    {
-      "id": "goals-testing-10",
-      "title": "Write comprehensive tests for goal system",
-      "description": "Create unit tests for goal calculation engine and integration tests for full goal workflow",
-      "priority": "medium",
-      "status": "completed",
-      "category": "testing",
-      "estimatedHours": 4,
-      "dependencies": ["goals-integration-8"],
-      "acceptanceCriteria": [
-        "Unit tests for progress calculation functions",
-        "Integration tests for goal CRUD operations",
-        "Frontend component tests for goal forms",
-        "Edge case testing: zero progress, negative progress, etc.",
-        "Formula accuracy validation with known test data",
-        "Error handling tests for missing data scenarios"
-      ],
-      "branch": "feature/user-goals-system",
-      "day": 3
-    },
-    {
-      "id": "goals-typescript-11",
-      "title": "Ensure TypeScript compilation remains clean",
-      "description": "Validate all new goal system code compiles without TypeScript errors and maintains type safety",
-      "priority": "high",
-      "status": "completed",
-      "category": "quality",
-      "estimatedHours": 1,
-      "dependencies": ["goals-testing-10"],
-      "acceptanceCriteria": [
-        "npm run check passes with zero TypeScript errors",
-        "All goal-related functions have proper type definitions",
-        "Zod schemas match TypeScript interfaces",
-        "Import/export statements are properly typed",
-        "No any types used in goal system code"
-      ],
-      "branch": "feature/user-goals-system",
-      "day": 3
-    },
-    {
-      "id": "goals-documentation-12",
-      "title": "Document goal system architecture and usage",
-      "description": "Create documentation for goal system including database schema, API usage, and user workflow",
-      "priority": "low",
-      "status": "completed",
-      "category": "documentation",
-      "estimatedHours": 2,
-      "dependencies": ["goals-typescript-11"],
-      "acceptanceCriteria": [
-        "Database schema documentation with ERD",
-        "API function documentation with examples",
-        "User workflow documentation with screenshots",
-        "Formula documentation with mathematical explanations",
-        "Troubleshooting guide for common issues",
-        "Update BRANCH_README.md with completion status"
-      ],
-      "branch": "feature/user-goals-system",
-      "day": 3
+      "branch": "fix/production-deployment-broken",
+      "day": 2
     }
   ],
   "metadata": {
-    "generated": "2025-06-01T19:35:48.000Z",
-    "branch": "feature/user-goals-system",
-    "totalTasks": 12,
-    "estimatedTotalHours": 40,
+    "generated": "2024-06-02T16:20:00.000Z",
+    "source": "masterfix.md",
+    "branch": "fix/production-deployment-broken",
+    "totalTasks": 4,
+    "estimatedTotalHours": 14,
+    "fixesCompleted": 6,
+    "fixesRemaining": 4,
     "priorities": {
-      "high": 6,
-      "medium": 4,
-      "low": 2
+      "high": 3,
+      "medium": 1,
+      "low": 0
     },
     "timeline": {
-      "day1": 4,
-      "day2": 3,
-      "day3": 5
+      "day1": 2,
+      "day2": 2
     }
   }
 }

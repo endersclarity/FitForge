@@ -5,7 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { WorkoutSession, UserStats, Achievement, Challenge } from "@shared/schema";
+import { WorkoutSession, UserStats, Challenge } from "@shared/schema";
+
+// Custom achievement type for calculated achievements
+interface CalculatedAchievement {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  unlockedAt: string;
+  icon: string;
+}
 import { 
   Calendar, 
   TrendingUp, 
@@ -30,9 +40,80 @@ export default function Dashboard() {
     queryKey: ["/api/user-stats/latest"],
   });
 
-  const { data: achievements = [] } = useQuery<Achievement[]>({
+  const { data: achievementsData = [] } = useQuery({
     queryKey: ["/api/achievements"],
   });
+
+  // Calculate achievements based on workout data
+  const calculateAchievements = (): CalculatedAchievement[] => {
+    const calculatedAchievements: CalculatedAchievement[] = [];
+    const now = new Date();
+    
+    // First Workout Achievement
+    if (recentSessions.length > 0) {
+      calculatedAchievements.push({
+        id: 1,
+        title: "First Steps",
+        description: "Completed your first workout session",
+        category: "milestone",
+        unlockedAt: recentSessions[recentSessions.length - 1].createdAt.toISOString(),
+        icon: "🎯"
+      });
+    }
+    
+    // 5 Workouts Achievement
+    if (recentSessions.length >= 5) {
+      calculatedAchievements.push({
+        id: 2,
+        title: "Getting Consistent",
+        description: "Completed 5 workout sessions",
+        category: "milestone",
+        unlockedAt: recentSessions[recentSessions.length - 5].createdAt.toISOString(),
+        icon: "💪"
+      });
+    }
+    
+    // 10 Workouts Achievement
+    if (recentSessions.length >= 10) {
+      calculatedAchievements.push({
+        id: 3,
+        title: "Dedicated Athlete",
+        description: "Completed 10 workout sessions",
+        category: "milestone",
+        unlockedAt: recentSessions[recentSessions.length - 10].createdAt.toISOString(),
+        icon: "🏆"
+      });
+    }
+    
+    // Volume Achievements
+    const totalVolumeLifted = recentSessions.reduce((sum, session) => sum + (session.totalVolume || 0), 0);
+    if (totalVolumeLifted >= 10000) {
+      calculatedAchievements.push({
+        id: 4,
+        title: "Heavy Lifter",
+        description: "Lifted over 10,000 lbs total volume",
+        category: "strength",
+        unlockedAt: now.toISOString(),
+        icon: "🏋️"
+      });
+    }
+    
+    // Streak Achievement
+    if (todayStats.workoutsThisWeek >= 3) {
+      calculatedAchievements.push({
+        id: 5,
+        title: "Week Warrior",
+        description: "Completed 3+ workouts this week",
+        category: "consistency",
+        unlockedAt: now.toISOString(),
+        icon: "🔥"
+      });
+    }
+    
+    return calculatedAchievements;
+  };
+  
+  const achievements = Array.isArray(achievementsData) && achievementsData.length > 0 ? achievementsData : calculateAchievements();
 
   const { data: challenges = [] } = useQuery<Challenge[]>({
     queryKey: ["/api/challenges"],
@@ -202,24 +283,48 @@ export default function Dashboard() {
               <CardContent>
                 {recentSessions.length > 0 ? (
                   <div className="space-y-4">
-                    {recentSessions.slice(0, 3).map((session) => (
-                      <div key={session.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                        <div>
-                          <p className="font-medium">Workout Session</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(session.createdAt).toLocaleDateString()}
-                          </p>
+                    {recentSessions.slice(0, 5).map((session) => {
+                      const sessionDate = new Date(session.createdAt);
+                      const isToday = sessionDate.toDateString() === new Date().toDateString();
+                      const exercises = Array.isArray(session.exercises) ? session.exercises : [];
+                      const exerciseCount = exercises.length;
+                      const totalSets = exercises.reduce((sum: number, ex: any) => sum + (ex.sets?.length || 0), 0);
+                      
+                      return (
+                        <div key={session.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">
+                                {session.workoutType ? 
+                                  session.workoutType.replace(/([A-Z])/g, ' $1').trim() : 
+                                  'Workout Session'}
+                              </p>
+                              {isToday && (
+                                <Badge variant="secondary" className="text-xs">Today</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {sessionDate.toLocaleDateString()} at {sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            {exerciseCount > 0 && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {exerciseCount} exercises • {totalSets} sets
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-primary">
+                              {session.totalDuration || 0} min
+                            </p>
+                            {session.totalVolume && session.totalVolume > 0 && (
+                              <p className="text-sm text-muted-foreground">
+                                {session.totalVolume.toLocaleString()} lbs
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-primary">
-                            {session.totalDuration || 0} min
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {session.caloriesBurned || 0} cal
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-8">
@@ -241,25 +346,24 @@ export default function Dashboard() {
                     <Trophy className="w-5 h-5 mr-2 text-accent" />
                     Recent Achievements
                   </CardTitle>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      // TODO: Create achievements page
-                      alert("Achievements page coming soon! Track your progress in the meantime.");
-                    }}
-                  >
-                    See All
-                  </Button>
+                  {achievements.length > 3 && (
+                    <Badge variant="secondary">
+                      +{achievements.length - 3} more
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
                 {achievements.length > 0 ? (
                   <div className="space-y-4">
-                    {achievements.slice(0, 3).map((achievement) => (
+                    {achievements.slice(0, 3).map((achievement: any) => (
                       <div key={achievement.id} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg">
                         <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Trophy className="w-5 h-5 text-accent" />
+                          {achievement.icon ? (
+                            <span className="text-xl">{achievement.icon}</span>
+                          ) : (
+                            <Trophy className="w-5 h-5 text-accent" />
+                          )}
                         </div>
                         <div className="flex-1">
                           <p className="font-medium">{achievement.title}</p>

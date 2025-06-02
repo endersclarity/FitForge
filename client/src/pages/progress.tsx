@@ -1,12 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Activity, Target, Calendar, Weight } from "lucide-react";
+import { TrendingUp, Activity, Target, Calendar, Weight, ChevronDown, ChevronUp, Dumbbell, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { WorkoutSession } from "@shared/schema";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export default function Progress() {
+  const [expandedSession, setExpandedSession] = useState<number | null>(null);
+  
   // Fetch real workout data
-  const { data: workoutSessions = [] } = useQuery<WorkoutSession[]>({
+  const { data: workoutSessions = [], isLoading } = useQuery<WorkoutSession[]>({
     queryKey: ["/api/workout-sessions"],
   });
 
@@ -106,6 +110,116 @@ export default function Progress() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Workout History */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Calendar className="w-5 h-5 mr-2 text-primary" />
+              Workout History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading workout history...</p>
+              </div>
+            ) : workoutSessions.length === 0 ? (
+              <div className="text-center py-8">
+                <Activity className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-2">No workout history yet</p>
+                <p className="text-sm text-muted-foreground">
+                  Complete your first workout to start building your history
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {[...workoutSessions]
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .map((session) => {
+                    const sessionDate = new Date(session.createdAt);
+                    const isExpanded = expandedSession === session.id;
+                    const exercises = Array.isArray(session.exercises) ? session.exercises : [];
+                    const exerciseCount = exercises.length;
+                    const totalSets = exercises.reduce((sum: number, ex: any) => sum + (ex.sets?.length || 0), 0);
+                    
+                    return (
+                      <Card key={session.id} className="overflow-hidden">
+                        <div 
+                          className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => setExpandedSession(isExpanded ? null : session.id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-semibold">
+                                  {session.workoutType ? 
+                                    session.workoutType.replace(/([A-Z])/g, ' $1').trim() : 
+                                    'Workout Session'}
+                                </h4>
+                                {session.status === 'completed' && (
+                                  <Badge variant="secondary" className="text-xs">Completed</Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-4 h-4" />
+                                  {sessionDate.toLocaleDateString()}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-4 h-4" />
+                                  {session.totalDuration || 0} min
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Dumbbell className="w-4 h-4" />
+                                  {exerciseCount} exercises
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Weight className="w-4 h-4" />
+                                  {session.totalVolume?.toLocaleString() || 0} lbs
+                                </span>
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="sm">
+                              {isExpanded ? <ChevronUp /> : <ChevronDown />}
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {isExpanded && exercises.length > 0 && (
+                          <div className="border-t bg-muted/20 p-4">
+                            <h5 className="font-medium mb-3">Exercise Details</h5>
+                            <div className="space-y-3">
+                              {exercises.map((exercise: any, index: number) => (
+                                <div key={index} className="bg-background rounded-lg p-3">
+                                  <h6 className="font-medium mb-2">{exercise.exerciseName}</h6>
+                                  <div className="grid grid-cols-4 gap-2 text-sm">
+                                    <div className="text-muted-foreground">Set</div>
+                                    <div className="text-muted-foreground">Weight</div>
+                                    <div className="text-muted-foreground">Reps</div>
+                                    <div className="text-muted-foreground">Volume</div>
+                                    {exercise.sets?.map((set: any, setIndex: number) => (
+                                      <React.Fragment key={setIndex}>
+                                        <div>{setIndex + 1}</div>
+                                        <div>{set.weight} lbs</div>
+                                        <div>{set.reps}</div>
+                                        <div>{set.weight * set.reps} lbs</div>
+                                      </React.Fragment>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Progress Message */}
         <Card className="mt-8">
