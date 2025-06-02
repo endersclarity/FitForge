@@ -2,8 +2,9 @@
 // Transparent formula-based progress tracking with data source attribution
 // Created: June 1, 2025
 
-import { supabase, db } from '@/lib/supabase';
+import { supabase, db, PersonalRecord, WorkoutSession, WorkoutSet } from '@/lib/supabase';
 import { Goal, GoalType } from '@/services/supabase-goal-service';
+import { workoutService } from '@/services/supabase-workout-service';
 
 // ============================================================================
 // PROGRESS CALCULATION INTERFACES
@@ -55,6 +56,144 @@ export interface BodyCompositionProgressData {
 // ============================================================================
 
 export class GoalProgressEngine {
+  
+  /**
+   * Get available exercises for strength goal creation
+   */
+  static async getAvailableExercisesForStrengthGoals(): Promise<Array<{
+    id: string;
+    name: string;
+    category: string;
+    recent_max_weight?: number;
+    recent_workout_count?: number;
+  }>> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Get all strength training exercises
+      const exercises = await workoutService.getAllExercises();
+      const strengthExercises = exercises.filter(ex => 
+        ex.workout_type === 'strength' || 
+        ex.category === 'strength'
+      );
+
+      // Get user's recent workout history for each exercise
+      const exercisesWithData = await Promise.all(
+        strengthExercises.map(async (exercise) => {
+          try {
+            // Get recent workout sessions (last 90 days)
+            const recentSessions = await db.getUserWorkoutSessions(user.id, 50);
+            const last90Days = new Date();
+            last90Days.setDate(last90Days.getDate() - 90);
+            
+            const relevantSessions = recentSessions.filter(session => 
+              new Date(session.start_time) >= last90Days &&
+              session.completion_status === 'completed'
+            );
+
+            let workoutCount = 0;
+            let maxWeight = 0;
+
+            // Check each session for this exercise
+            for (const session of relevantSessions) {
+              const workoutExercises = await db.getWorkoutExercises(session.id);
+              const targetExercise = workoutExercises.find(ex => ex.exercise_id === exercise.id);
+              
+              if (targetExercise) {
+                workoutCount++;
+                const sets = await db.getWorkoutSets(targetExercise.id);
+                if (sets.length > 0) {
+                  const sessionMax = Math.max(...sets.map(set => set.weight_lbs));
+                  maxWeight = Math.max(maxWeight, sessionMax);
+                }
+              }
+            }
+
+            return {
+              id: exercise.id,
+              name: exercise.exercise_name,
+              category: exercise.category,
+              recent_max_weight: maxWeight > 0 ? maxWeight : undefined,
+              recent_workout_count: workoutCount
+            };
+          } catch (error) {
+            // If we can't get data for this exercise, return basic info
+            return {
+              id: exercise.id,
+              name: exercise.exercise_name,
+              category: exercise.category,
+              recent_max_weight: undefined,
+              recent_workout_count: 0
+            };
+          }
+        })
+      );
+
+      // Sort by recent activity (exercises with recent workouts first)
+      return exercisesWithData.sort((a, b) => {
+        if (a.recent_workout_count !== b.recent_workout_count) {
+          return (b.recent_workout_count || 0) - (a.recent_workout_count || 0);
+        }
+        return a.name.localeCompare(b.name);
+      });
+
+    } catch (error) {
+      console.error('Error getting exercises for strength goals:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get user's current weight for weight loss goals
+   */
+  static async getCurrentWeightForGoals(): Promise<number | null> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      // Get most recent weight measurement
+      const bodyStats = await db.getUserBodyStats(user.id, 10);
+      const recentWeights = bodyStats.filter(stat => stat.weight_lbs !== null);
+      
+      if (recentWeights.length === 0) return null;
+
+      const latestWeight = recentWeights.sort((a, b) => 
+        new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime()
+      )[0];
+
+      return latestWeight.weight_lbs;
+    } catch (error) {
+      console.error('Error getting current weight:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get user's current body fat percentage for body composition goals
+   */
+  static async getCurrentBodyFatForGoals(): Promise<number | null> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      // Get most recent body fat measurement
+      const bodyStats = await db.getUserBodyStats(user.id, 10);
+      const recentMeasurements = bodyStats.filter(stat => stat.body_fat_percentage !== null);
+      
+      if (recentMeasurements.length === 0) return null;
+
+      const latestMeasurement = recentMeasurements.sort((a, b) => 
+        new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime()
+      )[0];
+
+      return latestMeasurement.body_fat_percentage;
+    } catch (error) {
+      console.error('Error getting current body fat:', error);
+      return null;
+    }
+  }
+
   
   /**
    * Calculate progress for a specific goal with transparent formulas

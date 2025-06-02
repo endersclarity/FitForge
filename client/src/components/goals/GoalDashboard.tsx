@@ -2,7 +2,7 @@
 // Comprehensive goal overview with progress tracking and missing data handling
 
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { 
   Target, 
   Plus, 
@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { ProgressChart } from './ProgressChart';
+import { GoalOnboarding } from './GoalOnboarding';
 import { getUserGoals, Goal, GoalType } from '@/services/supabase-goal-service';
 import { useGoalProgress } from '@/hooks/use-goal-progress';
 import { useAuth } from '@/hooks/use-auth';
@@ -52,7 +53,7 @@ interface MissingDataSuggestion {
 }
 
 export function GoalDashboard({ onCreateGoal, onViewGoal }: GoalDashboardProps) {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
   const { 
@@ -66,6 +67,7 @@ export function GoalDashboard({ onCreateGoal, onViewGoal }: GoalDashboardProps) 
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
     totalGoals: 0,
     activeGoals: 0,
@@ -81,6 +83,16 @@ export function GoalDashboard({ onCreateGoal, onViewGoal }: GoalDashboardProps) 
       loadGoalsAndProgress();
     }
   }, [user]);
+
+  // Check if user needs onboarding
+  useEffect(() => {
+    if (user && goals.length === 0 && !isLoading) {
+      const hasSeenOnboarding = localStorage.getItem(`goals_onboarding_${user.id}`) === 'completed';
+      if (!hasSeenOnboarding) {
+        setShowOnboarding(true);
+      }
+    }
+  }, [user, goals.length, isLoading]);
 
   const loadGoalsAndProgress = async () => {
     try {
@@ -192,6 +204,20 @@ export function GoalDashboard({ onCreateGoal, onViewGoal }: GoalDashboardProps) 
     }
   };
 
+  const handleOnboardingComplete = () => {
+    if (user) {
+      localStorage.setItem(`goals_onboarding_${user.id}`, 'completed');
+    }
+    setShowOnboarding(false);
+  };
+
+  const handleOnboardingSkip = () => {
+    if (user) {
+      localStorage.setItem(`goals_onboarding_${user.id}`, 'completed');
+    }
+    setShowOnboarding(false);
+  };
+
   const getGoalTypeIcon = (type: GoalType) => {
     switch (type) {
       case 'weight_loss': return <Scale className="h-4 w-4" />;
@@ -260,7 +286,19 @@ export function GoalDashboard({ onCreateGoal, onViewGoal }: GoalDashboardProps) 
     );
   }
 
-  // Empty state - no goals
+  // Show onboarding for new users
+  if (showOnboarding) {
+    return (
+      <div className="py-8">
+        <GoalOnboarding 
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+        />
+      </div>
+    );
+  }
+
+  // Empty state - no goals (for users who skipped onboarding)
   if (goals.length === 0) {
     return (
       <div className="text-center py-12">
@@ -275,10 +313,20 @@ export function GoalDashboard({ onCreateGoal, onViewGoal }: GoalDashboardProps) 
         </p>
         
         <div className="space-y-4">
-          <Button onClick={onCreateGoal} size="lg">
-            <Plus className="h-5 w-5 mr-2" />
-            Create Your First Goal
-          </Button>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={onCreateGoal} size="lg">
+              <Plus className="h-5 w-5 mr-2" />
+              Create Your First Goal
+            </Button>
+            <Button 
+              variant="outline" 
+              size="lg"
+              onClick={() => setShowOnboarding(true)}
+            >
+              <Target className="h-5 w-5 mr-2" />
+              Learn About Goals
+            </Button>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mt-8">
             <Card className="text-center p-4">
@@ -371,7 +419,7 @@ export function GoalDashboard({ onCreateGoal, onViewGoal }: GoalDashboardProps) 
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => navigate(suggestion.link)}
+                    onClick={() => setLocation(suggestion.link)}
                     className="w-full"
                   >
                     {suggestion.action}

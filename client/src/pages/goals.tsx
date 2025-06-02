@@ -2,26 +2,26 @@
 // Main goals dashboard with overview and management
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { Target } from 'lucide-react';
 import { GoalDashboard } from '@/components/goals/GoalDashboard';
 import { useAuth } from '@/hooks/use-auth';
 
 export default function GoalsPage() {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { user } = useAuth();
 
   if (!user) {
-    navigate('/auth');
+    setLocation('/auth');
     return null;
   }
 
   const handleCreateGoal = () => {
-    navigate('/goals/new');
+    setLocation('/goals/new');
   };
 
   const handleViewGoal = (goalId: string) => {
-    navigate(`/goals/${goalId}`);
+    setLocation(`/goals/${goalId}`);
   };
 
   return (

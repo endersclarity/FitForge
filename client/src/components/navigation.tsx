@@ -24,6 +24,7 @@ export function Navigation() {
     { path: "/dashboard", label: "Dashboard" },
     { path: "/workouts", label: "Workouts" },
     { path: "/start-workout", label: "Start Workout" },
+    { path: "/goals", label: "Goals" },
     { path: "/progress", label: "Progress" },
     { path: "/community", label: "Community" },
   ];
