@@ -35,7 +35,7 @@
 }
 
 .dark {
-  --background: 240 6% 4%; /* #0A0A0B */
+  --background: 240 6% 12%; /* #1C1D21 - Lighter dark background */
   --foreground: 0 0% 98%; /* #FAFAFA */
   --muted: 240 6% 11%; /* #1A1B1E */
   --muted-foreground: 240 5% 65%; /* #9CA3AF */
@@ -72,6 +72,14 @@
 
   html {
     scroll-behavior: smooth;
+  }
+
+  /* Temporary fix to ensure content is visible */
+  #root {
+    position: relative;
+    z-index: 1;
+    background-color: var(--background);
+    min-height: 100vh;
   }
 }
 

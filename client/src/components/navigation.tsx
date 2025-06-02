@@ -34,7 +34,7 @@ export function Navigation() {
   const UserAvatar = () => (
     <div className="w-8 h-8 gradient-bg rounded-full flex items-center justify-center">
       <span className="text-white text-sm font-semibold">
-        {user ? `${user.firstName[0]}${user.lastName[0]}` : "U"}
+        {user ? user.email?.[0]?.toUpperCase() || "U" : "U"}
       </span>
     </div>
   );
@@ -134,8 +134,8 @@ export function Navigation() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{user.firstName} {user.lastName}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                    <p className="text-sm font-medium">{user.email}</p>
+                    <p className="text-xs text-muted-foreground">Fitness Enthusiast</p>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
