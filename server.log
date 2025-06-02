@@ -27,3 +27,6 @@ No fake data generated - using only real user workout sessions
 6:11:55 PM [vite] hmr update /src/components/workout/WorkoutSession.tsx, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
 6:12:49 PM [vite] hmr update /src/components/live-workout-session.tsx, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
 6:13:22 PM [vite] hmr update /src/pages/test-supabase.tsx, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
+7:21:34 PM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
+7:21:51 PM [vite] hmr update /src/pages/workouts.tsx, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
+7:22:00 PM [vite] hmr update /src/App.tsx?v=9Ycp0XwOxpDIH_UrID0H9, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9

@@ -64,17 +64,25 @@ export default function Workouts() {
   const [, setLocation] = useLocation();
 
   const handleStartWorkout = (workoutId: string) => {
-    console.log('🎯 handleStartWorkout called with:', workoutId);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎯 handleStartWorkout called with:', workoutId);
+    }
     // Navigate to workout session with the selected workout type
     const targetUrl = `/start-workout?type=${workoutId}`;
-    console.log('🧭 Navigating to:', targetUrl);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🧭 Navigating to:', targetUrl);
+    }
     setLocation(targetUrl);
-    console.log('✅ setLocation called successfully');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ setLocation called successfully');
+    }
   };
 
   // Test function to verify component is working
   React.useEffect(() => {
-    console.log('🏋️ Workouts component mounted successfully');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🏋️ Workouts component mounted successfully');
+    }
   }, []);
 
   return (

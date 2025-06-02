@@ -41,10 +41,12 @@ export default function StartWorkout() {
   const urlParams = new URLSearchParams(window.location.search);
   const workoutType = urlParams.get('type') || '';
   
-  console.log('🔍 StartWorkout component loaded with Supabase');
-  console.log('📍 Current URL:', window.location.href);
-  console.log('🎯 Workout type from URL:', workoutType);
-  console.log('🔗 URL params:', Object.fromEntries(urlParams));
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 StartWorkout component loaded with Supabase');
+    console.log('📍 Current URL:', window.location.href);
+    console.log('🎯 Workout type from URL:', workoutType);
+    console.log('🔗 URL params:', Object.fromEntries(urlParams));
+  }
   
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
   const [workoutStarted, setWorkoutStarted] = useState(false);

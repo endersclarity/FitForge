@@ -97,11 +97,13 @@ function Router() {
             <Nutrition />
           </ProtectedRoute>
         </Route>
-        <Route path="/test-supabase">
-          <ProtectedRoute>
-            <TestSupabase />
-          </ProtectedRoute>
-        </Route>
+        {process.env.NODE_ENV === 'development' && (
+          <Route path="/test-supabase">
+            <ProtectedRoute>
+              <TestSupabase />
+            </ProtectedRoute>
+          </Route>
+        )}
         {/* <Route path="/workout/:id">
           <ProtectedRoute>
             <WorkoutDetail />
