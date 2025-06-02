@@ -3,24 +3,32 @@
 // Real Data-Driven Goal Creation Interface
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { ArrowLeft, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GoalForm } from '@/components/goals/GoalForm';
-import { db, Exercise } from '@/lib/supabase';
+import { db } from '@/lib/supabase';
+
+interface ExerciseOption {
+  id: string;
+  name: string;
+  category: string;
+  recent_max_weight?: number;
+  recent_workout_count?: number;
+}
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 
 export default function NewGoalPage() {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [exercises, setExercises] = useState<ExerciseOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
-      navigate('/auth');
+      setLocation('/auth');
       return;
     }
 
@@ -28,7 +36,15 @@ export default function NewGoalPage() {
     const loadExercises = async () => {
       try {
         const exerciseData = await db.getExercises();
-        setExercises(exerciseData);
+        // Convert to ExerciseOption format
+        const exerciseOptions = exerciseData.map(ex => ({
+          id: ex.id,
+          name: ex.exercise_name,
+          category: ex.category,
+          recent_max_weight: undefined,
+          recent_workout_count: undefined
+        }));
+        setExercises(exerciseOptions);
       } catch (error) {
         console.error('Failed to load exercises:', error);
         toast({
@@ -42,7 +58,7 @@ export default function NewGoalPage() {
     };
 
     loadExercises();
-  }, [user, navigate, toast]);
+  }, [user, setLocation, toast]);
 
   const handleGoalCreated = (goalId: string) => {
     toast({
@@ -52,12 +68,12 @@ export default function NewGoalPage() {
     
     // Navigate to goals dashboard or specific goal view
     setTimeout(() => {
-      navigate('/goals');
+      setLocation('/goals');
     }, 1500);
   };
 
   const handleCancel = () => {
-    navigate('/goals');
+    setLocation('/goals');
   };
 
   if (!user) {
@@ -84,7 +100,7 @@ export default function NewGoalPage() {
         <div className="mb-8">
           <Button 
             variant="ghost" 
-            onClick={() => navigate('/goals')}
+            onClick={() => setLocation('/goals')}
             className="mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />

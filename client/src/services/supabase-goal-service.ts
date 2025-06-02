@@ -154,8 +154,25 @@ export const CreateGoalSchema = z.object({
   message: 'Required fields missing for selected goal type',
 });
 
-export const UpdateGoalSchema = CreateGoalSchema.partial().extend({
+export const UpdateGoalSchema = z.object({
   id: z.string().uuid('Invalid goal ID'),
+  goal_type: GoalTypeEnum.optional(),
+  goal_title: z.string().min(1, 'Goal title is required').max(255, 'Goal title must be less than 255 characters').optional(),
+  goal_description: z.string().max(1000, 'Description must be less than 1000 characters').optional(),
+  target_date: z.date().optional(),
+  target_weight_lbs: z.number().positive('Target weight must be positive').optional(),
+  target_body_fat_percentage: z.number().min(1, 'Body fat must be at least 1%').max(50, 'Body fat must be at most 50%').optional(),
+  target_exercise_id: z.string().optional(),
+  target_weight_for_exercise_lbs: z.number().positive('Exercise weight must be positive').optional(),
+  target_reps_for_exercise: z.number().int().positive('Reps must be a positive integer').optional(),
+  start_weight_lbs: z.number().positive('Start weight must be positive').optional(),
+  start_body_fat_percentage: z.number().min(1).max(50).optional(),
+  start_exercise_max_weight_lbs: z.number().positive().optional(),
+  start_exercise_max_reps: z.number().int().positive().optional(),
+  motivation_notes: z.string().max(500).optional(),
+  reward_description: z.string().max(255).optional(),
+  is_active: z.boolean().optional(),
+  priority_level: PriorityLevelEnum.optional(),
 });
 
 export const GoalFiltersSchema = z.object({
@@ -331,7 +348,7 @@ export async function getUserGoals(
 /**
  * Update a goal with partial data
  */
-export async function updateGoal(goalId: string, updates: Partial<GoalFormData>): Promise<Goal> {
+export async function updateGoal(goalId: string, updates: Partial<GoalFormData> & { is_achieved?: boolean; achieved_date?: string; current_progress_percentage?: number }): Promise<Goal> {
   try {
     // Validate input data
     const validatedData = UpdateGoalSchema.parse({ id: goalId, ...updates });

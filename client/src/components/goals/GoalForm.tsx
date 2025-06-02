@@ -27,12 +27,20 @@ import {
 } from '@/services/supabase-goal-service';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { Exercise } from '@/lib/supabase';
+// Simple exercise interface for goal creation
+interface ExerciseOption {
+  id: string;
+  name: string;
+  category: string;
+  recent_max_weight?: number;
+  recent_workout_count?: number;
+}
 
 interface GoalFormProps {
   onGoalCreated?: (goalId: string) => void;
   onCancel?: () => void;
-  exercises?: Exercise[];
+  exercises?: ExerciseOption[];
+  isLoadingExercises?: boolean;
 }
 
 export function GoalForm({ onGoalCreated, onCancel, exercises = [] }: GoalFormProps) {
@@ -333,7 +341,7 @@ export function GoalForm({ onGoalCreated, onCancel, exercises = [] }: GoalFormPr
                         <SelectContent>
                           {exercises.map((exercise) => (
                             <SelectItem key={exercise.id} value={exercise.id}>
-                              {exercise.exercise_name}
+                              {exercise.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
