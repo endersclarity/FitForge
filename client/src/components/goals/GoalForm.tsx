@@ -8,7 +8,6 @@ import { useForm } from 'react-hook-form';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,7 +46,6 @@ export function GoalForm({ onGoalCreated, onCancel, exercises = [] }: GoalFormPr
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedGoalType, setSelectedGoalType] = useState<GoalType | ''>('');
 
   const form = useForm<GoalFormData>({
     resolver: zodResolver(CreateGoalSchema),
@@ -155,10 +153,7 @@ export function GoalForm({ onGoalCreated, onCancel, exercises = [] }: GoalFormPr
                 <FormItem>
                   <FormLabel>Goal Type</FormLabel>
                   <Select 
-                    onValueChange={(value: GoalType) => {
-                      field.onChange(value);
-                      setSelectedGoalType(value);
-                    }} 
+                    onValueChange={field.onChange} 
                     defaultValue={field.value}
                   >
                     <FormControl>

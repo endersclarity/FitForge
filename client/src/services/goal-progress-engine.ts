@@ -55,12 +55,13 @@ export interface BodyCompositionProgressData {
 // PROGRESS CALCULATION ENGINE
 // ============================================================================
 
-export class GoalProgressEngine {
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace GoalProgressEngine {
   
   /**
    * Get available exercises for strength goal creation
    */
-  static async getAvailableExercisesForStrengthGoals(): Promise<Array<{
+  export async function getAvailableExercisesForStrengthGoals(): Promise<Array<{
     id: string;
     name: string;
     category: string;
@@ -147,7 +148,7 @@ export class GoalProgressEngine {
   /**
    * Get user's current weight for weight loss goals
    */
-  static async getCurrentWeightForGoals(): Promise<number | null> {
+  export async function getCurrentWeightForGoals(): Promise<number | null> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
@@ -172,7 +173,7 @@ export class GoalProgressEngine {
   /**
    * Get user's current body fat percentage for body composition goals
    */
-  static async getCurrentBodyFatForGoals(): Promise<number | null> {
+  export async function getCurrentBodyFatForGoals(): Promise<number | null> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
@@ -198,15 +199,15 @@ export class GoalProgressEngine {
   /**
    * Calculate progress for a specific goal with transparent formulas
    */
-  static async calculateGoalProgress(goal: Goal): Promise<ProgressCalculationResult> {
+  export async function calculateGoalProgress(goal: Goal): Promise<ProgressCalculationResult> {
     try {
       switch (goal.goal_type) {
         case 'weight_loss':
-          return await this.calculateWeightLossProgress(goal);
+          return await calculateWeightLossProgress(goal);
         case 'strength_gain':
-          return await this.calculateStrengthGainProgress(goal);
+          return await calculateStrengthGainProgress(goal);
         case 'body_composition':
-          return await this.calculateBodyCompositionProgress(goal);
+          return await calculateBodyCompositionProgress(goal);
         default:
           throw new Error(`Unsupported goal type: ${goal.goal_type}`);
       }
@@ -233,7 +234,7 @@ export class GoalProgressEngine {
   /**
    * Calculate weight loss progress based on body measurements
    */
-  private static async calculateWeightLossProgress(goal: Goal): Promise<ProgressCalculationResult> {
+  async function calculateWeightLossProgress(goal: Goal): Promise<ProgressCalculationResult> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -310,7 +311,7 @@ export class GoalProgressEngine {
   /**
    * Calculate strength gain progress based on workout data
    */
-  private static async calculateStrengthGainProgress(goal: Goal): Promise<ProgressCalculationResult> {
+  async function calculateStrengthGainProgress(goal: Goal): Promise<ProgressCalculationResult> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -438,7 +439,7 @@ export class GoalProgressEngine {
   /**
    * Calculate body composition progress based on body fat measurements
    */
-  private static async calculateBodyCompositionProgress(goal: Goal): Promise<ProgressCalculationResult> {
+  async function calculateBodyCompositionProgress(goal: Goal): Promise<ProgressCalculationResult> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -514,8 +515,8 @@ export class GoalProgressEngine {
   /**
    * Update goal progress in database
    */
-  static async updateGoalProgress(goal: Goal): Promise<ProgressCalculationResult> {
-    const progressResult = await this.calculateGoalProgress(goal);
+  export async function updateGoalProgress(goal: Goal): Promise<ProgressCalculationResult> {
+    const progressResult = await calculateGoalProgress(goal);
     
     try {
       // Update goal in database with new progress
@@ -540,12 +541,12 @@ export class GoalProgressEngine {
   /**
    * Calculate progress for multiple goals
    */
-  static async calculateMultipleGoalsProgress(goals: Goal[]): Promise<ProgressCalculationResult[]> {
+  export async function calculateMultipleGoalsProgress(goals: Goal[]): Promise<ProgressCalculationResult[]> {
     const results: ProgressCalculationResult[] = [];
     
     for (const goal of goals) {
       try {
-        const progress = await this.calculateGoalProgress(goal);
+        const progress = await calculateGoalProgress(goal);
         results.push(progress);
       } catch (error) {
         console.error(`Failed to calculate progress for goal ${goal.id}:`, error);

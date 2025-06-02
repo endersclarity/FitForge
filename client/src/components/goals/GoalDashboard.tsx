@@ -142,7 +142,7 @@ export function GoalDashboard({ onCreateGoal, onViewGoal }: GoalDashboardProps) 
 
     // Calculate average progress
     const totalProgress = goalsList.reduce((sum, goal) => sum + goal.current_progress_percentage, 0);
-    const average = total > 0 ? totalProgress / total : 0;
+    const average = total > 0 ? Math.round(totalProgress / total) : 0;
 
     setStats({
       totalGoals: total,
@@ -388,7 +388,7 @@ export function GoalDashboard({ onCreateGoal, onViewGoal }: GoalDashboardProps) 
             <CardTitle className="text-sm font-medium">Average Progress</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Math.round(stats.averageProgress)}%</div>
+            <div className="text-2xl font-bold">{stats.averageProgress}%</div>
           </CardContent>
         </Card>
       </div>
