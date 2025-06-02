@@ -1,330 +1,255 @@
 {
-  "project": "FitForge Workout Logging Flow",
-  "branch": "feature/workout-logging-flow", 
-  "generated": "2025-06-01T00:45:32Z",
-  "source": "BRANCH_README.md via fresh context parsing",
-  
-  "phase_1_database_foundation": {
-    "timeline": "Days 1-2",
-    "priority": "Critical Path",
-    "tasks": {
-      "db-01": {
-        "id": "db-01",
-        "title": "Update workout session schema in shared/schema.ts",
-        "description": "Implement enhanced exercise logging structure including ExerciseLog and SetLog interfaces",
-        "files": ["shared/schema.ts"],
-        "priority": "high",
-        "estimated_hours": 3,
-        "acceptance_criteria": [
-          "WorkoutSession interface includes exercises array of ExerciseLog",
-          "ExerciseLog interface has sets array of SetLog entries",
-          "SetLog interface captures weight, reps, completion, timestamp",
-          "All interfaces are properly typed with Zod validation schemas",
-          "TypeScript compilation passes without errors"
-        ],
-        "technical_notes": "Use existing schema as base, extend with workout-specific logging structures from branch spec"
-      },
-      "db-02": {
-        "id": "db-02", 
-        "title": "Implement set logging data storage in server/storage.ts",
-        "description": "Add methods for saving weight/reps/completion data with user association",
-        "files": ["server/storage.ts"],
-        "priority": "high",
-        "estimated_hours": 4,
-        "acceptance_criteria": [
-          "saveWorkoutSession() method stores complete session data",
-          "updateSetLog() method updates individual set data",
-          "getUserWorkoutHistory() method retrieves user's sessions",
-          "Data stored in data/users/{userId}/workouts/ directory",
-          "Proper error handling and data validation"
-        ],
-        "technical_notes": "Extend existing file storage system, maintain JSON structure for user data"
-      },
-      "db-03": {
-        "id": "db-03",
-        "title": "Create POST /api/workout-sessions/start endpoint",
-        "description": "Initialize new workout sessions with exercise templates",
-        "files": ["server/workoutRoutes.ts", "server/routes.ts"],
-        "priority": "high",
-        "estimated_hours": 3,
-        "acceptance_criteria": [
-          "Endpoint accepts workoutType and exerciseIds in request body",
-          "Returns sessionId and exercise templates",
-          "Creates new session record in user's data directory",
-          "Validates user authentication and exercise IDs",
-          "Proper HTTP status codes and error responses"
-        ],
-        "technical_notes": "Follow existing API patterns, integrate with Universal Exercise Database"
-      },
-      "db-04": {
-        "id": "db-04",
-        "title": "Implement PATCH /api/workout-sessions/:id/exercises/:exerciseId/sets endpoint",
-        "description": "Log individual exercise sets with real-time updates",
-        "files": ["server/workoutRoutes.ts"],
-        "priority": "high", 
-        "estimated_hours": 4,
-        "acceptance_criteria": [
-          "Endpoint accepts weight, reps, completed in request body",
-          "Updates specific set in workout session data",
-          "Returns success status and progress update",
-          "Validates session ownership and exercise existence",
-          "Atomic updates to prevent data corruption"
-        ],
-        "technical_notes": "Critical for real-time workout logging, must be performant and reliable"
-      }
+  "tasks": [
+    {
+      "id": "goals-db-schema-1",
+      "title": "Design user_goals table schema for Supabase",
+      "description": "Create comprehensive database schema for user_goals table including goal types (weight_loss, strength_gain, body_composition), target values, deadlines, progress tracking, and RLS policies for user data isolation",
+      "priority": "high",
+      "status": "completed",
+      "category": "database",
+      "estimatedHours": 3,
+      "dependencies": [],
+      "acceptanceCriteria": [
+        "user_goals table created in Supabase with proper column types",
+        "RLS policies implemented for user data isolation",
+        "Goal types enum defined (weight_loss, strength_gain, body_composition)",
+        "Foreign key relationships to users table established",
+        "Indexes created for performance on user_id and goal_type"
+      ],
+      "branch": "feature/user-goals-system",
+      "day": 1
+    },
+    {
+      "id": "goals-db-crud-2",
+      "title": "Implement goal CRUD operations in Supabase service",
+      "description": "Create TypeScript service functions for goal creation, reading, updating, and deletion with proper error handling and type safety",
+      "priority": "high",
+      "status": "completed",
+      "category": "backend",
+      "estimatedHours": 4,
+      "dependencies": ["goals-db-schema-1"],
+      "acceptanceCriteria": [
+        "createGoal function with Zod validation",
+        "getUserGoals function with filtering and sorting",
+        "updateGoal function with partial updates",
+        "deleteGoal function with cascade handling",
+        "All functions have proper TypeScript types and error handling"
+      ],
+      "branch": "feature/user-goals-system",
+      "day": 1
+    },
+    {
+      "id": "goals-types-3",
+      "title": "Define TypeScript interfaces for goal system",
+      "description": "Create comprehensive TypeScript type definitions for goals, progress tracking, and calculation results to match database schema",
+      "priority": "high",
+      "status": "completed",
+      "category": "types",
+      "estimatedHours": 2,
+      "dependencies": ["goals-db-schema-1"],
+      "acceptanceCriteria": [
+        "Goal interface with all required properties",
+        "GoalType enum (weight_loss, strength_gain, body_composition)",
+        "ProgressCalculation interface for formula results",
+        "GoalFormData interface for UI form validation",
+        "Export types from main lib/supabase.ts file"
+      ],
+      "branch": "feature/user-goals-system",
+      "day": 1
+    },
+    {
+      "id": "goals-forms-4",
+      "title": "Build goal setting React forms with validation",
+      "description": "Create user-friendly forms for setting weight loss, strength gain, and body composition goals with date pickers and real-time validation",
+      "priority": "high",
+      "status": "completed",
+      "category": "frontend",
+      "estimatedHours": 5,
+      "dependencies": ["goals-types-3", "goals-db-crud-2"],
+      "acceptanceCriteria": [
+        "GoalForm component with goal type selection",
+        "Weight loss form with target weight and deadline",
+        "Strength gain form with exercise and target weight/reps",
+        "Body composition form with target body fat percentage",
+        "Zod validation with helpful error messages",
+        "Date picker integration with react-day-picker"
+      ],
+      "branch": "feature/user-goals-system",
+      "day": 2
+    },
+    {
+      "id": "goals-progress-engine-5",
+      "title": "Implement progress calculation engine with transparent formulas",
+      "description": "Create calculation engine that computes goal progress with transparent formulas showing data sources and methodology",
+      "priority": "high",
+      "status": "completed",
+      "category": "backend",
+      "estimatedHours": 4,
+      "dependencies": ["goals-db-crud-2"],
+      "acceptanceCriteria": [
+        "calculateGoalProgress function with formula transparency",
+        "Weight loss progress: (start_weight - current_weight) / (start_weight - target_weight) * 100",
+        "Strength progress based on workout session data",
+        "Body composition progress calculation",
+        "Data source attribution: 'Based on X workouts since Y date'",
+        "Handle edge cases: no progress data, goal achieved, etc."
+      ],
+      "branch": "feature/user-goals-system",
+      "day": 2
+    },
+    {
+      "id": "goals-dashboard-6",
+      "title": "Create goal progress dashboard UI component",
+      "description": "Build visual dashboard showing goal progress with charts, percentages, and milestone tracking using real user data",
+      "priority": "medium",
+      "status": "completed",
+      "category": "frontend",
+      "estimatedHours": 6,
+      "dependencies": ["goals-progress-engine-5", "goals-forms-4"],
+      "acceptanceCriteria": [
+        "GoalDashboard component with progress overview",
+        "Individual goal cards with progress bars and percentages",
+        "Chart visualization using recharts library",
+        "Formula display showing calculation methodology",
+        "Data source information for transparency",
+        "Milestone indicators and achievement badges"
+      ],
+      "branch": "feature/user-goals-system",
+      "day": 2
+    },
+    {
+      "id": "goals-navigation-7",
+      "title": "Add goals navigation and routing",
+      "description": "Integrate goal system into main navigation and create proper routing for goal management pages",
+      "priority": "medium",
+      "status": "completed",
+      "category": "frontend",
+      "estimatedHours": 2,
+      "dependencies": ["goals-dashboard-6"],
+      "acceptanceCriteria": [
+        "Goals link added to main navigation menu",
+        "Route configuration for /goals and /goals/new",
+        "Breadcrumb navigation within goal system",
+        "Back navigation from goal forms to dashboard",
+        "Proper page titles and meta information"
+      ],
+      "branch": "feature/user-goals-system",
+      "day": 3
+    },
+    {
+      "id": "goals-integration-8",
+      "title": "Integrate goal progress with existing workout data",
+      "description": "Connect goal progress calculations with existing workout sessions and exercise data for meaningful progress tracking",
+      "priority": "high",
+      "status": "completed",
+      "category": "integration",
+      "estimatedHours": 4,
+      "dependencies": ["goals-progress-engine-5"],
+      "acceptanceCriteria": [
+        "Link strength goals to workout exercise data",
+        "Calculate progress from actual logged sets and reps",
+        "Weight goals integrate with user profile weight tracking",
+        "Body composition goals connect to body stats (when available)",
+        "Real-time progress updates when new workouts are logged",
+        "Historical progress timeline based on workout dates"
+      ],
+      "branch": "feature/user-goals-system",
+      "day": 3
+    },
+    {
+      "id": "goals-missing-data-9",
+      "title": "Handle missing data scenarios gracefully",
+      "description": "Implement clear UI for cases when users haven't entered enough data for meaningful progress calculations",
+      "priority": "medium",
+      "status": "completed",
+      "category": "frontend",
+      "estimatedHours": 3,
+      "dependencies": ["goals-dashboard-6"],
+      "acceptanceCriteria": [
+        "Empty state UI for users with no goals set",
+        "Insufficient data warnings with clear next steps",
+        "Onboarding flow for first-time goal setting",
+        "Helpful tips for data entry to enable progress tracking",
+        "Link to relevant data entry forms (weight, workouts, etc.)",
+        "Progress calculation requirements clearly explained"
+      ],
+      "branch": "feature/user-goals-system",
+      "day": 3
+    },
+    {
+      "id": "goals-testing-10",
+      "title": "Write comprehensive tests for goal system",
+      "description": "Create unit tests for goal calculation engine and integration tests for full goal workflow",
+      "priority": "medium",
+      "status": "completed",
+      "category": "testing",
+      "estimatedHours": 4,
+      "dependencies": ["goals-integration-8"],
+      "acceptanceCriteria": [
+        "Unit tests for progress calculation functions",
+        "Integration tests for goal CRUD operations",
+        "Frontend component tests for goal forms",
+        "Edge case testing: zero progress, negative progress, etc.",
+        "Formula accuracy validation with known test data",
+        "Error handling tests for missing data scenarios"
+      ],
+      "branch": "feature/user-goals-system",
+      "day": 3
+    },
+    {
+      "id": "goals-typescript-11",
+      "title": "Ensure TypeScript compilation remains clean",
+      "description": "Validate all new goal system code compiles without TypeScript errors and maintains type safety",
+      "priority": "high",
+      "status": "completed",
+      "category": "quality",
+      "estimatedHours": 1,
+      "dependencies": ["goals-testing-10"],
+      "acceptanceCriteria": [
+        "npm run check passes with zero TypeScript errors",
+        "All goal-related functions have proper type definitions",
+        "Zod schemas match TypeScript interfaces",
+        "Import/export statements are properly typed",
+        "No any types used in goal system code"
+      ],
+      "branch": "feature/user-goals-system",
+      "day": 3
+    },
+    {
+      "id": "goals-documentation-12",
+      "title": "Document goal system architecture and usage",
+      "description": "Create documentation for goal system including database schema, API usage, and user workflow",
+      "priority": "low",
+      "status": "completed",
+      "category": "documentation",
+      "estimatedHours": 2,
+      "dependencies": ["goals-typescript-11"],
+      "acceptanceCriteria": [
+        "Database schema documentation with ERD",
+        "API function documentation with examples",
+        "User workflow documentation with screenshots",
+        "Formula documentation with mathematical explanations",
+        "Troubleshooting guide for common issues",
+        "Update BRANCH_README.md with completion status"
+      ],
+      "branch": "feature/user-goals-system",
+      "day": 3
     }
-  },
-
-  "phase_2_live_workout_session": {
-    "timeline": "Days 3-4",
-    "priority": "Core Feature",
-    "tasks": {
-      "live-01": {
-        "id": "live-01",
-        "title": "Build live workout session component",
-        "description": "Create WorkoutSession.tsx with real-time set logging interface",
-        "files": ["client/src/components/workout/WorkoutSession.tsx"],
-        "priority": "high",
-        "estimated_hours": 6,
-        "acceptance_criteria": [
-          "Component displays current exercise and set information",
-          "Real-time progress tracking through workout session",
-          "Navigation between exercises within session",
-          "Integration with workout session API endpoints",
-          "Responsive design for mobile and desktop use"
-        ],
-        "technical_notes": "Main component for live workout experience, use existing UI components from ui/ directory"
-      },
-      "live-02": {
-        "id": "live-02",
-        "title": "Create RealSetLogger component",
-        "description": "Build component for capturing actual weight/reps input with validation",
-        "files": ["client/src/components/workout/RealSetLogger.tsx"],
-        "priority": "high",
-        "estimated_hours": 4,
-        "acceptance_criteria": [
-          "Input fields for weight and reps with proper validation",
-          "Immediate persistence to backend on set completion",
-          "Visual feedback for successful saves",
-          "Optimistic UI updates while saving",
-          "Error handling for network failures"
-        ],
-        "technical_notes": "Core data entry component, must be reliable and user-friendly"
-      },
-      "live-03": {
-        "id": "live-03",
-        "title": "Implement exercise timer and rest period management",
-        "description": "Add timer functionality with user-configurable intervals",
-        "files": ["client/src/components/workout/WorkoutSession.tsx"],
-        "priority": "medium",
-        "estimated_hours": 3,
-        "acceptance_criteria": [
-          "Countdown timer for rest periods between sets",
-          "Configurable rest time based on exercise type",
-          "Audio/visual notifications when rest period ends",
-          "Pause/resume functionality",
-          "Integration with set completion workflow"
-        ],
-        "technical_notes": "Enhance user experience, not critical path but valuable for workout flow"
-      },
-      "live-04": {
-        "id": "live-04",
-        "title": "Create POST /api/workout-sessions/:id/complete endpoint",
-        "description": "Finish workouts with summary data and session statistics",
-        "files": ["server/workoutRoutes.ts"],
-        "priority": "high",
-        "estimated_hours": 3,
-        "acceptance_criteria": [
-          "Endpoint accepts optional rating and notes",
-          "Calculates workout statistics (duration, volume, etc.)",
-          "Returns complete session data and summary",
-          "Updates session status to 'completed'",
-          "Triggers any post-workout data processing"
-        ],
-        "technical_notes": "Critical for completing workout flow and generating progress data"
-      }
-    }
-  },
-
-  "phase_3_data_integration": {
-    "timeline": "Days 5-6", 
-    "priority": "Data Pipeline",
-    "tasks": {
-      "data-01": {
-        "id": "data-01",
-        "title": "Build useWorkoutSession hook",
-        "description": "Create hook for managing live session state and API communication",
-        "files": ["client/src/hooks/use-workout-session.tsx"],
-        "priority": "high",
-        "estimated_hours": 4,
-        "acceptance_criteria": [
-          "Hook manages workout session state and current exercise",
-          "logSet() function with optimistic updates",
-          "completeWorkout() function with proper state cleanup",
-          "Error handling and retry logic",
-          "TypeScript types for all hook functions"
-        ],
-        "technical_notes": "Central state management for workout session, follow existing hook patterns"
-      },
-      "data-02": {
-        "id": "data-02",
-        "title": "Implement GET /api/users/:userId/workout-history endpoint",
-        "description": "Retrieve user's historical workout data for progress tracking",
-        "files": ["server/workoutRoutes.ts"],
-        "priority": "medium",
-        "estimated_hours": 2,
-        "acceptance_criteria": [
-          "Returns paginated list of user's completed workouts",
-          "Includes workout statistics and exercise summaries",
-          "Supports filtering by date range and workout type",
-          "Proper caching for performance",
-          "Validates user access permissions"
-        ],
-        "technical_notes": "Required for progress charts and historical analysis"
-      },
-      "data-03": {
-        "id": "data-03",
-        "title": "Connect progress charts to real workout data",
-        "description": "Replace mock data in progress.tsx with actual logged workout data",
-        "files": ["client/src/pages/progress.tsx"],
-        "priority": "high",
-        "estimated_hours": 5,
-        "acceptance_criteria": [
-          "All charts display data from user's actual workouts",
-          "Volume progression shows real weight × reps calculations", 
-          "Strength trends based on personal records",
-          "'No data' states for users without workout history",
-          "Clear formulas showing how metrics are calculated"
-        ],
-        "technical_notes": "Critical for demonstrating real data architecture, must remove all mock data"
-      },
-      "data-04": {
-        "id": "data-04",
-        "title": "Create personal records tracking endpoint",
-        "description": "GET /api/exercises/:exerciseId/personal-records for user PRs",
-        "files": ["server/workoutRoutes.ts"],
-        "priority": "medium",
-        "estimated_hours": 3,
-        "acceptance_criteria": [
-          "Returns user's best performances for specific exercise",
-          "Tracks max weight, max reps, max volume",
-          "Includes timestamps and workout context",
-          "Efficient calculation from workout history",
-          "Supports different PR categories (1RM, volume, etc.)"
-        ],
-        "technical_notes": "Enables progress tracking and goal setting features"
-      }
-    }
-  },
-
-  "phase_4_ux_polish": {
-    "timeline": "Day 7",
-    "priority": "User Experience",
-    "tasks": {
-      "ux-01": {
-        "id": "ux-01",
-        "title": "Update workouts page navigation flow",
-        "description": "Smooth transition from exercise selection to live workout session",
-        "files": ["client/src/pages/workouts.tsx"],
-        "priority": "medium",
-        "estimated_hours": 3,
-        "acceptance_criteria": [
-          "Seamless navigation from workouts page to live session",
-          "Proper state management during transitions",
-          "Back navigation preserves user selections",
-          "Loading states during session initialization",
-          "Breadcrumb navigation for user orientation"
-        ],
-        "technical_notes": "Improve overall user experience and workflow clarity"
-      },
-      "ux-02": {
-        "id": "ux-02",
-        "title": "Implement workout completion summary view",
-        "description": "Display logged data and session statistics after workout completion",
-        "files": ["client/src/components/workout/WorkoutSummary.tsx"],
-        "priority": "medium",
-        "estimated_hours": 3,
-        "acceptance_criteria": [
-          "Shows all exercises completed with set details",
-          "Displays workout statistics (duration, volume, PRs)",
-          "Option to add notes or rating to completed workout",
-          "Share workout results functionality",
-          "Navigation to progress page to see updated charts"
-        ],
-        "technical_notes": "Provides closure to workout experience and motivates continued use"
-      },
-      "ux-03": {
-        "id": "ux-03",
-        "title": "Remove all mock/fake workout data",
-        "description": "Replace with 'No data' states that guide users to log their first workout",
-        "files": ["client/src/pages/progress.tsx", "client/src/components/dashboard-overview.tsx"],
-        "priority": "high",
-        "estimated_hours": 2,
-        "acceptance_criteria": [
-          "No mock data anywhere in the application",
-          "Clear 'No data' states with actionable guidance",
-          "Call-to-action buttons leading to workout logging",
-          "Progressive disclosure as users add more workout data",
-          "Transparent formula explanations for all metrics"
-        ],
-        "technical_notes": "Critical for real data architecture compliance, must be thorough"
-      }
-    }
-  },
-
-  "critical_path_summary": {
-    "must_complete_tasks": [
-      "db-01: Update workout session schema",
-      "db-02: Implement set logging storage", 
-      "db-03: Create workout start endpoint",
-      "live-01: Build live workout session component",
-      "live-02: Create set logging component",
-      "data-01: Build workout session hook",
-      "data-03: Connect progress charts to real data",
-      "ux-03: Remove all mock data"
-    ],
-    "dependencies": {
-      "db-01": [],
-      "db-02": ["db-01"],
-      "db-03": ["db-01", "db-02"],
-      "live-01": ["db-03"],
-      "live-02": ["db-03", "live-01"],
-      "data-01": ["db-03", "db-04"],
-      "data-03": ["data-01", "data-02"],
-      "ux-03": ["data-03"]
-    }
-  },
-
-  "testing_checklist": [
-    "New user creates first workout session",
-    "User logs multiple exercises with different set counts", 
-    "Workout completion saves all data correctly",
-    "Progress charts populate from logged workout data",
-    "Personal records update automatically",
-    "Navigation flow works smoothly throughout",
-    "Error handling for network issues during logging",
-    "Data persistence across browser sessions",
-    "No mock data visible anywhere in application"
   ],
-
-  "merge_requirements": {
-    "functional": [
-      "Complete end-to-end workout logging flow operational",
-      "All workout data persists in database correctly",
-      "Progress metrics calculated from real logged data",
-      "Universal Exercise Database integration functional"
-    ],
-    "technical": [
-      "TypeScript compilation passes with zero errors",
-      "All API endpoints respond with proper status codes",
-      "Database schema supports complete feature set",
-      "Performance acceptable for large workout sessions"
-    ],
-    "quality": [
-      "Navigation flow is intuitive and smooth",
-      "Data entry forms are user-friendly and validated",
-      "Error handling covers edge cases",
-      "No mock/fake data remains in application"
-    ]
+  "metadata": {
+    "generated": "2025-06-01T19:35:48.000Z",
+    "branch": "feature/user-goals-system",
+    "totalTasks": 12,
+    "estimatedTotalHours": 40,
+    "priorities": {
+      "high": 6,
+      "medium": 4,
+      "low": 2
+    },
+    "timeline": {
+      "day1": 4,
+      "day2": 3,
+      "day3": 5
+    }
   }
 }

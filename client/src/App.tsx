@@ -16,6 +16,8 @@ import Auth from "@/pages/auth";
 import Dashboard from "@/pages/dashboard";
 import Workouts from "@/pages/workouts";
 import Progress from "@/pages/progress";
+import Goals from "@/pages/goals";
+import NewGoal from "@/pages/new-goal";
 import Community from "@/pages/community";
 import Profile from "@/pages/profile";
 import Nutrition from "@/pages/nutrition";
@@ -75,6 +77,16 @@ function Router() {
         <Route path="/progress">
           <ProtectedRoute>
             <Progress />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/goals">
+          <ProtectedRoute>
+            <Goals />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/goals/new">
+          <ProtectedRoute>
+            <NewGoal />
           </ProtectedRoute>
         </Route>
         <Route path="/community">

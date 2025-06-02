@@ -24,6 +24,7 @@ export function Navigation() {
     { path: "/dashboard", label: "Dashboard" },
     { path: "/workouts", label: "Workouts" },
     { path: "/start-workout", label: "Start Workout" },
+    { path: "/goals", label: "Goals" },
     { path: "/progress", label: "Progress" },
     { path: "/community", label: "Community" },
   ];
@@ -58,8 +59,7 @@ export function Navigation() {
                   key={item.path}
                   href={item.path}
                   onClick={() => {
-                    console.log('🧭 Navigation link clicked:', item.label, '→', item.path);
-                    console.log('🔍 Current location before click:', location);
+                    // Navigation analytics could be added here if needed
                   }}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                     isActive(item.path)
@@ -102,7 +102,6 @@ export function Navigation() {
                           key={item.path}
                           href={item.path}
                           onClick={() => {
-                            console.log('📱 Mobile nav link clicked:', item.label, '→', item.path);
                             setMobileMenuOpen(false);
                           }}
                           className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
