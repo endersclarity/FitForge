@@ -38,10 +38,20 @@ export default function Dashboard() {
     queryKey: ["/api/challenges"],
   });
 
+  // Calculate real progress based on actual data
+  const today = new Date();
+  const todaysSessions = recentSessions.filter(session => {
+    const sessionDate = new Date(session.createdAt);
+    return sessionDate.toDateString() === today.toDateString();
+  });
+  
+  // Progress is based on whether user completed a workout today (0 or 100)
+  const workoutProgress = todaysSessions.length > 0 ? 100 : 0;
+  
   const todayStats = {
-    workoutProgress: 70,
+    workoutProgress,
     calorieGoal: 2200,
-    caloriesConsumed: userStats?.caloriesConsumed || 1750,
+    caloriesConsumed: userStats?.caloriesConsumed || 0,
     workoutsThisWeek: recentSessions.filter(session => {
       const sessionDate = new Date(session.createdAt);
       const weekAgo = new Date();
