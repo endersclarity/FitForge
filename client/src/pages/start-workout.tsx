@@ -53,14 +53,24 @@ export default function StartWorkout() {
   const { user } = useAuth();
   const { session, startWorkout, loading: sessionLoading, error } = useWorkoutSession();
 
-  // Fetch exercises from Supabase by workout type
-  const { data: supabaseExercises, isLoading } = useQuery<Exercise[]>({
+  // Fetch exercises from Supabase by workout type with proper error handling
+  const { data: supabaseExercises, isLoading, error: exercisesError } = useQuery<Exercise[]>({
     queryKey: ["supabase-exercises", workoutType],
     queryFn: async () => {
       if (!workoutType) return [];
-      return await workoutService.getExercisesByType(workoutType);
+      console.log(`🔍 Fetching exercises for workout type: ${workoutType}`);
+      try {
+        const exercises = await workoutService.getExercisesByType(workoutType);
+        console.log(`✅ Found ${exercises.length} exercises for ${workoutType}`);
+        return exercises;
+      } catch (error) {
+        console.error(`❌ Failed to fetch exercises for ${workoutType}:`, error);
+        throw new Error(`Failed to load ${workoutType} exercises. Please try again.`);
+      }
     },
-    enabled: !!workoutType
+    enabled: !!workoutType,
+    retry: 2,
+    retryDelay: 1000
   });
 
   // Convert Supabase exercises to legacy format for UI compatibility
@@ -104,33 +114,52 @@ export default function StartWorkout() {
     return <WorkoutSession workoutType={workoutName} selectedExercises={selectedExerciseIds} />;
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!workoutType) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">No Workout Type Selected</h1>
-          <Button onClick={() => window.location.href = '/workouts'}>
-            Back to Workouts
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
+  // Show loading state with proper background and feedback
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading {workoutName} exercises...</p>
+          <h2 className="text-xl font-semibold mb-2">Loading {workoutName} exercises...</h2>
+          <p className="text-muted-foreground">Please wait while we fetch your workout exercises</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state with actionable feedback
+  if (exercisesError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold mb-2">Unable to Load Exercises</h2>
+          <p className="text-muted-foreground mb-4">
+            {exercisesError instanceof Error ? exercisesError.message : 'An unexpected error occurred'}
+          </p>
+          <div className="space-y-2">
+            <Button onClick={() => window.location.reload()} className="w-full">
+              Try Again
+            </Button>
+            <Button variant="outline" onClick={() => window.location.href = '/workouts'} className="w-full">
+              Back to Workouts
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show no workout type selected
+  if (!workoutType) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">No Workout Type Selected</h1>
+          <p className="text-muted-foreground mb-4">Please select a workout type to continue</p>
+          <Button onClick={() => window.location.href = '/workouts'}>
+            Back to Workouts
+          </Button>
         </div>
       </div>
     );
@@ -296,17 +325,32 @@ export default function StartWorkout() {
           </div>
         ) : (
           <div className="text-center py-12">
+            <div className="text-yellow-500 text-6xl mb-4">📭</div>
+            <h2 className="text-xl font-semibold mb-2">No Exercises Available</h2>
             <p className="text-muted-foreground mb-4">
-              {isLoading 
-                ? `Loading ${workoutName} exercises from Supabase...`
-                : `No exercises found for ${workoutName} in Supabase database`
-              }
+              We couldn't find any exercises for <strong>{workoutName}</strong> in the database.
             </p>
-            {!isLoading && (
-              <Button onClick={() => window.location.href = '/workouts'}>
-                Choose Different Workout
-              </Button>
-            )}
+            <div className="space-y-2 max-w-sm mx-auto">
+              <p className="text-sm text-muted-foreground mb-4">
+                This might be because:
+              </p>
+              <ul className="text-sm text-muted-foreground text-left space-y-1 mb-4">
+                <li>• The exercise database hasn't been populated yet</li>
+                <li>• There's a connection issue with the database</li>
+                <li>• No exercises are configured for this workout type</li>
+              </ul>
+              <div className="space-y-2">
+                <Button onClick={() => window.location.reload()} className="w-full">
+                  Refresh Page
+                </Button>
+                <Button variant="outline" onClick={() => window.location.href = '/workouts'} className="w-full">
+                  Choose Different Workout
+                </Button>
+                <Button variant="outline" onClick={() => window.location.href = '/exercises'} className="w-full">
+                  Browse All Exercises
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>
