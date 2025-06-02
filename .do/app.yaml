@@ -1,77 +1,38 @@
 # Digital Ocean App Platform Configuration for FitForge
-# Production-ready fitness ecosystem with Supabase integration
+# FREE TIER - Static site hosting with Supabase backend
 
-name: fitforge-production
+name: fitforge-free
 region: nyc
 
-# Unified Node.js application (React frontend + Express backend)
-services:
-  - name: fitforge-app
+# Static site (FREE tier on Digital Ocean)
+static_sites:
+  - name: fitforge-frontend
     source_dir: /
     github:
       repo: endersclarity/FitForge
-      branch: master
+      branch: main
       deploy_on_push: true
     build_command: |
-      npm ci --production=false &&
-      npm run build-all &&
+      npm ci &&
+      npm run build &&
       npm run check
-    run_command: npm start
-    environment_slug: node-js
-    instance_count: 1
-    instance_size_slug: basic-xxs
-    http_port: 5000
+    output_dir: dist
     
-    # Health check
-    health_check:
-      http_path: "/"
-      initial_delay_seconds: 90
-      period_seconds: 30
-      timeout_seconds: 10
-      success_threshold: 1
-      failure_threshold: 3
-    
-    # Auto-scaling for production load
-    autoscaling:
-      min_instance_count: 1
-      max_instance_count: 3
-      metrics:
-        cpu:
-          percent: 75
-    
-    # Environment variables
+    # Environment variables for build
     envs:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: "5000"
       - key: VITE_SUPABASE_URL
-        value: "https://your-project-id.supabase.co"
-        scope: BUILD_TIME
-      - key: VITE_SUPABASE_ANON_KEY
-        value: "your-anon-key-from-supabase-dashboard"
-        scope: BUILD_TIME
+        value: "https://qobrbjpsbwwumzkphlns.supabase.co"
+      - key: VITE_SUPABASE_ANON_KEY  
+        value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvYnJianBzYnd3dW16a3BobG5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMyNzU0MzMsImV4cCI6MjA0ODg1MTQzM30.2W_8qaEKNUGdGXKTdJT_WiG7jFKWOBRg9E0JtIHaPRQ"
 
-    routes:
-      - path: /
-        preserve_path_prefix: true
+    # Catchall routing for SPA
+    catchall_document: index.html
 
-# Database (using Supabase cloud - no local database needed)
-# All data persistence handled by Supabase PostgreSQL
+# Database: Supabase PostgreSQL (Free tier: 500MB database, 2GB bandwidth)
+# Authentication: Supabase Auth (Free tier: 50,000 monthly active users)
+# Storage: Supabase Storage (Free tier: 1GB storage)
 
-# Alerts for production monitoring
-alerts:
-  - rule: DEPLOYMENT_FAILED
-    disabled: false
-  - rule: DOMAIN_FAILED
-    disabled: false
-  - rule: CPU_UTILIZATION
-    disabled: false
-    value: 80
-    operator: GREATER_THAN
-    window: TEN_MINUTES
-  - rule: MEM_UTILIZATION
-    disabled: false
-    value: 85
-    operator: GREATER_THAN
-    window: TEN_MINUTES
+# FREE TIER LIMITS:
+# - Static sites: 3 sites, 1GB bandwidth per site
+# - Build minutes: 1000 minutes/month  
+# - Total cost: $0/month
