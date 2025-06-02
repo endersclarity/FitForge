@@ -42,7 +42,7 @@ interface GoalFormProps {
   isLoadingExercises?: boolean;
 }
 
-export function GoalForm({ onGoalCreated, onCancel, exercises = [] }: GoalFormProps) {
+export function GoalForm({ onGoalCreated, onCancel, exercises = [], isLoadingExercises = false }: GoalFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -334,6 +334,9 @@ export function GoalForm({ onGoalCreated, onCancel, exercises = [] }: GoalFormPr
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          {isLoadingExercises && (
+                            <SelectItem disabled value="loading">Loading exercises...</SelectItem>
+                          )}
                           {exercises.map((exercise) => (
                             <SelectItem key={exercise.id} value={exercise.id}>
                               {exercise.name}

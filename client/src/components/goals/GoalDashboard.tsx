@@ -86,7 +86,7 @@ export function GoalDashboard({ onCreateGoal, onViewGoal }: GoalDashboardProps) 
 
   // Check if user needs onboarding
   useEffect(() => {
-    if (user && goals.length === 0 && !isLoading) {
+    if (user && goals.length === 0 && !isLoading && !error) {
       const hasSeenOnboarding = localStorage.getItem(`goals_onboarding_${user.id}`) === 'completed';
       if (!hasSeenOnboarding) {
         setShowOnboarding(true);

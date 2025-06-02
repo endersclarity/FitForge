@@ -26,7 +26,7 @@ vi.mock('@/lib/supabase', () => ({
                 { weight: 72, recorded_at: '2024-06-01' }
               ],
               error: null
-            })),
+            })
           })),
         })),
       })),
