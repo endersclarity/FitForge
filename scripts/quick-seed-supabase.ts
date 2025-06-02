@@ -1,14 +1,47 @@
 import { createClient } from '@supabase/supabase-js';
 import { enderExerciseDatabase } from './ender-real-exercises.js';
+import dotenv from 'dotenv';
 
-// Initialize Supabase client
-const supabaseUrl = 'https://qobrbjpsbwwumzkphlns.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvYnJianBzYnd3dW16a3BobG5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI5NzE5MzAsImV4cCI6MjA0ODU0NzkzMH0._4om6Ij0Vvf1VLrtmuiOitfGqG3DJHE5FBx_SiAXNuA';
+// Load environment variables
+dotenv.config();
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Initialize Supabase client with service role key for admin operations
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://qobrbjpsbwwumzkphlns.supabase.co';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvYnJianBzYnd3dW16a3BobG5zIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMjk3MTkzMCwiZXhwIjoyMDQ4NTQ3OTMwfQ.k0q_dGS2RWzPRo8q0BsPeA1fwVLGc6qSBjBdDKdyL-M';
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function seedExercises() {
   console.log('🌱 Starting exercise seeding to Supabase...');
+  
+  // First check if exercises already exist
+  try {
+    const { count, error: countError } = await supabase
+      .from('exercises')
+      .select('*', { count: 'exact', head: true });
+      
+    if (countError) {
+      console.error('❌ Error checking existing exercises:', countError);
+      return;
+    }
+    
+    if (count && count > 0) {
+      console.log(`ℹ️  Found ${count} existing exercises. Clearing table first...`);
+      const { error: deleteError } = await supabase
+        .from('exercises')
+        .delete()
+        .neq('id', ''); // Delete all rows
+        
+      if (deleteError) {
+        console.error('❌ Error clearing exercises table:', deleteError);
+        return;
+      }
+      console.log('✅ Cleared existing exercises');
+    }
+  } catch (error) {
+    console.error('❌ Error checking/clearing exercises:', error);
+    return;
+  }
   
   // Map workout types
   const workoutTypeMap: Record<string, string> = {
