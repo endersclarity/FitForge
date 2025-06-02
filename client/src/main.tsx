@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import App from "./App";
+import TestApp from "./TestApp";
 import "./index.css";
 
 // Keep environment debug for production monitoring
@@ -9,4 +9,4 @@ console.log("FitForge Environment:", {
   MODE: import.meta.env.MODE
 });
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(<TestApp />);
