@@ -24,7 +24,7 @@
       "title": "Implement goal CRUD operations in Supabase service",
       "description": "Create TypeScript service functions for goal creation, reading, updating, and deletion with proper error handling and type safety",
       "priority": "high",
-      "status": "pending",
+      "status": "completed",
       "category": "backend",
       "estimatedHours": 4,
       "dependencies": ["goals-db-schema-1"],
