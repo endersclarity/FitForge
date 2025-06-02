@@ -1,110 +1,48 @@
 {
-  "session_id": "workout-logging-flow-20250601",
-  "branch": "feature/workout-logging-flow",
-  "created": "2025-06-01T00:45:32Z",
-  "goal": "Enable users to log actual workouts with real data storage and retrieval throughout the entire application ecosystem",
-  "timeline": {
-    "total_days": 7,
-    "current_day": 1,
-    "phases": {
-      "phase_1": {
-        "name": "Database Foundation",
-        "days": "1-2",
-        "status": "pending",
-        "tasks": ["db-01", "db-02", "db-03", "db-04"],
-        "completion": 0
-      },
-      "phase_2": {
-        "name": "Live Workout Session",
-        "days": "3-4", 
-        "status": "pending",
-        "tasks": ["live-01", "live-02", "live-03", "live-04"],
-        "completion": 0
-      },
-      "phase_3": {
-        "name": "Data Integration",
-        "days": "5-6",
-        "status": "pending", 
-        "tasks": ["data-01", "data-02", "data-03", "data-04"],
-        "completion": 0
-      },
-      "phase_4": {
-        "name": "UX Polish",
-        "day": "7",
-        "status": "pending",
-        "tasks": ["ux-01", "ux-02", "ux-03"],
-        "completion": 0
-      }
-    }
+  "metadata": {
+    "lastUpdated": "2025-06-01T19:44:32.000Z",
+    "sessionStart": "2025-06-01T19:44:32.000Z",
+    "projectPhase": "User Goals System Implementation",
+    "branchContext": "feature/user-goals-system",
+    "totalTasks": 12
   },
-  "critical_path": [
-    "db-01", "db-02", "db-03", "live-01", "live-02", "data-01", "data-03", "ux-03"
-  ],
-  "deliverables": {
-    "database_schema": {
-      "status": "pending",
-      "files": ["shared/schema.ts", "server/storage.ts"],
-      "requirements": ["Enhanced workout session schema", "Set logging structure", "User workout history indexing"]
-    },
-    "api_endpoints": {
-      "status": "pending", 
-      "files": ["server/routes.ts", "server/workoutRoutes.ts"],
-      "requirements": ["Start workout session", "Log exercise sets", "Complete workout", "Workout history"]
-    },
-    "frontend_components": {
-      "status": "pending",
-      "files": ["client/src/pages/", "client/src/components/workout/"],
-      "requirements": ["Live workout session", "Set logging interface", "Exercise timer", "Completion flow"]
-    },
-    "real_data_integration": {
-      "status": "pending",
-      "files": ["client/src/services/", "client/src/hooks/"],
-      "requirements": ["Session state management", "Progress calculations", "No mock data"]
-    }
-  },
-  "success_criteria": {
-    "core_flow": [
-      "Browse exercise categories",
-      "Select individual exercises", 
-      "Start workout session",
-      "Log actual weight/reps",
-      "Save to persistent database",
-      "Populate progress metrics"
-    ],
-    "data_persistence": [
-      "Workout sessions in database",
-      "Exercise sets with real data",
-      "Accessible via API",
-      "Progress from logged data",
-      "No mock data anywhere"
-    ],
-    "user_experience": [
-      "Smooth navigation flow",
-      "Clear progress tracking",
-      "Exercise timer functionality", 
-      "Workout completion summary",
-      "Historical data visibility"
+  "currentWork": {
+    "activeTaskId": "goals-db-schema-1",
+    "activeTaskTitle": "Design user_goals table schema for Supabase",
+    "status": "in_progress",
+    "startedAt": "2025-06-01T19:44:32.000Z",
+    "progressNotes": "Starting database schema design for user goals system",
+    "workingFiles": [
+      "supabase-schema.sql"
     ]
   },
-  "testing_scenarios": [
-    "New user first workout flow",
-    "Multi-exercise session logging",
-    "Workout completion and summary",
-    "Progress chart data population",
-    "Edge cases and error handling"
-  ],
-  "current_focus": "Phase 1: Database Foundation - Setting up data schemas and API endpoints for workout logging",
-  "next_actions": [
-    "Start with db-01: Update workout session schema",
-    "Follow with db-02: Implement set logging storage", 
-    "Create API endpoints for session management",
-    "Test data persistence before moving to frontend"
-  ],
-  "merge_criteria": [
-    "Complete workout logging flow works end-to-end",
-    "All workout data persists correctly",
-    "Progress metrics from real data",
-    "No mock data remaining",
-    "TypeScript compilation passes"
+  "taskPipeline": {
+    "completedToday": ["goals-db-schema-1"],
+    "readyToStart": ["goals-db-crud-2", "goals-types-3"],
+    "blockedTasks": ["goals-forms-4", "goals-progress-engine-5", "goals-dashboard-6", "goals-navigation-7", "goals-integration-8", "goals-missing-data-9", "goals-testing-10", "goals-typescript-11", "goals-documentation-12"],
+    "nextRecommended": "goals-db-crud-2"
+  },
+  "sessionProgress": {
+    "tasksCompletedToday": 1,
+    "timeInCurrentTask": "25 minutes",
+    "momentum": "good",
+    "estimatedTasksToday": 2,
+    "sessionType": "feature_development"
+  },
+  "quickContext": {
+    "currentFocus": "Database schema design for goal system foundation",
+    "businessGoal": "Enable users to set and track fitness goals with transparent progress calculations",
+    "performanceTarget": "Real-time goal progress tracking",
+    "accuracyTarget": "Formula-based calculations with data source transparency",
+    "lastConversationSummary": "Starting Task #1 - user_goals database schema design",
+    "targetFile": "supabase-schema.sql"
+  },
+  "recentActivity": [
+    {
+      "timestamp": "2025-06-01T19:44:32.000Z",
+      "action": "task_started",
+      "description": "Started Task #1 - Design user_goals table schema for Supabase",
+      "evidence": "Updated tasks.json status to in_progress, beginning database schema design"
+    }
   ]
 }

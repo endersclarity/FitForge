@@ -246,6 +246,106 @@ CREATE TABLE public.user_achievements (
 );
 
 -- ============================================================================
+-- USER GOALS & PROGRESS TRACKING
+-- ============================================================================
+
+-- Goal types enumeration
+CREATE TYPE goal_type AS ENUM ('weight_loss', 'strength_gain', 'body_composition');
+
+-- User goals table (comprehensive goal setting and tracking)
+CREATE TABLE public.user_goals (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  
+  -- Goal classification
+  goal_type goal_type NOT NULL,
+  goal_title TEXT NOT NULL,
+  goal_description TEXT,
+  
+  -- Target values (flexible based on goal type)
+  target_weight_lbs NUMERIC(5,1), -- For weight_loss goals
+  target_body_fat_percentage NUMERIC(4,1), -- For body_composition goals
+  target_exercise_id TEXT REFERENCES public.exercises(id), -- For strength_gain goals
+  target_weight_for_exercise_lbs NUMERIC(5,1), -- Weight target for strength goals
+  target_reps_for_exercise INTEGER, -- Rep target for strength goals
+  
+  -- Starting baseline (recorded when goal is created)
+  start_weight_lbs NUMERIC(5,1),
+  start_body_fat_percentage NUMERIC(4,1),
+  start_exercise_max_weight_lbs NUMERIC(5,1),
+  start_exercise_max_reps INTEGER,
+  
+  -- Timeline
+  target_date DATE NOT NULL,
+  created_date DATE DEFAULT CURRENT_DATE,
+  
+  -- Progress tracking
+  current_progress_percentage NUMERIC(5,2) DEFAULT 0.00,
+  is_achieved BOOLEAN DEFAULT FALSE,
+  achieved_date DATE,
+  
+  -- Motivation and tracking
+  motivation_notes TEXT,
+  reward_description TEXT,
+  
+  -- Goal status
+  is_active BOOLEAN DEFAULT TRUE,
+  priority_level TEXT DEFAULT 'medium', -- 'high', 'medium', 'low'
+  
+  -- Metadata
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Goal progress milestones (track intermediate progress)
+CREATE TABLE public.goal_milestones (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  goal_id UUID REFERENCES public.user_goals(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  
+  -- Milestone details
+  milestone_percentage INTEGER NOT NULL CHECK (milestone_percentage >= 0 AND milestone_percentage <= 100),
+  milestone_description TEXT,
+  
+  -- Progress values at milestone
+  recorded_weight_lbs NUMERIC(5,1),
+  recorded_body_fat_percentage NUMERIC(4,1),
+  recorded_exercise_weight_lbs NUMERIC(5,1),
+  recorded_exercise_reps INTEGER,
+  
+  -- Data source (transparent formula calculation)
+  data_source_description TEXT NOT NULL, -- e.g., "Based on 15 workouts logged since goal creation"
+  calculation_formula TEXT NOT NULL, -- e.g., "progress = (current - start) / (target - start) * 100"
+  
+  -- Timing
+  achieved_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Goal check-ins (manual progress updates)
+CREATE TABLE public.goal_check_ins (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  goal_id UUID REFERENCES public.user_goals(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  
+  -- Check-in data
+  check_in_weight_lbs NUMERIC(5,1),
+  check_in_body_fat_percentage NUMERIC(4,1),
+  
+  -- Notes and reflections
+  progress_notes TEXT,
+  challenges_faced TEXT,
+  motivation_level INTEGER CHECK (motivation_level >= 1 AND motivation_level <= 10),
+  
+  -- Photos
+  progress_photo_urls TEXT[],
+  
+  -- Timing
+  check_in_date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================================================
 -- ANALYTICS & PROGRESS TRACKING
 -- ============================================================================
 
@@ -316,6 +416,11 @@ ALTER TABLE public.personal_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.body_stats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workout_analytics_daily ENABLE ROW LEVEL SECURITY;
+
+-- Enable RLS on goal system tables
+ALTER TABLE public.user_goals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.goal_milestones ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.goal_check_ins ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: Users can only see/edit their own profile
 CREATE POLICY "Users can view own profile" ON public.profiles
@@ -400,6 +505,39 @@ CREATE POLICY "Users can delete own body stats" ON public.body_stats
 CREATE POLICY "Users can view own analytics" ON public.workout_analytics_daily
   FOR SELECT USING (auth.uid() = user_id);
 
+-- User Goals: Users can only access their own goals
+CREATE POLICY "Users can view own goals" ON public.user_goals
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own goals" ON public.user_goals
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own goals" ON public.user_goals
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own goals" ON public.user_goals
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Goal Milestones: Users can only access their own goal milestones
+CREATE POLICY "Users can view own goal milestones" ON public.goal_milestones
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own goal milestones" ON public.goal_milestones
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Goal Check-ins: Users can only access their own goal check-ins
+CREATE POLICY "Users can view own goal check-ins" ON public.goal_check_ins
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own goal check-ins" ON public.goal_check_ins
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own goal check-ins" ON public.goal_check_ins
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own goal check-ins" ON public.goal_check_ins
+  FOR DELETE USING (auth.uid() = user_id);
+
 -- ============================================================================
 -- PUBLIC READ ACCESS FOR SHARED DATA
 -- ============================================================================
@@ -428,6 +566,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.workout_exercises;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.workout_sets;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.personal_records;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.user_achievements;
+
+-- Enable real-time for goal tracking
+ALTER PUBLICATION supabase_realtime ADD TABLE public.user_goals;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.goal_milestones;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.goal_check_ins;
 
 -- ============================================================================
 -- INDEXES FOR PERFORMANCE
@@ -458,6 +601,18 @@ CREATE INDEX idx_exercise_muscles_exercise_id ON public.exercise_primary_muscles
 -- Analytics indexes
 CREATE INDEX idx_analytics_user_date ON public.workout_analytics_daily(user_id, analytics_date);
 
+-- Goal system indexes  
+CREATE INDEX idx_user_goals_user_id ON public.user_goals(user_id);
+CREATE INDEX idx_user_goals_goal_type ON public.user_goals(goal_type);
+CREATE INDEX idx_user_goals_target_date ON public.user_goals(target_date);
+CREATE INDEX idx_user_goals_user_active ON public.user_goals(user_id, is_active);
+
+CREATE INDEX idx_goal_milestones_goal_id ON public.goal_milestones(goal_id);
+CREATE INDEX idx_goal_milestones_user_id ON public.goal_milestones(user_id);
+
+CREATE INDEX idx_goal_check_ins_goal_id ON public.goal_check_ins(goal_id);
+CREATE INDEX idx_goal_check_ins_user_date ON public.goal_check_ins(user_id, check_in_date);
+
 -- ============================================================================
 -- FUNCTIONS & TRIGGERS
 -- ============================================================================
@@ -485,6 +640,10 @@ CREATE TRIGGER update_workout_sets_updated_at BEFORE UPDATE ON public.workout_se
   FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 
 CREATE TRIGGER update_user_achievements_updated_at BEFORE UPDATE ON public.user_achievements
+  FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+-- Apply updated_at trigger to goal system tables
+CREATE TRIGGER update_user_goals_updated_at BEFORE UPDATE ON public.user_goals
   FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 
 -- Function to calculate one-rep max (Epley formula)
