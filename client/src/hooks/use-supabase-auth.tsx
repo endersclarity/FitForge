@@ -54,6 +54,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // TEMPORARY: Auto-sign in for debugging
+        console.log('🔧 DEBUG MODE: Auto-signing in as endersclarity@gmail.com');
+        
+        // Create a mock user object
+        const mockUser: User = {
+          id: '1e7c6f3a-5b8f-4e89-b0e4-1234567890ab', // Your actual user ID from Supabase
+          email: 'endersclarity@gmail.com',
+          app_metadata: {},
+          user_metadata: { full_name: 'Ender' },
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+        } as User;
+        
+        const mockSession: Session = {
+          access_token: 'mock-token',
+          token_type: 'bearer',
+          expires_in: 3600,
+          expires_at: Date.now() + 3600000,
+          refresh_token: 'mock-refresh',
+          user: mockUser,
+        } as Session;
+        
+        setSession(mockSession);
+        setUser(mockUser);
+        
+        // Create a mock profile
+        const mockProfile: Profile = {
+          id: mockUser.id,
+          email: mockUser.email!,
+          full_name: 'Ender',
+          username: 'endersclarity',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
+        setProfile(mockProfile);
+        
+        console.log('✅ Auto-signed in successfully');
+        
+        // Comment out normal auth flow
+        /*
         // Get initial session
         const { data: { session: initialSession } } = await supabase.auth.getSession()
         
@@ -62,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(initialSession.user)
           await loadProfile(initialSession.user.id)
         }
+        */
       } catch (error) {
         console.error('Error initializing auth:', error)
       } finally {
@@ -71,25 +113,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth()
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email)
-        
-        setSession(session)
-        setUser(session?.user ?? null)
+    // TEMPORARILY DISABLED: Listen for auth changes
+    // const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    //   async (event, session) => {
+    //     console.log('Auth state changed:', event, session?.user?.email)
+    //     
+    //     setSession(session)
+    //     setUser(session?.user ?? null)
 
-        if (session?.user) {
-          await loadProfile(session.user.id)
-        } else {
-          setProfile(null)
-        }
+    //     if (session?.user) {
+    //       await loadProfile(session.user.id)
+    //     } else {
+    //       setProfile(null)
+    //     }
 
-        setLoading(false)
-      }
-    )
+    //     setLoading(false)
+    //   }
+    // )
 
-    return () => subscription.unsubscribe()
+    // return () => subscription.unsubscribe()
   }, [])
 
   const signUp = async (email: string, password: string, fullName: string) => {
