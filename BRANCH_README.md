@@ -1,48 +1,41 @@
-# Branch: feature/complete-supabase-integration
+# Branch: feature/user-goals-system
 
 ## Purpose
-Complete the Supabase integration by setting up database schema, authentication system, and migrating from local file storage to production-ready cloud infrastructure.
+Implement comprehensive user goal setting and progress tracking system with real data-driven calculations. Enable users to set fitness targets (weight loss, strength gains, body composition goals) and track progress with transparent formulas showing exactly how calculations are performed.
 
 ## Success Criteria
-1. **Database Schema**: Full Supabase database with tables for users, workouts, exercises, and sets
-2. **Authentication System**: Working user registration and login with Supabase Auth
-3. **Data Migration**: All existing workout data migrated from JSON files to Supabase
-4. **Real-time Features**: Live workout session updates and progress tracking
-5. **Production Readiness**: Complete environment setup ready for Digital Ocean deployment
+1. **Database Schema Complete**: `user_goals` table in Supabase with goal types, target values, deadlines, and progress tracking
+2. **Goal Setting UI**: Forms for creating weight, strength, and body composition goals with validation and date pickers
+3. **Progress Calculation Engine**: Real-time progress calculations with transparent formulas showing data sources
+4. **Goal Dashboard**: Visual progress display with charts, percentages, and milestone tracking based on real user data
+5. **Production Ready**: TypeScript clean, all features tested, deployment configuration updated
 
 ## Timeline
-- **Created**: 2025-01-06
-- **Target Completion**: End of current session
-- **Status**: ✅ **COMPLETED** - Production deployment ready
+- **Day 1**: Database schema design, Supabase table creation, basic CRUD operations
+- **Day 2**: Goal setting forms, progress calculation engine with transparent formulas
+- **Day 3**: Goal dashboard UI, integration testing, production deployment validation
 
 ## Technical Goals
-- Set up complete Supabase database schema with RLS policies
-- Implement authentication hooks and components using Supabase Auth
-- Create data migration scripts for existing workout history
-- Replace file-based storage with Supabase client calls
-- Establish real-time subscriptions for live workout tracking
-
-## Key Migration Components
-
-### ✅ Completed - ALL SUCCESS CRITERIA MET
-- [x] **Database Schema**: Complete PostgreSQL schema with 12 tables, RLS policies, triggers
-- [x] **Authentication System**: Supabase Auth with user registration, login, and profile management
-- [x] **Data Migration**: Migration scripts created for transferring existing workout data
-- [x] **Real-time Features**: Live workout session updates with Supabase subscriptions
-- [x] **Production Readiness**: Digital Ocean deployment configuration complete
-- [x] **TypeScript Clean**: All 19 compilation errors resolved
-- [x] **Service Layer**: Comprehensive `supabase-workout-service.ts` implementation
-- [x] **Environment Setup**: Production `.env` configuration with Supabase credentials
-- [x] **Build Validation**: Successful production build (6.67s) with health checks
-- [x] **Quality Gates**: Pre-deployment script validation passed
-
-### 🚀 Ready for Production Deployment
-- [x] Supabase project operational (ID: jkbubfzezuiuvfduajqly)
-- [x] Database schema ready for deployment
-- [x] Digital Ocean App Platform configured
-- [x] All technical requirements satisfied
+- Add `user_goals` table to Supabase with RLS policies for user data isolation
+- Create goal management service with TypeScript interfaces matching database schema
+- Build React forms with Zod validation for goal entry (weight targets, strength PRs, body fat %)
+- Implement progress calculation engine showing formulas: `progress = (current - start) / (target - start) * 100`
+- Display progress with real data sources: "Based on 15 workouts logged since goal creation"
 
 ## User Experience Target
-Users will be able to register accounts, log in securely, and have their workout data automatically synchronized across devices. All existing workout tracking functionality will be preserved while gaining cloud backup and multi-device access.
+Users can set specific, measurable fitness goals with target dates and track their progress with complete transparency. They see exactly how progress is calculated, what data drives each metric, and clear paths to improve. No mock data - all progress based on real user-entered workouts and body measurements.
 
-This addresses the core need: transitioning from local file storage to scalable cloud infrastructure while maintaining all current functionality.
+This addresses the core need: **Meaningful progress tracking requires user-defined goals with transparent, formula-based calculations from real data**.
+
+## Dependencies
+- ✅ Supabase integration complete (production-ready cloud database)
+- ✅ User authentication system operational
+- ✅ TypeScript compilation clean
+- ✅ Real data architecture foundation established
+
+## Next Steps After Branch Creation
+1. Run `/parse` to generate actionable tasks from this branch scope
+2. Begin with database schema design as foundation
+3. Build goal setting forms with real data validation
+4. Implement transparent progress calculation engine
+5. Create goal progress dashboard with formula display
