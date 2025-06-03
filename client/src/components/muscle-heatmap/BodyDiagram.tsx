@@ -54,19 +54,21 @@ export function BodyDiagram({
   // Get muscle color based on fatigue level (following the reference design)
   const getMuscleColor = useCallback((muscleGroup: MuscleGroupType): string => {
     const state = getMuscleState(muscleGroup);
-    if (!state) return '#374151'; // Dark gray for no data
+    if (!state) return '#22c55e'; // Green for no data (fresh/ready to train)
 
     const fatigue = state.currentFatiguePercentage;
     
-    // Reference design uses red/pink for worked muscles, gray for fresh
+    // Reference design uses red/pink for worked muscles, green/blue for fresh
     if (fatigue >= 70) {
       return '#ef4444'; // Bright red - heavily worked
     } else if (fatigue >= 50) {
-      return '#f87171'; // Light red - moderately worked
+      return '#f97316'; // Orange - moderately worked
     } else if (fatigue >= 30) {
-      return '#fca5a5'; // Pink - lightly worked
+      return '#eab308'; // Yellow - lightly worked  
+    } else if (fatigue >= 15) {
+      return '#22c55e'; // Green - fresh
     } else {
-      return '#6b7280'; // Gray - fresh/undertrained
+      return '#3b82f6'; // Blue - undertrained/very fresh
     }
   }, [getMuscleState]);
 
@@ -179,14 +181,14 @@ export function BodyDiagram({
       {showMetrics && (
         <div className="flex justify-between items-center mb-6 px-4">
           <div className="text-center">
-            <div className="text-3xl font-bold text-white">{daysSinceLastWorkout}</div>
-            <div className="text-xs text-gray-400 uppercase tracking-wide">
+            <div className="text-3xl font-bold">{daysSinceLastWorkout}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wide">
               Days Since Your<br />Last Workout
             </div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-white">{freshMuscleGroups}</div>
-            <div className="text-xs text-gray-400 uppercase tracking-wide">
+            <div className="text-3xl font-bold">{freshMuscleGroups}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wide">
               Fresh Muscle<br />Groups
             </div>
           </div>
@@ -194,7 +196,7 @@ export function BodyDiagram({
       )}
 
       {/* Body Diagram */}
-      <div className="bg-gray-900 rounded-3xl p-6 relative overflow-hidden">
+      <div className="bg-muted/30 rounded-3xl p-6 relative overflow-hidden">
         <svg
           viewBox="0 0 450 300"
           className="w-full h-auto"
@@ -313,10 +315,10 @@ export function BodyDiagram({
           </g>
 
           {/* View Labels */}
-          <text x="180" y="45" textAnchor="middle" className="text-xs font-medium fill-gray-400">
+          <text x="180" y="45" textAnchor="middle" className="text-xs font-medium fill-muted-foreground">
             FRONT
           </text>
-          <text x="305" y="45" textAnchor="middle" className="text-xs font-medium fill-gray-400">
+          <text x="305" y="45" textAnchor="middle" className="text-xs font-medium fill-muted-foreground">
             BACK
           </text>
         </svg>

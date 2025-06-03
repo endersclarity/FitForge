@@ -54,8 +54,11 @@ export function useMuscleRecovery(): UseMuscleRecoveryReturn {
       refreshRecoveryData();
     } else {
       setRecoveryCalculator(null);
-      setRecoveryStates([]);
-      setHeatMapData(null);
+      // Provide default fresh muscle states for non-authenticated users
+      const defaultStates = generateDefaultFreshMuscleStates();
+      setRecoveryStates(defaultStates);
+      setHeatMapData(generateHeatMapData(defaultStates));
+      setIsLoading(false);
     }
   }, [user]);
 
@@ -71,10 +74,13 @@ export function useMuscleRecovery(): UseMuscleRecoveryReturn {
 
       // Get recovery states for all muscle groups
       const states = await recoveryCalculator.getMuscleRecoveryStates(user.id);
-      setRecoveryStates(states);
+      
+      // If no workout data exists, provide fresh muscle states
+      const finalStates = states.length > 0 ? states : generateDefaultFreshMuscleStates();
+      setRecoveryStates(finalStates);
 
       // Generate heat map visualization data
-      const heatMap = generateHeatMapData(states);
+      const heatMap = generateHeatMapData(finalStates);
       setHeatMapData(heatMap);
 
     } catch (err) {
@@ -372,6 +378,23 @@ export function useMuscleRecovery(): UseMuscleRecoveryReturn {
     }
 
     return new Date(now.getTime() + minDaysUntilOptimal * 24 * 60 * 60 * 1000);
+  };
+
+  /**
+   * Generate default fresh muscle states for users with no workout data
+   */
+  const generateDefaultFreshMuscleStates = (): MuscleRecoveryState[] => {
+    const allMuscleGroups = Object.values(MUSCLE_GROUPS);
+    const defaultDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
+    
+    return allMuscleGroups.map(muscleGroup => ({
+      muscleGroup,
+      lastWorkoutDate: defaultDate,
+      workoutIntensity: 0, // No recent workouts
+      currentFatiguePercentage: 5, // Very low baseline fatigue
+      recoveryStatus: 'undertrained' as const,
+      daysUntilOptimal: 0 // Ready to train immediately
+    }));
   };
 
   return {

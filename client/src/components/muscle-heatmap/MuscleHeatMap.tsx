@@ -41,6 +41,17 @@ export function MuscleHeatMap({
     getMostFatiguedMuscles
   } = useMuscleRecovery();
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('🔥 MuscleHeatMap Debug:', {
+      isLoading,
+      error,
+      recoveryStatesCount: recoveryStates.length,
+      recoveryStates: recoveryStates.slice(0, 3), // Log first 3 for debugging
+      heatMapData: heatMapData ? 'exists' : 'null'
+    });
+  }, [isLoading, error, recoveryStates, heatMapData]);
+
   const [selectedMuscle, setSelectedMuscle] = useState<MuscleGroupType | null>(null);
   const [hoveredMuscle, setHoveredMuscle] = useState<{
     muscle: MuscleGroupType;
@@ -140,14 +151,14 @@ export function MuscleHeatMap({
   return (
     <div className={cn("w-full space-y-6", className)}>
       {/* Main Heat Map Card */}
-      <Card className="w-full bg-gradient-to-b from-gray-900 to-gray-800 border-gray-700">
+      <Card className="w-full">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between text-white">
+          <CardTitle className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <TrendingUp className="h-5 w-5" />
               <span>Muscle Recovery Map</span>
             </div>
-            <Badge variant="outline" className="text-gray-300 border-gray-600">
+            <Badge variant="outline">
               Overall: {overallFatigue}% Fatigue
             </Badge>
           </CardTitle>

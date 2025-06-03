@@ -36,32 +36,13 @@ export function DashboardOverview() {
 
       <div className="space-y-8">
         {/* Muscle Recovery Heat Map - Primary Feature */}
-        {user ? (
-          <div className="w-full">
-            <MuscleHeatMap 
-              onWorkoutSuggestion={handleWorkoutSuggestion}
-              showRecommendations={true}
-              showDetailedMetrics={true}
-            />
-          </div>
-        ) : (
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5 text-blue-500" />
-                <span>Muscle Recovery Map</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center py-12">
-              <p className="text-muted-foreground mb-4">
-                Sign in to see your muscle recovery status and get personalized training recommendations
-              </p>
-              <Button onClick={() => window.location.href = '/auth'}>
-                Sign In to Continue
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <div className="w-full">
+          <MuscleHeatMap 
+            onWorkoutSuggestion={handleWorkoutSuggestion}
+            showRecommendations={true}
+            showDetailedMetrics={true}
+          />
+        </div>
 
         {/* Secondary Analytics Grid */}
         <div className="grid lg:grid-cols-3 gap-8">
