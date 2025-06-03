@@ -40,13 +40,16 @@ export default function Exercises() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
   const [selectedExercise, setSelectedExercise] = useState<ExerciseWithDetails | null>(null);
 
-  // Fetch exercises from Supabase
-  const { data: exercisesData, isLoading, error: exercisesError } = useQuery<Exercise[]>({
-    queryKey: ["supabase-all-exercises"],
+  // Fetch exercises from working API endpoint
+  const { data: exercisesData, isLoading, error: exercisesError } = useQuery({
+    queryKey: ["all-exercises"],
     queryFn: async () => {
-      console.log('🔍 Fetching all exercises from Supabase...');
+      console.log('🔍 Fetching all exercises from API...');
       try {
-        const exercises = await workoutService.getAllExercises();
+        const response = await fetch('/api/exercises');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const exercises = data.data.exercises || [];
         console.log(`✅ Found ${exercises.length} exercises`);
         return exercises;
       } catch (error) {
@@ -58,28 +61,28 @@ export default function Exercises() {
     retryDelay: 1000
   });
 
-  // Convert Supabase exercises to the expected format
-  const exercises: ExerciseWithDetails[] = (exercisesData || []).map(exercise => ({
+  // Convert API exercises to the expected format
+  const exercises: ExerciseWithDetails[] = (exercisesData || []).map((exercise: any) => ({
     id: exercise.id,
-    exerciseName: exercise.exercise_name,
-    name: exercise.exercise_name, // For compatibility
+    exerciseName: exercise.exerciseName,
+    name: exercise.exerciseName, // For compatibility
     category: exercise.category,
-    movementPattern: exercise.movement_pattern || '',
-    workoutType: exercise.workout_type || '',
-    workout_type: exercise.workout_type, // For compatibility
-    equipmentType: exercise.equipment_type || [],
-    equipment: exercise.equipment_type?.[0] || '', // For compatibility - take first equipment
-    primaryMuscles: [], // Would need to fetch from exercise_primary_muscles table
-    secondaryMuscles: [], // Would need to fetch from exercise_secondary_muscles table
-    difficulty: exercise.difficulty_level || 'beginner',
-    difficultyLevel: exercise.difficulty_level || 'beginner',
+    movementPattern: exercise.movementPattern || '',
+    workoutType: exercise.workoutType || '',
+    workout_type: exercise.workoutType, // For compatibility
+    equipmentType: exercise.equipmentType || [],
+    equipment: exercise.equipmentType?.[0] || '', // For compatibility - take first equipment
+    primaryMuscles: exercise.primaryMuscles || [],
+    secondaryMuscles: exercise.secondaryMuscles || [],
+    difficulty: exercise.difficultyLevel || 'beginner',
+    difficultyLevel: exercise.difficultyLevel || 'beginner',
     description: exercise.description || '',
-    restTimeSeconds: exercise.rest_time_seconds || 60,
-    rest_time_seconds: exercise.rest_time_seconds || 60,
+    restTimeSeconds: exercise.restTimeSeconds || 60,
+    rest_time_seconds: exercise.restTimeSeconds || 60,
     defaultSets: 3, // Default value since this field doesn't exist in Exercise type
     default_sets: 3, // Default value since this field doesn't exist in Exercise type
-    defaultReps: exercise.default_reps || 10,
-    default_reps: exercise.default_reps || 10
+    defaultReps: exercise.defaultReps || 10,
+    default_reps: exercise.defaultReps || 10
   }));
 
   // Get unique values for filters

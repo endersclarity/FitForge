@@ -77,6 +77,92 @@ export function WorkoutSession({ workoutType = "Custom Workout", selectedExercis
     );
   }
 
+  // If session is completed, show completion screen
+  if (session && session.status === 'completed') {
+    const stats = {
+      duration: session.endTime 
+        ? formatDuration(session.endTime.getTime() - session.startTime.getTime())
+        : formatDuration(Date.now() - session.startTime.getTime()),
+      totalSets: session.exercises.reduce((total, ex) => total + ex.sets.length, 0),
+      totalVolume: session.totalVolume,
+      exercisesCompleted: session.exercises.filter(ex => ex.sets.length > 0).length
+    };
+
+    return (
+      <div className="min-h-screen bg-background">
+        <section className="bg-gradient-to-r from-green-500/20 via-blue-500/10 to-purple-500/20 py-12">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div className="mb-8">
+              <CheckCircle className="w-20 h-20 mx-auto mb-4 text-green-500" />
+              <h1 className="text-4xl font-bold mb-4">Workout Complete! 🎉</h1>
+              <p className="text-xl text-muted-foreground">
+                Great job on completing your {session.workoutType} workout!
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-4 gap-6 mb-8">
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <Timer className="w-8 h-8 mx-auto mb-2 text-blue-500" />
+                  <div className="text-2xl font-bold">{stats.duration}</div>
+                  <div className="text-sm text-muted-foreground">Duration</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <TrendingUp className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                  <div className="text-2xl font-bold">{stats.totalSets}</div>
+                  <div className="text-sm text-muted-foreground">Sets Completed</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <Dumbbell className="w-8 h-8 mx-auto mb-2 text-purple-500" />
+                  <div className="text-2xl font-bold">{Math.round(stats.totalVolume)}</div>
+                  <div className="text-sm text-muted-foreground">Total Volume (lbs)</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <CheckCircle className="w-8 h-8 mx-auto mb-2 text-orange-500" />
+                  <div className="text-2xl font-bold">{stats.exercisesCompleted}</div>
+                  <div className="text-sm text-muted-foreground">Exercises</div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex gap-4 justify-center">
+                <Button 
+                  onClick={() => window.location.href = '/dashboard'}
+                  size="lg" 
+                  className="gradient-bg text-white font-semibold"
+                >
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                  Back to Dashboard
+                </Button>
+                <Button 
+                  onClick={() => window.location.href = '/workouts'}
+                  variant="outline"
+                  size="lg"
+                >
+                  Start Another Workout
+                </Button>
+              </div>
+              
+              <p className="text-sm text-muted-foreground">
+                Your workout has been saved and logged automatically.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   // If no session exists, show start screen
   if (!session) {
     return (

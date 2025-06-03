@@ -57,16 +57,34 @@ export default function StartWorkout() {
   const { user } = useAuth();
   const { session, startWorkout, abandonActiveSession, resumeActiveSession, loading: sessionLoading, error } = useWorkoutSession();
 
-  // Fetch exercises from Supabase by workout type with proper error handling
-  const { data: supabaseExercises, isLoading, error: exercisesError } = useQuery<Exercise[]>({
-    queryKey: ["supabase-exercises", workoutType],
+  // Fetch exercises from working API endpoint by workout type
+  const { data: exercisesResponse, isLoading, error: exercisesError } = useQuery({
+    queryKey: ["exercises", workoutType],
     queryFn: async () => {
-      if (!workoutType) return [];
+      if (!workoutType) return { exercises: [] };
       console.log(`🔍 Fetching exercises for workout type: ${workoutType}`);
       try {
-        const exercises = await workoutService.getExercisesByType(workoutType);
-        console.log(`✅ Found ${exercises.length} exercises for ${workoutType}`);
-        return exercises;
+        const response = await fetch('/api/exercises');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        console.log(`✅ Found ${data.data.exercises.length} total exercises`);
+        
+        // Filter by workout type (convert backbiceps -> BackBiceps for matching)
+        const workoutTypeMapping: Record<string, string> = {
+          'backbiceps': 'BackBiceps',
+          'chesttriceps': 'ChestTriceps', 
+          'legs': 'Legs',
+          'abs': 'Abs',
+          'warmup': 'Warmup'
+        };
+        
+        const mappedType = workoutTypeMapping[workoutType] || workoutType;
+        const filteredExercises = data.data.exercises.filter((ex: any) => 
+          ex.workoutType === mappedType
+        );
+        console.log(`✅ Found ${filteredExercises.length} exercises for ${workoutType} (${mappedType})`);
+        
+        return { exercises: filteredExercises };
       } catch (error) {
         console.error(`❌ Failed to fetch exercises for ${workoutType}:`, error);
         throw new Error(`Failed to load ${workoutType} exercises. Please try again.`);
@@ -77,31 +95,20 @@ export default function StartWorkout() {
     retryDelay: 1000
   });
 
-  // Convert Supabase exercises to legacy format for UI compatibility
-  const allExercises: LegacyExercise[] = (supabaseExercises || []).map(exercise => ({
-    exerciseName: exercise.exercise_name,
-    equipmentType: exercise.equipment_type || [],
-    category: exercise.category,
-    workoutType: exercise.workout_type || workoutType,
-    variation: exercise.variation || '',
-    weight: exercise.default_weight_lbs || 0,
-    restTime: `${exercise.rest_time_seconds || 60}s`,
-    reps: exercise.default_reps || 10,
-    primaryMuscles: [], // Would need to fetch from exercise_primary_muscles table
-    secondaryMuscles: [] // Would need to fetch from exercise_secondary_muscles table
-  }));
+  // Use exercises from API (already in the correct format)
+  const allExercises: LegacyExercise[] = exercisesResponse?.exercises || [];
 
   // Available exercises (already filtered by workout type from Supabase)
   const availableExercises = allExercises;
 
   // Auto-select exercises when they load
   useEffect(() => {
-    if (availableExercises.length > 0 && selectedExerciseIds.length === 0 && supabaseExercises) {
-      // Use the actual Supabase exercise IDs for selection
-      const defaultExerciseIds = supabaseExercises.slice(0, 6).map(exercise => exercise.id);
+    if (availableExercises.length > 0 && selectedExerciseIds.length === 0) {
+      // Use exercise IDs from the API response
+      const defaultExerciseIds = exercisesResponse?.exercises.slice(0, 6).map((exercise: any) => exercise.id) || [];
       setSelectedExerciseIds(defaultExerciseIds);
     }
-  }, [availableExercises, selectedExerciseIds.length, supabaseExercises]);
+  }, [availableExercises, selectedExerciseIds.length, exercisesResponse]);
 
   const workoutTypeNames: Record<string, string> = {
     'abs': 'Abs & Core',
@@ -205,17 +212,17 @@ export default function StartWorkout() {
 
       // Create legacy exercise objects for the workout session
       const selectedExercises = selectedExerciseIds
-        .map(id => supabaseExercises?.find(ex => ex.id === id))
+        .map(id => exercisesResponse?.exercises.find((ex: any) => ex.id === id))
         .filter(Boolean)
-        .map(exercise => ({
-          id: exercise!.id,
-          name: exercise!.exercise_name,
-          primaryMuscles: [], // TODO: Fetch from muscles tables
-          secondaryMuscles: [],
-          equipment: exercise!.equipment_type || [],
-          restTime: exercise!.rest_time_seconds || 60,
-          difficulty: exercise!.difficulty_level || 'beginner',
-          workoutType: exercise!.workout_type || workoutType
+        .map((exercise: any) => ({
+          id: exercise.id,
+          name: exercise.exerciseName,
+          primaryMuscles: exercise.primaryMuscles || [],
+          secondaryMuscles: exercise.secondaryMuscles || [],
+          equipment: exercise.equipmentType || [],
+          restTime: exercise.restTimeSeconds || 60,
+          difficulty: exercise.difficultyLevel || 'beginner',
+          workoutType: exercise.workoutType || workoutType
         }));
 
       await startWorkout(workoutType, selectedExercises);
@@ -307,7 +314,7 @@ export default function StartWorkout() {
               </p>
             </div>
 
-            {supabaseExercises?.map((exercise, index) => {
+            {exercisesResponse?.exercises.map((exercise: any, index: number) => {
               const exerciseId = exercise.id;
               const isSelected = selectedExerciseIds.includes(exerciseId);
               
@@ -322,21 +329,21 @@ export default function StartWorkout() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold">{exercise.exercise_name}</h3>
+                        <h3 className="font-semibold">{exercise.exerciseName}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {exercise.category} • {exercise.difficulty_level}
+                          {exercise.category} • {exercise.difficultyLevel}
                         </p>
                         <div className="flex gap-2 mt-2">
                           <Badge variant="outline">{exercise.category}</Badge>
-                          {exercise.equipment_type?.map((eq, idx) => (
+                          {exercise.equipmentType?.map((eq: string, idx: number) => (
                             <Badge key={idx} variant="outline">{eq}</Badge>
                           ))}
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        {exercise.default_weight_lbs && (
+                        {exercise.defaultWeight && exercise.defaultWeight !== 'Bodyweight' && (
                           <div className="text-sm text-muted-foreground">
-                            {exercise.default_weight_lbs} lbs
+                            {exercise.defaultWeight} lbs
                           </div>
                         )}
                         <Badge variant={isSelected ? "default" : "secondary"}>
