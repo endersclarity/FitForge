@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, Dumbbell, Target, ChevronRight, Activity } from "lucide-react";
+import { Search, Filter, Dumbbell, Target, ChevronRight, Activity, Plus, Check } from "lucide-react";
 import { workoutService } from "@/services/supabase-workout-service";
+import { useWorkoutQueue } from "@/hooks/use-workout-queue";
+import { WorkoutQueueButton } from "@/components/workout-queue-button";
 import type { Exercise } from "@/lib/supabase";
 
 interface ExerciseWithDetails {
@@ -39,6 +41,13 @@ export default function Exercises() {
   const [selectedEquipment, setSelectedEquipment] = useState<string>("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
   const [selectedExercise, setSelectedExercise] = useState<ExerciseWithDetails | null>(null);
+  
+  const { addExercise, isExerciseQueued } = useWorkoutQueue();
+
+  const handleAddToWorkout = (exercise: ExerciseWithDetails, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent opening the detail modal
+    addExercise(exercise);
+  };
 
   // Fetch exercises from working API endpoint
   const { data: exercisesData, isLoading, error: exercisesError } = useQuery({
@@ -342,6 +351,29 @@ export default function Exercises() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Add to Workout Button */}
+                  <div className="pt-2">
+                    <Button
+                      onClick={(e) => handleAddToWorkout(exercise, e)}
+                      disabled={isExerciseQueued(exercise.id)}
+                      className="w-full"
+                      variant={isExerciseQueued(exercise.id) ? "secondary" : "default"}
+                      size="sm"
+                    >
+                      {isExerciseQueued(exercise.id) ? (
+                        <>
+                          <Check className="w-4 h-4 mr-2" />
+                          Added to Workout
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add to Workout
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -398,10 +430,51 @@ export default function Exercises() {
 
               {/* Muscle Groups */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Target Muscles</h3>
-                <p className="text-sm text-muted-foreground">
-                  Primary and secondary muscle engagement data coming soon
-                </p>
+                <h3 className="font-semibold text-lg">Muscle Engagement</h3>
+                
+                {selectedExercise.primaryMuscles && selectedExercise.primaryMuscles.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-primary">Primary Muscles</h4>
+                    <div className="space-y-2">
+                      {selectedExercise.primaryMuscles.map((muscle, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <span className="text-sm">{muscle.muscle}</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 h-2 bg-secondary rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-primary rounded-full transition-all duration-500"
+                                style={{ width: `${muscle.percentage}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium text-primary">{muscle.percentage}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedExercise.secondaryMuscles && selectedExercise.secondaryMuscles.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-muted-foreground">Secondary Muscles</h4>
+                    <div className="space-y-2">
+                      {selectedExercise.secondaryMuscles.map((muscle, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <span className="text-sm">{muscle.muscle}</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 h-2 bg-secondary rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-accent rounded-full transition-all duration-500"
+                                style={{ width: `${muscle.percentage}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium text-accent">{muscle.percentage}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Instructions */}
@@ -426,6 +499,9 @@ export default function Exercises() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Floating Workout Queue Button */}
+      <WorkoutQueueButton />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider, useAuth } from "@/hooks/use-supabase-auth";
 import { WorkoutSessionProvider } from "@/hooks/use-workout-session";
+import { WorkoutQueueProvider } from "@/hooks/use-workout-queue";
 import { useDataMigration, MigrationStatus } from "@/hooks/use-data-migration";
 import { Navigation } from "@/components/navigation";
 import NavigationErrorBoundary from "@/components/navigation-error-boundary";
@@ -161,7 +162,9 @@ function App() {
           <Toaster />
           <AuthProvider>
             <WorkoutSessionProvider>
-              <Router />
+              <WorkoutQueueProvider>
+                <Router />
+              </WorkoutQueueProvider>
             </WorkoutSessionProvider>
           </AuthProvider>
         </TooltipProvider>

@@ -1,0 +1,66 @@
+# FitForge - Real Data-Driven Fitness Ecosystem
+
+## Project Overview
+FitForge is a complete AI-powered fitness tracking platform with real-time workout logging, progressive overload algorithms, goal tracking, and comprehensive analytics - all driven by actual user data with transparent formulas.
+
+## Critical Priority: Storage Architecture Unification (GitHub Issue #27)
+**URGENT**: Two incompatible storage systems blocking user workflow:
+- **Workout Logging**: Simple logs (`/data/workout-logs/workout-YYYY-MM-DD.json`)  
+- **Progress Display**: Structured sessions (`/data/users/{userId}/workouts.json`)
+- **Impact**: Progress tab shows "No workouts yet" despite completed workouts
+
+## Core Requirements
+
+### User Stories
+1. **Real Workout Tracking**: User completes exercise → data stored → progress visible
+2. **Progressive Overload**: System calculates intelligent weight/rep progressions  
+3. **Goal Achievement**: User sets goals → system tracks progress → achievement unlocked
+4. **Formula Transparency**: User sees HOW calculations work, not just results
+5. **Real Data Only**: No mock data - everything from actual user input
+
+### Technical Architecture
+- **Frontend**: React 18, TypeScript, Radix UI, Tailwind CSS
+- **Backend**: Node.js, Express, TypeScript
+- **Database**: Supabase (primary), SQLite (local), File Storage (JSON)
+- **Development**: Unified dev server on port 5000
+
+### Success Criteria
+- ✅ Exercise selection → workout completion flow working
+- ⚠️ **BLOCKING**: Workout → progress display seamless flow (storage issue)
+- 📋 Progressive overload recommendations based on performance
+- 📋 Goal tracking with real-time progress calculations
+- 📋 Body metrics input and tracking
+
+## Implementation Strategy
+
+### Phase 1: Core Infrastructure (URGENT)
+1. **Enhance FileStorage** - Add structured session support
+2. **Update Workout Completion** - Use fileStorage directly (eliminate simple logs)
+3. **Test Unified Flow** - Verify workout → progress display works
+4. **Remove Converters** - Clean up architectural debt
+
+### Phase 2: Progressive Overload AI
+- Evidence-based progression algorithms
+- Plateau detection and recovery
+- Smart exercise selection
+
+### Phase 3: Goal System Enhancement
+- Real-time progress calculations  
+- Body composition tracking
+- Achievement system
+
+### Phase 4: User Experience Polish
+- Performance optimization
+- Offline capabilities
+- Mobile responsiveness
+
+## Development Standards
+- **TypeScript Full Coverage**: No `any` types allowed
+- **Real Data Testing**: Test with actual user input scenarios
+- **Formula Validation**: Verify calculation accuracy
+- **Component Standards**: Functional components, React Query, custom hooks
+
+## Risk Analysis
+- **Storage Architecture Mismatch** (GitHub Issue #27) - Critical blocker
+- **Multiple Storage Systems** - Requires data converters (architectural debt)
+- **Formula Complexity** - Progressive overload algorithms need research validation

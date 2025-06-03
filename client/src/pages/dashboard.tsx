@@ -62,6 +62,28 @@ export default function Dashboard() {
     queryKey: ["/api/achievements"],
   });
 
+  // Calculate real progress based on actual Supabase data
+  const today = new Date();
+  const todaysSessions = recentSessions.filter(session => {
+    const sessionDate = new Date(session.start_time);
+    return sessionDate.toDateString() === today.toDateString() && session.completion_status === 'completed';
+  });
+  
+  // Progress is based on whether user completed a workout today (0 or 100)
+  const workoutProgress = todaysSessions.length > 0 ? 100 : 0;
+  
+  const todayStats = {
+    workoutProgress,
+    calorieGoal: 2200,
+    caloriesConsumed: userStats?.caloriesConsumed || 0,
+    workoutsThisWeek: recentSessions.filter(session => {
+      const sessionDate = new Date(session.start_time);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return sessionDate >= weekAgo && session.completion_status === 'completed';
+    }).length,
+  };
+
   // Calculate achievements based on workout data
   const calculateAchievements = (): CalculatedAchievement[] => {
     const calculatedAchievements: CalculatedAchievement[] = [];
@@ -137,49 +159,27 @@ export default function Dashboard() {
     queryKey: ["/api/challenges"],
   });
 
-  // Calculate real progress based on actual Supabase data
-  const today = new Date();
-  const todaysSessions = recentSessions.filter(session => {
-    const sessionDate = new Date(session.start_time);
-    return sessionDate.toDateString() === today.toDateString() && session.completion_status === 'completed';
-  });
-  
-  // Progress is based on whether user completed a workout today (0 or 100)
-  const workoutProgress = todaysSessions.length > 0 ? 100 : 0;
-  
-  const todayStats = {
-    workoutProgress,
-    calorieGoal: 2200,
-    caloriesConsumed: userStats?.caloriesConsumed || 0,
-    workoutsThisWeek: recentSessions.filter(session => {
-      const sessionDate = new Date(session.start_time);
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return sessionDate >= weekAgo && session.completion_status === 'completed';
-    }).length,
-  };
-
   const quickActions = [
     {
-      title: "Start Quick Workout",
-      description: "15-minute full body routine",
+      title: "Exercises",
+      description: "Browse all 38 exercises",
       icon: Play,
       color: "bg-primary/10 text-primary",
-      href: "/workouts",
+      href: "/exercises",
     },
     {
-      title: "Log Nutrition",
-      description: "Track your meals",
-      icon: Target,
-      color: "bg-accent/10 text-accent",
-      href: "/nutrition",
-    },
-    {
-      title: "View Progress",
-      description: "Check your stats",
+      title: "Workout History",
+      description: "View past workouts & muscle heat map",
       icon: TrendingUp,
       color: "bg-secondary/10 text-secondary",
       href: "/progress",
+    },
+    {
+      title: "Nutrition Tracker",
+      description: "Track your meals and calories",
+      icon: Target,
+      color: "bg-accent/10 text-accent",
+      href: "/nutrition",
     },
   ];
 

@@ -1,67 +1,90 @@
 {
-  "name": "FitForge - Real Data Architecture",
-  "description": "Data-driven fitness ecosystem with transparent calculations and no mock data",
-  "version": "3.0.0",
-  "type": "full-stack-typescript",
-  "architecture": "real-data-driven",
-  "commands": {
-    "/load": "Load project context and current development status",
-    "/implement": "Implement features using database-first methodology",
-    "/quality": "Run TypeScript validation and real data tests",
-    "/process": "Enforce git workflow and commit real changes",
-    "/architect": "Run complete project scaffolding with HDTA templates"
+  "keymap": {
+    "/task": {
+      "description": "Execute intelligent task workflow - analyze progress, complete next actionable task, sync state",
+      "command": "user:task"
+    },
+    "/sync": {
+      "description": "Synchronize project state and analyze current progress across all systems",
+      "command": "user:sync"
+    },
+    "/architect": {
+      "description": "Complete CRCT/HDTA project scaffolding with populated templates",
+      "command": "user:architect"
+    },
+    "/branch": {
+      "description": "Create development branch with success criteria and timeline tracking",
+      "command": "user:branch"
+    },
+    "/parse": {
+      "description": "Parse branch requirements and generate actionable tasks.json",
+      "command": "user:parse"
+    },
+    "/init": {
+      "description": "Initialize AI agent integration with taskmaster and strategic context",
+      "command": "user:init"
+    },
+    "/web-eval": {
+      "description": "Comprehensive web application evaluation and UX analysis",
+      "command": "mcp__web-eval-agent__web_eval_agent"
+    },
+    "/monitor": {
+      "description": "Real-time backend monitoring and API debugging",
+      "command": "bash"
+    },
+    "/test": {
+      "description": "Run TypeScript validation and test suite",
+      "command": "bash",
+      "args": ["npm", "run", "check", "&&", "npm", "test"]
+    },
+    "/build": {
+      "description": "Production build with Vite",
+      "command": "bash",
+      "args": ["npm", "run", "build"]
+    },
+    "/dev": {
+      "description": "Start unified development server (backend + frontend on port 5000)",
+      "command": "bash",
+      "args": ["npm", "run", "dev"]
+    },
+    "/frontend": {
+      "description": "Start Vite frontend dev server on port 3000",
+      "command": "bash",
+      "args": ["npm", "run", "frontend"]
+    },
+    "/electron": {
+      "description": "Start desktop app development mode",
+      "command": "bash",
+      "args": ["npm", "run", "electron-dev"]
+    }
   },
-  "keyPaths": {
-    "systemManifest": "memory-bank/system_manifest_data_driven.md",
-    "databaseSchema": "memory-bank/database_schema_module.md",
-    "userDataEntry": "memory-bank/user_data_entry_module.md",
-    "progressCalculations": "memory-bank/progress_calculations_module.md",
-    "realDataPlan": "memory-bank/implementation_plan_real_data_architecture.md",
-    "projectRoadmap": "memory-bank/project_roadmap_data_driven.md",
-    "mainConfig": "CLAUDE.md",
-    "packageJson": "package.json",
-    "architecture": "ARCHITECTURE.md"
-  },
-  "dataArchitecture": {
-    "philosophy": "Every feature driven by real user-entered data",
-    "noMockData": true,
-    "formulaTransparency": true,
-    "databaseFirst": true,
-    "userDataPaths": [
-      "data/users/{userId}/workouts.json",
-      "data/users/{userId}/preferences.json",
-      "data/users/{userId}/body-stats.json",
-      "data/users/{userId}/goals.json"
-    ],
-    "universalData": [
-      "data/exercises/universal-exercise-database.json"
+  "project": {
+    "name": "FitForge",
+    "description": "Real Data-Driven Fitness Ecosystem with AI-powered progressive overload",
+    "version": "1.0.0",
+    "type": "fitness-app",
+    "tech_stack": ["TypeScript", "React", "Node.js", "Supabase", "Radix UI", "Tailwind CSS"],
+    "architecture": "real-data-driven",
+    "development_principles": [
+      "Database schema first",
+      "No mock data policy", 
+      "Formula transparency",
+      "TypeScript full coverage",
+      "Real user input only"
     ]
   },
-  "metadata": {
-    "lastSync": "2025-06-01T21:30:00.000Z",
-    "completedPhases": ["Phase1_DatabaseFoundation", "Phase2_UserDataEntry", "Phase3_SupabaseMigration", "Phase4_UserGoalsSystem"],
-    "currentPhase": "Phase5_ProductionDeployment",
-    "lastMajorAccomplishment": "Complete User Goals System implementation - 12/12 tasks finished via parallel workstream development, production-ready"
+  "development": {
+    "port": 5000,
+    "wsl_ip_required": true,
+    "unified_server": true,
+    "test_command": "npm run check",
+    "build_command": "npm run build",
+    "data_architecture": "excel-like-structured"
   },
-  "developmentWorkflow": [
-    "1. Design database schema first",
-    "2. Build user data entry forms",
-    "3. Create API endpoints for real data",
-    "4. Implement formula-based calculations",
-    "5. Build UI showing real data or formulas",
-    "6. Test with real user input scenarios"
-  ],
-  "testingStrategy": {
-    "primary": "MCP BrowserMCP for user flow testing",
-    "dataValidation": "Real user input scenarios only",
-    "missingData": "Test behavior without data",
-    "formulaAccuracy": "Verify mathematical calculations"
-  },
-  "codeStandards": {
-    "typescript": "Full coverage, no any types",
-    "react": "Functional components with hooks",
-    "validation": "Zod schemas for all user input",
-    "apiDesign": "RESTful with real data only",
-    "uiFramework": "Radix UI + Tailwind CSS"
+  "memory_bank": {
+    "system_manifest": "memory-bank/system_manifest_fitforge.md",
+    "current_focus": "unified_storage_architecture",
+    "active_issues": ["GitHub Issue #27 - Storage Architecture Mismatch"],
+    "roadmap": "memory-bank/project_roadmap_fitforge.md"
   }
 }

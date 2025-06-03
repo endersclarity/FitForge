@@ -33,5 +33,75 @@
     "workoutType": "BackBiceps",
     "exerciseName": "WORKOUT_COMPLETED",
     "set": {}
+  },
+  {
+    "timestamp": "2025-06-03T06:21:45.410Z",
+    "sessionId": "local-1748931594846",
+    "workoutType": "backbiceps",
+    "exerciseName": "Neutral Grip Pull-ups",
+    "set": {
+      "setNumber": 1,
+      "weight": 200,
+      "reps": 8,
+      "equipment": "bodyweight",
+      "volume": 1600,
+      "timestamp": "2025-06-03T06:21:45.410Z"
+    }
+  },
+  {
+    "timestamp": "2025-06-03T06:22:07.460Z",
+    "sessionId": "local-1748931594846",
+    "workoutType": "backbiceps",
+    "exerciseName": "WORKOUT_COMPLETED",
+    "set": {}
+  },
+  {
+    "timestamp": "2025-06-03T06:29:03.874Z",
+    "sessionId": "local-1748932106596",
+    "workoutType": "Abs",
+    "exerciseName": "Spider Planks",
+    "set": {
+      "setNumber": 1,
+      "weight": 1,
+      "reps": 1,
+      "equipment": "Bodyweight",
+      "volume": 1,
+      "timestamp": "2025-06-03T06:29:03.874Z"
+    }
+  },
+  {
+    "timestamp": "2025-06-03T06:29:04.353Z",
+    "sessionId": "local-1748932106596",
+    "workoutType": "Abs",
+    "exerciseName": "Bench Situps",
+    "set": {
+      "setNumber": 1,
+      "weight": 1,
+      "reps": 1,
+      "equipment": "Bench",
+      "volume": 1,
+      "timestamp": "2025-06-03T06:29:04.353Z"
+    }
+  },
+  {
+    "timestamp": "2025-06-03T06:29:04.848Z",
+    "sessionId": "local-1748932106596",
+    "workoutType": "Abs",
+    "exerciseName": "Planks",
+    "set": {
+      "setNumber": 1,
+      "weight": 1,
+      "reps": 1,
+      "equipment": "Bodyweight",
+      "volume": 1,
+      "timestamp": "2025-06-03T06:29:04.848Z"
+    }
+  },
+  {
+    "timestamp": "2025-06-03T06:29:08.579Z",
+    "sessionId": "local-1748932106596",
+    "workoutType": "Abs",
+    "exerciseName": "WORKOUT_COMPLETED",
+    "set": {}
   }
 ]
