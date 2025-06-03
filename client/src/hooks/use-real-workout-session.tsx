@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/hooks/use-supabase-auth'
 import { workoutService } from '@/services/supabase-workout-service'
+import { useMuscleRecovery } from '@/hooks/use-muscle-recovery'
 import type { WorkoutSession, WorkoutExercise, WorkoutSet, Exercise } from '@/lib/supabase'
 
 interface WorkoutExerciseWithDetails extends WorkoutExercise {
@@ -15,6 +16,7 @@ interface WorkoutSessionData {
 
 export function useRealWorkoutSession(sessionId: string | null) {
   const { user } = useAuth()
+  const { updateMuscleRecovery } = useMuscleRecovery()
   const [workoutData, setWorkoutData] = useState<WorkoutSessionData>({
     session: null,
     exercises: []
@@ -188,6 +190,33 @@ export function useRealWorkoutSession(sessionId: string | null) {
         session: completedSession
       }))
 
+      // Update muscle recovery after workout completion
+      try {
+        // Convert workout data to format expected by muscle recovery service
+        const workoutSessionData = {
+          id: completedSession.id,
+          userId: user?.id || '',
+          date: new Date(completedSession.end_time || completedSession.created_at),
+          exercises: workoutData.exercises.map(ex => ({
+            exerciseId: ex.exercise_id,
+            exerciseName: ex.exercise.exercise_name,
+            sets: ex.sets.length,
+            reps: ex.sets.length > 0 ? ex.sets.reduce((total, set) => total + set.reps, 0) / ex.sets.length : 0,
+            weight: ex.sets.length > 0 ? ex.sets.reduce((total, set) => total + (set.weight_lbs || 0), 0) / ex.sets.length : 0,
+            rpe: ex.sets.length > 0 ? ex.sets.reduce((total, set) => total + (set.perceived_exertion || 7), 0) / ex.sets.length : 7,
+            muscleActivation: [] // Will be populated by muscle mapping service
+          })),
+          totalDuration: completedSession.total_duration_seconds || 0,
+          rpe: rating || 7
+        }
+
+        await updateMuscleRecovery(workoutSessionData)
+        console.log('✅ Muscle recovery updated after workout completion')
+      } catch (recoveryError) {
+        console.warn('Failed to update muscle recovery:', recoveryError)
+        // Don't fail the workout completion if recovery update fails
+      }
+
       return completedSession
     } catch (err: any) {
       console.error('Error completing workout:', err)
@@ -196,7 +225,7 @@ export function useRealWorkoutSession(sessionId: string | null) {
     } finally {
       setLoading(false)
     }
-  }, [workoutData.session])
+  }, [workoutData.session, workoutData.exercises, user, updateMuscleRecovery])
 
   // Cancel workout
   const cancelWorkout = useCallback(async () => {
