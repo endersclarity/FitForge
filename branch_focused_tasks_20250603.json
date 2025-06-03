@@ -38,7 +38,7 @@
         "Integrate with existing fileStorage patterns"
       ],
       "branchContext": "Issue #26 - User profile infrastructure",
-      "implementation": "server/userProfileRoutes.ts"
+      "implementation": "server/userPreferencesRoutes.ts"
     },
     {
       "id": "26-3",
