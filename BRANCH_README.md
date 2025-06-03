@@ -1,152 +1,192 @@
-# Branch: Auto-Populate Body Weight for Bodyweight Exercises
+# Branch: feature/muscle-activation-heatmap-issue-22
 
-**Issue**: [#26 Auto-Populate Body Weight for Bodyweight Exercises](https://github.com/endersclarity/FitForge/issues/26)  
-**Branch**: `feature/auto-populate-body-weight-issue-26`  
+**Issue**: [#22 Implement Muscle Activation Heat Map Visualization](https://github.com/endersclarity/FitForge/issues/22)  
+**Branch**: `feature/muscle-activation-heatmap-issue-22`  
 **Created**: 2025-06-03  
-**Type**: Enhancement - User Experience & Data Foundation
+**Type**: Enhancement - Data Visualization & Recovery Tracking
 
-## 🎯 Success Criteria ✅ ALL COMPLETED
+## 🎯 Success Criteria
 
-### Core Functionality
-- [x] **Detect bodyweight exercises** from exercise database via `/api/exercises/is-bodyweight/{exerciseId}`
-- [x] **Auto-populate weight field** with user's body weight from profile
-- [x] **Display clear weight indication** showing "200 lbs (body weight)" format with badges
-- [x] **Provide additional weight option** for dumbbells, weighted vest, weight belt, backpack
-- [x] **Calculate total weight accurately** as `bodyWeight + additionalWeight`
-- [x] **Handle missing body weight** by prompting user for profile completion
-- [x] **Save additional weight preferences** per exercise for future sessions
+### Core Functionality  
+- [ ] **Visual Body Diagram**: SVG body diagram showing major muscle groups
+- [ ] **Color-Coded Recovery Status**: 
+  - Red (80-100%): Over-activated, needs recovery
+  - Orange/Pink (30-80%): Optimal training range  
+  - Blue/Green (0-30%): Under-activated, safe to train
+- [ ] **Interactive Elements**: Hover/click details showing exact percentages
+- [ ] **Real-time Updates**: Updates after completing workouts
+- [ ] **Workout History Integration**: Calculate current fatigue levels from workout data
 
-### Data Infrastructure 
-- [x] **User profile system** for storing body weight and preferences via `useUserProfile()`
-- [x] **Profile completion workflow** when body weight is missing via `ProfileSetupDialog`
-- [x] **Integration with existing volume calculations** (weight × reps × sets)
-- [x] **Data persistence** across sessions and page refreshes
+### Technical Implementation
+- [ ] **Recovery Algorithm**: Implement 5-day recovery cycle calculations
+- [ ] **Muscle Group Mapping**: Map exercises to muscle groups for fatigue tracking
+- [ ] **Data Integration**: Connect with existing exercise database and workout history
+- [ ] **Responsive Design**: Mobile-friendly heat map component
+- [ ] **Performance**: Smooth animations and fast rendering
 
 ### User Experience
-- [x] **Seamless workflow integration** with existing workout logging in `SetLogger.tsx`
-- [x] **Clear visual distinction** between body weight and additional weight with visual indicators
-- [x] **Progressive enhancement** - works without breaking existing functionality
-- [x] **Responsive design** across mobile and desktop interfaces
+- [ ] **Clear Visual Indicators**: Intuitive color coding and legends
+- [ ] **Actionable Insights**: Clear guidance on which muscles to train/rest
+- [ ] **Dashboard Integration**: Heat map accessible from main dashboard
+- [ ] **Loading States**: Proper skeleton/loading UI while calculating
 
 ## 🏗️ Implementation Plan
 
-### Phase 1: User Profile Foundation (Days 1-2)
+### Phase 1: Recovery Algorithm (Days 1-2)
 ```typescript
-// Core data structures and storage
-interface UserProfile {
-  bodyWeight: number;
-  heightFeet: number;
-  heightInches: number;
-  age: number;
-  goals: {
-    calorieTarget?: number;
-    volumeIncreasePreference: number; // percentage
-  };
+// Core recovery data structures
+interface MuscleRecoveryState {
+  muscleGroup: string;
+  lastWorkoutDate: Date;
+  workoutIntensity: number;  // 0-1 scale based on RPE
+  currentFatiguePercentage: number;
+  recoveryStatus: 'overworked' | 'optimal' | 'undertrained';
+  daysUntilOptimal: number;
+}
+
+interface MuscleRecoveryService {
+  calculateRecovery(lastWorkout: Date, intensity: number): number;
+  getMuscleRecoveryStates(userId: string): MuscleRecoveryState[];
+  updateMuscleRecovery(workoutData: WorkoutSession): void;
 }
 ```
 
 **Tasks:**
-- Create user profile schema and TypeScript interfaces
-- Build profile storage system (JSON file-based for development)
-- Design profile completion/editing UI components
-- Implement profile data hooks and context providers
+1. **Muscle Recovery Service**: Create service to calculate recovery percentages
+2. **Workout-to-Muscle Mapping**: Map workout history to muscle group fatigue
+3. **Recovery Status Calculation**: Implement 5-day recovery cycle logic
 
-### Phase 2: Exercise Detection & Auto-Population (Days 3-4)
+### Phase 2: Visual Component (Days 3-4)
 ```typescript
-// Exercise classification and weight logic
-interface BodyweightExerciseConfig {
-  baseWeight: number;
-  additionalWeight: number;
-  totalWeight: number;
-  additionalEquipment?: string;
+// Heat map visual components
+interface MuscleHeatMapProps {
+  recoveryData: MuscleRecoveryState[];
+  onMuscleClick?: (muscle: string) => void;
+  showLegend?: boolean;
+  interactive?: boolean;
+}
+
+interface BodyDiagramProps {
+  muscleStates: MuscleRecoveryState[];
+  onMuscleHover?: (muscle: string, data: MuscleRecoveryState) => void;
 }
 ```
 
 **Tasks:**
-- Enhance exercise database queries to detect bodyweight exercises
-- Modify SetLogger component to auto-populate weight for bodyweight exercises
-- Add additional weight input UI with equipment selection
-- Update volume calculation logic to use total weight
+4. **SVG Body Diagram**: Create interactive body diagram component
+5. **Color Mapping System**: Implement fatigue percentage to color conversion
+6. **Interactive Tooltips**: Add hover/click details and muscle information
+7. **Animation & Transitions**: Smooth color transitions and loading states
 
-### Phase 3: Integration & Polish (Days 5-6)
+### Phase 3: Integration (Days 5-6)
 **Tasks:**
-- Integrate profile completion prompts into workout flow
-- Add preference persistence for additional weights per exercise
-- Implement data migration for existing users
-- Add comprehensive error handling and edge cases
-- Mobile responsiveness and UX polish
+8. **Dashboard Integration**: Add heat map to main dashboard
+9. **Workout Integration**: Update heat map after workout completion
+10. **Mobile Optimization**: Ensure responsive design and touch interactions
 
-## 🧪 Testing Strategy ✅ COMPLETED
+### Phase 4: Polish (Day 7)
+**Tasks:**
+11. **Performance Optimization**: Optimize rendering and calculations
+12. **User Testing**: Test with real workout data and user feedback
+
+## 🧪 Testing Strategy
 
 ### Unit Testing
-- [x] User profile data validation and storage
-- [x] Exercise type detection algorithms via API integration
-- [x] Weight calculation logic (bodyweight + additional)
-- [x] Volume calculation accuracy with enhanced breakdowns
+- [ ] Recovery algorithm accuracy with known workout data
+- [ ] Muscle group mapping from exercises to recovery states  
+- [ ] Color calculation algorithms for fatigue percentages
+- [ ] SVG rendering and interaction event handling
 
 ### Integration Testing
-- [x] Profile completion workflow end-to-end
-- [x] Workout logging with auto-populated weights
-- [x] Data persistence across browser sessions
-- [x] Migration compatibility with existing workout data
+- [ ] Heat map updates after workout completion
+- [ ] Dashboard integration and navigation
+- [ ] Data persistence and recovery state storage
+- [ ] Cross-device responsive design and touch interactions
 
 ### User Experience Testing
-- [x] First-time user onboarding flow via `ProfileSetupDialog`
-- [x] Existing user profile setup and body weight management
-- [x] Bodyweight vs weighted exercise workflows
-- [x] Mobile device compatibility with touch-optimized controls
+- [ ] Visual clarity and color interpretation by users
+- [ ] Interactive tooltip and muscle detail functionality
+- [ ] Performance with real workout history data
+- [ ] Mobile touch interactions and gesture support
 
-## 📊 Foundation for Future Features
+## 🏗️ Technical Foundation (Already Complete)
 
-This implementation creates the **user data infrastructure** that enables:
+### ✅ **Data Architecture Ready**
+- **Exercise Database**: Complete muscle activation data with percentages
+- **Muscle Schema**: Primary/secondary muscle engagement structure  
+- **Data Validation**: Schema validation ensuring data integrity
+- **Exercise Integration**: Muscle filtering working in exercise browser
 
-- **Progressive Overload Algorithm** (Issue #23) - needs user weight and preferences
-- **Chart.js Progress Dashboard** (Issue #13) - needs user metrics for context
-- **Recovery Tracking** (Issue #24) - needs user body composition data
-- **Smart Exercise Selection** (Issue #11) - needs user equipment and preferences
+### ✅ **Supporting Systems**
+- **Workout History**: User workout data available for recovery calculations
+- **Progressive Overload**: Existing intensity tracking for fatigue calculations
+- **User Preferences**: Body weight and user profile data available
+- **Component Library**: Radix UI + Tailwind CSS design system ready
 
 ## 🎛️ Technical Architecture
 
 ### Data Flow
 ```
-User Profile → Exercise Detection → Weight Auto-Population → Volume Calculation → Progress Tracking
+Workout History → Muscle Recovery Calculation → Heat Map Visualization → User Training Guidance
 ```
 
 ### Key Components
-- `useUserProfile()` - Profile data management hook
-- `ProfileSetupDialog` - Profile completion UI
-- `EnhancedSetLogger` - Modified workout logging with auto-population
-- `BodyweightExerciseService` - Exercise classification and weight logic
+- `MuscleRecoveryService` - Recovery calculation algorithms
+- `MuscleHeatMap` - Main heat map visualization component
+- `BodyDiagram` - SVG body diagram with interactive muscle groups
+- `useMuscleRecovery()` - Recovery data management hook
 
 ### Integration Points
 - Exercise database (`universal-exercise-database.json`)
-- Workout session management (`use-workout-session.tsx`)
-- User data storage (file-based system)
-- Volume calculation services
+- Workout history data (`data/users/{id}/workouts.json`)
+- Dashboard component integration
+- Real-time workout completion updates
+
+## 🗂️ File Structure Plan
+
+```
+client/src/
+├── components/
+│   ├── muscle-heatmap/
+│   │   ├── MuscleHeatMap.tsx          # Main heat map component
+│   │   ├── BodyDiagram.tsx            # SVG body diagram
+│   │   ├── MuscleGroup.tsx            # Individual muscle group component
+│   │   ├── HeatMapLegend.tsx          # Color legend component
+│   │   └── MuscleTooltip.tsx          # Muscle detail tooltip
+│   └── dashboard-overview.tsx         # Updated to include heat map
+├── services/
+│   ├── muscle-recovery.ts             # Recovery calculation service
+│   └── muscle-mapping.ts              # Exercise-to-muscle mapping
+├── hooks/
+│   ├── use-muscle-recovery.tsx        # Recovery data hook
+│   └── use-heat-map-data.tsx          # Heat map data aggregation
+└── types/
+    └── muscle-recovery.ts             # Recovery data types
+```
 
 ## 🚀 Estimated Timeline
 
-**Total Duration**: 6 days
-- **Days 1-2**: User profile foundation and data structures
-- **Days 3-4**: Exercise detection and auto-population logic  
-- **Days 5-6**: Integration, testing, and polish
+**Total Duration**: 7 days
+- **Days 1-2**: Recovery algorithm and muscle mapping
+- **Days 3-4**: SVG body diagram and visual components
+- **Days 5-6**: Dashboard integration and responsive design
+- **Day 7**: Performance optimization and user testing
 
 **Daily Commitment**: 4-6 hours focused development
-**Complexity**: Medium (new data infrastructure + UI integration)
+**Complexity**: High (complex calculations + SVG visualization + real-time updates)
 
-## ✅ Definition of Done ✅ ALL COMPLETED
+## ✅ Definition of Done
 
-- [x] All acceptance criteria from Issue #26 completed
-- [x] TypeScript compilation with zero errors (`npm run check`)
-- [x] Integration tests passing for user workflows  
-- [x] Mobile-responsive design verified with touch-optimized controls
-- [x] User profile system ready for future feature expansion
-- [x] Documentation updated with new user data architecture
-- [x] CodeRabbit review completed and approved (PR #30)
-- [x] Successfully merged to master with clean git history
+- [ ] All acceptance criteria from Issue #22 completed
+- [ ] TypeScript compilation with zero errors (`npm run check`)
+- [ ] Integration tests passing for recovery calculations
+- [ ] Mobile-responsive heat map with touch interactions
+- [ ] Performance benchmarks met (fast rendering, smooth animations)
+- [ ] Dashboard integration completed and tested
+- [ ] Real workout data integration verified
+- [ ] User testing completed with positive feedback
 
 ---
-**Branch Status**: ✅ **COMPLETE** - Issue #26 Fully Implemented & Merged  
-**Completion Date**: 2025-06-03  
-**Pull Request**: #30 MERGED - Auto-populate body weight for bodyweight exercises  
-**Production Status**: Feature deployed and operational
+**Branch Status**: 🚧 **IN PROGRESS** - Ready to Begin Phase 1  
+**Next Action**: Implement muscle recovery service and calculation algorithms  
+**Target Completion**: Within 1-2 weeks of focused development
