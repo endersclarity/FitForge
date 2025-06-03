@@ -2,9 +2,10 @@
 // SVG body diagram with muscle activation heat map - inspired by fitness app design
 // Created: June 3, 2025
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { MuscleRecoveryState, MuscleGroupType, MUSCLE_GROUPS } from '@/types/muscle-recovery';
 import { cn } from '@/lib/utils';
+import { useMobileOptimization, usePerformanceOptimization, touchOptimizations } from './MobileOptimizations';
 
 interface BodyDiagramProps {
   muscleStates: MuscleRecoveryState[];
@@ -32,19 +33,29 @@ export function BodyDiagram({
   showMetrics = true
 }: BodyDiagramProps) {
   const [hoveredMuscle, setHoveredMuscle] = useState<MuscleGroupType | null>(null);
+  
+  // Mobile and performance optimizations
+  const { isMobile, isTablet } = useMobileOptimization();
+  const { shouldUseReducedAnimations, debounceMs } = usePerformanceOptimization();
 
-  // Calculate key metrics
-  const daysSinceLastWorkout = muscleStates.length > 0 
-    ? Math.min(...muscleStates.map(state => {
-        const daysDiff = Math.floor((Date.now() - state.lastWorkoutDate.getTime()) / (1000 * 60 * 60 * 24));
-        return daysDiff;
-      }))
-    : 0;
+  // Memoize expensive calculations for performance
+  const { daysSinceLastWorkout, freshMuscleGroups } = useMemo(() => {
+    if (muscleStates.length === 0) {
+      return { daysSinceLastWorkout: 0, freshMuscleGroups: 0 };
+    }
 
-  const freshMuscleGroups = muscleStates.filter(state => 
-    state.recoveryStatus === 'undertrained' || 
-    (state.recoveryStatus === 'optimal' && state.currentFatiguePercentage < 30)
-  ).length;
+    const daysSince = Math.min(...muscleStates.map(state => {
+      const daysDiff = Math.floor((Date.now() - state.lastWorkoutDate.getTime()) / (1000 * 60 * 60 * 24));
+      return daysDiff;
+    }));
+
+    const freshCount = muscleStates.filter(state => 
+      state.recoveryStatus === 'undertrained' || 
+      (state.recoveryStatus === 'optimal' && state.currentFatiguePercentage < 30)
+    ).length;
+
+    return { daysSinceLastWorkout: daysSince, freshMuscleGroups: freshCount };
+  }, [muscleStates]);
 
   // Get muscle state by muscle group
   const getMuscleState = useCallback((muscleGroup: MuscleGroupType): MuscleRecoveryState | null => {
@@ -94,8 +105,8 @@ export function BodyDiagram({
     }
   }, [interactive, getMuscleState, onMuscleClick]);
 
-  // Anatomically accurate muscle group paths
-  const muscleGroups: MuscleGroupPath[] = [
+  // Memoize muscle groups for performance - these paths don't change
+  const muscleGroups: MuscleGroupPath[] = useMemo(() => [
     // Chest
     {
       id: MUSCLE_GROUPS.CHEST,
@@ -173,7 +184,7 @@ export function BodyDiagram({
       center: { x: 310, y: 225 },
       label: "Hamstrings"
     }
-  ];
+  ], []); // Empty dependency array since muscle paths are static
 
   return (
     <div className={cn("relative w-full max-w-lg mx-auto", className)}>
@@ -201,6 +212,10 @@ export function BodyDiagram({
           viewBox="0 0 450 300"
           className="w-full h-auto"
           xmlns="http://www.w3.org/2000/svg"
+          style={{ 
+            maxHeight: isMobile ? '300px' : '400px',
+            willChange: shouldUseReducedAnimations ? 'auto' : 'transform'
+          }}
         >
           {/* Body Outline - Front View */}
           <g className="body-outline-front">
@@ -302,9 +317,16 @@ export function BodyDiagram({
                     strokeWidth={isHovered ? 1 : 0}
                     opacity={opacity}
                     className={cn(
-                      "transition-all duration-200",
+                      shouldUseReducedAnimations ? "transition-none" : "transition-all duration-200",
                       interactive && "cursor-pointer hover:opacity-90"
                     )}
+                    style={{
+                      ...touchOptimizations.preventTextSelection,
+                      ...(isMobile && {
+                        strokeWidth: isHovered ? 2 : 1,
+                        filter: isHovered ? 'drop-shadow(0 0 4px rgba(255,255,255,0.5))' : 'none'
+                      })
+                    }}
                     onMouseEnter={() => handleMuscleEnter(muscle.id)}
                     onMouseLeave={handleMuscleLeave}
                     onClick={() => handleMuscleClick(muscle.id)}

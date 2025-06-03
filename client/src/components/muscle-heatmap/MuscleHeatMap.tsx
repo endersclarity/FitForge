@@ -2,7 +2,7 @@
 // Main heat map component that integrates recovery data with body diagram
 // Created: June 3, 2025
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { MuscleRecoveryState, MuscleGroupType } from '@/types/muscle-recovery';
 import { useMuscleRecovery } from '@/hooks/use-muscle-recovery';
 import BodyDiagram from './BodyDiagram';
@@ -98,16 +98,26 @@ export function MuscleHeatMap({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-4 animate-pulse">
             <div className="flex justify-between">
-              <Skeleton className="h-16 w-24" />
-              <Skeleton className="h-16 w-24" />
+              <div className="space-y-2">
+                <div className="h-8 w-12 bg-muted rounded"></div>
+                <div className="h-4 w-20 bg-muted rounded"></div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-8 w-12 bg-muted rounded"></div>
+                <div className="h-4 w-20 bg-muted rounded"></div>
+              </div>
             </div>
-            <Skeleton className="h-80 w-full rounded-3xl" />
+            <div className="h-80 w-full bg-gradient-to-b from-muted/50 to-muted/30 rounded-3xl relative">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-sm text-muted-foreground">Loading muscle recovery data...</div>
+              </div>
+            </div>
             <div className="flex justify-center space-x-4">
-              <Skeleton className="h-6 w-20" />
-              <Skeleton className="h-6 w-20" />
-              <Skeleton className="h-6 w-20" />
+              <div className="h-6 w-20 bg-muted rounded"></div>
+              <div className="h-6 w-20 bg-muted rounded"></div>
+              <div className="h-6 w-20 bg-muted rounded"></div>
             </div>
           </div>
         </CardContent>
@@ -143,10 +153,15 @@ export function MuscleHeatMap({
     );
   }
 
-  const overallFatigue = getOverallFatigueLevel();
-  const recommendedWorkout = getRecommendedWorkoutType();
-  const mostRecovered = getMostRecoveredMuscles();
-  const mostFatigued = getMostFatiguedMuscles();
+  // Memoize expensive calculations for performance
+  const memoizedMetrics = useMemo(() => ({
+    overallFatigue: getOverallFatigueLevel(),
+    recommendedWorkout: getRecommendedWorkoutType(),
+    mostRecovered: getMostRecoveredMuscles(),
+    mostFatigued: getMostFatiguedMuscles()
+  }), [getOverallFatigueLevel, getRecommendedWorkoutType, getMostRecoveredMuscles, getMostFatiguedMuscles]);
+
+  const { overallFatigue, recommendedWorkout, mostRecovered, mostFatigued } = memoizedMetrics;
 
   return (
     <div className={cn("w-full space-y-6", className)}>
