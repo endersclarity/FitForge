@@ -83,8 +83,10 @@
   },
   "memory_bank": {
     "system_manifest": "memory-bank/system_manifest_fitforge.md",
-    "current_focus": "unified_storage_architecture",
-    "active_issues": ["GitHub Issue #27 - Storage Architecture Mismatch"],
-    "roadmap": "memory-bank/project_roadmap_fitforge.md"
+    "current_focus": "next_development_initiative",
+    "active_issues": [],
+    "completed_issues": ["GitHub Issue #26 - Auto-populate body weight", "GitHub Issue #27 - Storage Architecture Mismatch"],
+    "roadmap": "memory-bank/project_roadmap_fitforge.md",
+    "last_sync": "2025-06-03T23:00:00Z"
   }
 }

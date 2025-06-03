@@ -139,7 +139,7 @@ export function SetLogger({ exerciseIndex, onSetCompleted, showHistory = true }:
         // Handle different error types
         if (error instanceof TypeError && error.message.includes('fetch')) {
           setComponentError('Network error: Could not connect to exercise database. Using manual detection.');
-        } else if (error.name === 'AbortError') {
+        } else if (error instanceof Error && error.name === 'AbortError') {
           setComponentError('Request timeout: Exercise detection took too long. Using manual detection.');
         } else {
           setComponentError('Failed to detect exercise type. Using manual detection.');
