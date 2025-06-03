@@ -296,7 +296,10 @@ export function SetLogger({ exerciseIndex, onSetCompleted, showHistory = true }:
 
   // Auto-populate weight for bodyweight exercises
   useEffect(() => {
-    if (!isBodyweight || weight || isCheckingBodyweight) return;
+    if (!isBodyweight || isCheckingBodyweight) return;
+    
+    // Only skip if weight was manually entered (not from auto-population)
+    if (weight && !autoPopulatedWeight) return;
 
     try {
       if (hasBodyWeight && bodyStats?.bodyWeight) {
