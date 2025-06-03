@@ -6,7 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { ArrowLeft, Dumbbell, Clock, Target, Plus, Minus, Play } from "lucide-react";
 import { WorkoutSession } from "@/components/workout/WorkoutSession";
-import { useWorkoutSession } from "@/hooks/use-workout-session";
+import { useWorkoutSession, SessionConflictError, type SessionConflictData } from "@/hooks/use-workout-session";
+import { SessionConflictDialog } from "@/components/SessionConflictDialog";
+import { WorkoutProgressErrorBoundary } from "@/components/workout-progress-error-boundary";
 import { workoutService } from "@/services/supabase-workout-service";
 import { useAuth } from "@/hooks/use-supabase-auth";
 import type { Exercise } from "@/lib/supabase";
@@ -50,8 +52,10 @@ export default function StartWorkout() {
   
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
   const [workoutStarted, setWorkoutStarted] = useState(false);
+  const [sessionConflict, setSessionConflict] = useState<SessionConflictData | null>(null);
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
   const { user } = useAuth();
-  const { session, startWorkout, loading: sessionLoading, error } = useWorkoutSession();
+  const { session, startWorkout, abandonActiveSession, resumeActiveSession, loading: sessionLoading, error } = useWorkoutSession();
 
   // Fetch exercises from Supabase by workout type with proper error handling
   const { data: supabaseExercises, isLoading, error: exercisesError } = useQuery<Exercise[]>({
@@ -111,7 +115,18 @@ export default function StartWorkout() {
 
   // If we have an active session or workout has been started, show the WorkoutSession component
   if (session || workoutStarted) {
-    return <WorkoutSession workoutType={workoutName} selectedExercises={selectedExerciseIds} />;
+    return (
+      <WorkoutProgressErrorBoundary 
+        context="workout-session"
+        onRetry={() => {
+          console.log('🔄 Retrying workout session...');
+          setWorkoutStarted(false);
+          // Session will be maintained by the hook
+        }}
+      >
+        <WorkoutSession workoutType={workoutName} selectedExercises={selectedExerciseIds} />
+      </WorkoutProgressErrorBoundary>
+    );
   }
 
   // Show loading state with proper background and feedback
@@ -208,8 +223,52 @@ export default function StartWorkout() {
       console.log('✅ Workout started successfully');
     } catch (error) {
       console.error('❌ Failed to start workout:', error);
-      alert(error instanceof Error ? error.message : 'Failed to start workout');
+      
+      // Handle session conflict with proper dialog
+      if (error instanceof SessionConflictError) {
+        console.log('🔄 Session conflict detected, showing dialog...');
+        setSessionConflict(error.conflictData);
+        setShowConflictDialog(true);
+      } else {
+        // Handle other errors with alert
+        alert(error instanceof Error ? error.message : 'Failed to start workout');
+      }
     }
+  };
+
+  // Session conflict dialog handlers
+  const handleAbandonAndStart = async () => {
+    try {
+      console.log('🗑️ Abandoning previous session and starting new workout...');
+      await abandonActiveSession();
+      setShowConflictDialog(false);
+      setSessionConflict(null);
+      
+      // Retry starting the workout
+      await startWorkoutSession();
+    } catch (error) {
+      console.error('❌ Failed to abandon session and start new workout:', error);
+      alert(error instanceof Error ? error.message : 'Failed to abandon previous session');
+    }
+  };
+
+  const handleResumeExisting = async () => {
+    try {
+      console.log('🔄 Resuming previous workout session...');
+      await resumeActiveSession();
+      setShowConflictDialog(false);
+      setSessionConflict(null);
+      setWorkoutStarted(true);
+    } catch (error) {
+      console.error('❌ Failed to resume previous session:', error);
+      alert(error instanceof Error ? error.message : 'Failed to resume previous session');
+    }
+  };
+
+  const handleCancelConflict = () => {
+    console.log('❌ User cancelled session conflict resolution');
+    setShowConflictDialog(false);
+    setSessionConflict(null);
   };
 
   return (
@@ -354,6 +413,18 @@ export default function StartWorkout() {
           </div>
         )}
       </div>
+
+      {/* Session Conflict Dialog */}
+      {sessionConflict && (
+        <SessionConflictDialog
+          open={showConflictDialog}
+          conflictData={sessionConflict}
+          onAbandonAndStart={handleAbandonAndStart}
+          onResumeExisting={handleResumeExisting}
+          onCancel={handleCancelConflict}
+          loading={sessionLoading}
+        />
+      )}
     </div>
   );
 }

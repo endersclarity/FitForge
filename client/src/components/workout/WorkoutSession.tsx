@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { useWorkoutSession } from "@/hooks/use-workout-session";
 import { ExerciseSelector } from "./ExerciseSelector";
 import { RealSetLogger } from "./RealSetLogger";
+import { WorkoutProgressErrorBoundary } from "../workout-progress-error-boundary";
 import { 
   Play, 
   Pause, 
@@ -226,16 +227,35 @@ export function WorkoutSession({ workoutType = "Custom Workout", selectedExercis
               </div>
 
               {/* Real Set Logger */}
-              <RealSetLogger 
-                exerciseId={currentExercise.exerciseId}
-                exerciseName={currentExercise.exerciseName}
-                sessionId={session.sessionId}
-                currentSets={currentExercise.sets || []}
-                targetSets={3}
-                onSetLogged={(setData) => {
-                  logSet(setData.weight, setData.reps, setData.equipment || 'bodyweight');
-                }}
-              />
+              <WorkoutProgressErrorBoundary 
+                context="set-logging"
+                fallback={
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-destructive">Set Logging Error</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground mb-4">
+                        Unable to load set logging interface. Your workout progress is still saved.
+                      </p>
+                      <Button onClick={() => window.location.reload()} className="w-full">
+                        Refresh to Try Again
+                      </Button>
+                    </CardContent>
+                  </Card>
+                }
+              >
+                <RealSetLogger 
+                  exerciseId={currentExercise.exerciseId}
+                  exerciseName={currentExercise.exerciseName}
+                  sessionId={session.sessionId}
+                  currentSets={currentExercise.sets || []}
+                  targetSets={3}
+                  onSetLogged={(setData) => {
+                    logSet(setData.weight, setData.reps, setData.equipment || 'bodyweight');
+                  }}
+                />
+              </WorkoutProgressErrorBoundary>
 
               {/* Navigation buttons */}
               <div className="flex justify-between mt-6">
