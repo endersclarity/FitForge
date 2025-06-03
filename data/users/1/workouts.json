@@ -35,7 +35,10 @@
             "equipment": "Bodyweight"
           }
         ],
-        "restTimes": [90, 90],
+        "restTimes": [
+          90,
+          90
+        ],
         "formScore": 7.7
       }
     ],
@@ -44,5 +47,15 @@
     "status": "completed",
     "rating": 4,
     "notes": "Good calf workout, felt the burn on the last set"
+  },
+  {
+    "id": "5571ef60-a04a-4eda-a35a-c9111adc33c2",
+    "userId": "1",
+    "startTime": "2025-06-03T13:56:58.562Z",
+    "workoutType": "Abs",
+    "exercises": [],
+    "totalVolume": 0,
+    "caloriesBurned": 0,
+    "status": "in_progress"
   }
 ]
