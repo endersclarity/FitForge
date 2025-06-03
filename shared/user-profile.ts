@@ -30,6 +30,25 @@ export const EquipmentSchema = z.enum([
   "squat_rack"
 ]);
 
+// Body weight and physical stats schema
+export const BodyStatsSchema = z.object({
+  bodyWeight: z.number().min(50).max(500).optional(), // in pounds
+  height: z.number().min(36).max(96).optional(), // in inches
+  age: z.number().min(13).max(120).optional(),
+  gender: z.enum(["male", "female", "other"]).optional(),
+  updatedAt: z.string().optional()
+});
+
+// Configuration for bodyweight exercise preferences
+export const BodyweightExerciseConfigSchema = z.object({
+  exerciseId: z.number(),
+  exerciseName: z.string(),
+  defaultAdditionalWeight: z.number().default(0), // additional weight on top of body weight
+  preferredEquipment: z.enum(["none", "dumbbells", "weighted_vest", "plate", "kettlebell"]).default("none"),
+  lastUsedAdditionalWeight: z.number().optional(),
+  lastUsedAt: z.string().optional()
+});
+
 export const UserPreferencesSchema = z.object({
   goals: z.array(UserGoalSchema),
   experienceLevel: ExperienceLevelSchema,
@@ -38,7 +57,9 @@ export const UserPreferencesSchema = z.object({
   sessionDuration: z.number().min(15).max(180), // minutes
   onboardingCompleted: z.boolean().default(false),
   coachingEnabled: z.boolean().default(true),
-  achievementNotifications: z.boolean().default(true)
+  achievementNotifications: z.boolean().default(true),
+  bodyStats: BodyStatsSchema.optional(),
+  bodyweightExerciseConfigs: z.array(BodyweightExerciseConfigSchema).default([])
 });
 
 export const AchievementSchema = z.object({
@@ -73,6 +94,8 @@ export const WorkoutRecommendationSchema = z.object({
 export type UserGoal = z.infer<typeof UserGoalSchema>;
 export type ExperienceLevel = z.infer<typeof ExperienceLevelSchema>;
 export type Equipment = z.infer<typeof EquipmentSchema>;
+export type BodyStats = z.infer<typeof BodyStatsSchema>;
+export type BodyweightExerciseConfig = z.infer<typeof BodyweightExerciseConfigSchema>;
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
 export type Achievement = z.infer<typeof AchievementSchema>;
 export type WorkoutRecommendation = z.infer<typeof WorkoutRecommendationSchema>;
@@ -86,7 +109,9 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   sessionDuration: 45,
   onboardingCompleted: false,
   coachingEnabled: true,
-  achievementNotifications: true
+  achievementNotifications: true,
+  bodyStats: undefined,
+  bodyweightExerciseConfigs: []
 };
 
 // Core achievements that all users can unlock
@@ -134,3 +159,92 @@ export const CORE_ACHIEVEMENTS: Omit<Achievement, "unlockedAt" | "progress">[] =
     target: 12
   }
 ];
+
+// Utility functions for bodyweight exercise management
+export const UserProfileUtils = {
+  /**
+   * Check if user has body weight data
+   */
+  hasBodyWeight(preferences: UserPreferences): boolean {
+    return preferences.bodyStats?.bodyWeight !== undefined;
+  },
+
+  /**
+   * Get user's current body weight in pounds
+   */
+  getBodyWeight(preferences: UserPreferences): number | undefined {
+    return preferences.bodyStats?.bodyWeight;
+  },
+
+  /**
+   * Update user's body weight
+   */
+  updateBodyWeight(preferences: UserPreferences, bodyWeight: number): UserPreferences {
+    return {
+      ...preferences,
+      bodyStats: {
+        ...preferences.bodyStats,
+        bodyWeight,
+        updatedAt: new Date().toISOString()
+      }
+    };
+  },
+
+  /**
+   * Get bodyweight exercise configuration for a specific exercise
+   */
+  getBodyweightExerciseConfig(preferences: UserPreferences, exerciseId: number): BodyweightExerciseConfig | undefined {
+    return preferences.bodyweightExerciseConfigs.find(config => config.exerciseId === exerciseId);
+  },
+
+  /**
+   * Update or add bodyweight exercise configuration
+   */
+  updateBodyweightExerciseConfig(
+    preferences: UserPreferences, 
+    exerciseId: number, 
+    config: Partial<BodyweightExerciseConfig>
+  ): UserPreferences {
+    const existingConfigIndex = preferences.bodyweightExerciseConfigs.findIndex(
+      c => c.exerciseId === exerciseId
+    );
+
+    const updatedConfig: BodyweightExerciseConfig = {
+      exerciseId,
+      exerciseName: config.exerciseName || '',
+      defaultAdditionalWeight: config.defaultAdditionalWeight || 0,
+      preferredEquipment: config.preferredEquipment || 'none',
+      lastUsedAdditionalWeight: config.lastUsedAdditionalWeight,
+      lastUsedAt: new Date().toISOString()
+    };
+
+    const newConfigs = [...preferences.bodyweightExerciseConfigs];
+    if (existingConfigIndex >= 0) {
+      newConfigs[existingConfigIndex] = updatedConfig;
+    } else {
+      newConfigs.push(updatedConfig);
+    }
+
+    return {
+      ...preferences,
+      bodyweightExerciseConfigs: newConfigs
+    };
+  },
+
+  /**
+   * Calculate total weight for a bodyweight exercise (body weight + additional weight)
+   */
+  calculateTotalWeight(preferences: UserPreferences, exerciseId: number, additionalWeight: number = 0): number | undefined {
+    const bodyWeight = this.getBodyWeight(preferences);
+    if (bodyWeight === undefined) return undefined;
+    
+    return bodyWeight + additionalWeight;
+  },
+
+  /**
+   * Check if user profile is complete enough for bodyweight exercises
+   */
+  isProfileCompleteForBodyweight(preferences: UserPreferences): boolean {
+    return this.hasBodyWeight(preferences);
+  }
+};

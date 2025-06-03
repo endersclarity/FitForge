@@ -1,5 +1,39 @@
 # FitForge Development Changelog
 
+## 2025-06-03 - NEW FEATURE BRANCH: AUTO-POPULATE BODYWEIGHT FOR BODYWEIGHT EXERCISES
+
+### 🚀 FEATURE BRANCH CREATION: GitHub Issue #26 Implementation
+**Branch**: `feature/auto-populate-bodyweight-issue-26` - **FOUNDATION USER DATA INFRASTRUCTURE**
+
+#### Branch Setup Complete
+- ✅ **New Branch Created**: `feature/auto-populate-bodyweight-issue-26` for GitHub Issue #26
+- 📋 **BRANCH_README.md**: Comprehensive 7-day implementation plan with success criteria
+- 🎯 **Context Updated**: activeContext.md reflects new branch focus on user profile system
+- 📁 **Foundation Focus**: Building user data collection infrastructure through bodyweight exercise auto-population
+
+#### Implementation Plan (7 Days)
+- **Phase 1 (Days 1-2)**: User profile infrastructure & exercise database enhancement
+- **Phase 2 (Days 3-4)**: SetLogger enhancement & additional weight system  
+- **Phase 3 (Days 5-6)**: Volume calculations & missing data handling
+- **Phase 4 (Day 7)**: UX refinement & quality assurance
+
+#### Success Criteria Defined
+- 🎯 **Auto-Detection**: Automatically detect bodyweight exercises from exercise database
+- 📊 **Auto-Population**: Weight field auto-fills with user's current body weight
+- 🏷️ **Clear Labeling**: Display weight as "200 lbs (body weight)" for transparency
+- ➕ **Additional Weight**: Support for dumbbells, weighted vest on top of body weight
+- 📈 **Accurate Volume**: Body weight included in volume calculations for progressive overload
+
+#### Foundation Value
+This feature establishes the **user profile system** - critical infrastructure enabling:
+- Body composition tracking & goal-based recommendations
+- Personalized workout analytics & progressive overload calculations
+- Other features requiring user data (body stats, preferences, etc.)
+
+**Branch Status**: Ready for Phase 1 implementation - user profile body weight infrastructure
+
+---
+
 ## 2025-06-02 - WORKOUT ARCHITECTURE ANALYSIS & STORAGE UNIFICATION DESIGN
 
 ### 🔍 ARCHITECTURAL DISCOVERY: Storage System Mismatch Identified

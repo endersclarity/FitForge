@@ -1,95 +1,151 @@
-# Branch: fix/production-deployment-broken
+# Branch: Auto-Populate Body Weight for Bodyweight Exercises
 
-## ⚠️ UPDATE: Production deployment fixed, but app is non-functional for users
+**Issue**: [#26 Auto-Populate Body Weight for Bodyweight Exercises](https://github.com/endersclarity/FitForge/issues/26)  
+**Branch**: `feature/auto-populate-body-weight-issue-26`  
+**Created**: 2025-06-03  
+**Type**: Enhancement - User Experience & Data Foundation
 
-**Previous Issue**: ~~Blank white page~~ ✅ FIXED  
-**Current Issue**: Core features broken - users cannot actually use the app
+## 🎯 Success Criteria
 
-## 📋 Master Fix Document
-**See [masterfix.md](./masterfix.md) for the comprehensive fix plan and progress tracking**
+### Core Functionality
+- [ ] **Detect bodyweight exercises** from exercise database (`equipmentType: ["Bodyweight"]`)
+- [ ] **Auto-populate weight field** with user's body weight from profile
+- [ ] **Display clear weight indication** showing "200 lbs (body weight)" format
+- [ ] **Provide additional weight option** for extra equipment (dumbbells, weighted vest)
+- [ ] **Calculate total weight accurately** as `bodyWeight + additionalWeight`
+- [ ] **Handle missing body weight** by prompting user for profile completion
+- [ ] **Save additional weight preferences** per exercise for future sessions
 
-## Critical Issues Discovered
-1. **Cannot Start Workouts**: Main feature is disabled (route commented out)
-2. **Dead Navigation Links**: Menu items lead to 404 pages
-3. **Fake Data Displayed**: Dashboard shows hardcoded 70% progress
-4. **Empty Progress Page**: Shows only "--" placeholders
-5. **No Exercise Browser**: 38 exercises exist but are invisible to users
+### Data Infrastructure 
+- [ ] **User profile system** for storing body weight and preferences
+- [ ] **Profile completion workflow** when body weight is missing
+- [ ] **Integration with existing volume calculations** (weight × reps × sets)
+- [ ] **Data persistence** across sessions and page refreshes
 
-## Original Issue (RESOLVED)
-FitForge production deployment at https://fitforge-free-9zezd.ondigitalocean.app ~~shows only a blank white page~~ now loads but with broken functionality.
+### User Experience
+- [ ] **Seamless workflow integration** with existing workout logging
+- [ ] **Clear visual distinction** between body weight and additional weight
+- [ ] **Progressive enhancement** - works without breaking existing functionality
+- [ ] **Responsive design** across mobile and desktop interfaces
 
-## New Purpose
-Transform FitForge from a beautiful but broken app into a fully functional fitness tracking system. While the blank page issue is fixed, the app currently fails at its primary purpose - users cannot track workouts.
+## 🏗️ Implementation Plan
 
-## Updated Success Criteria
-1. ✅ **Application Loads**: ~~Production URL shows the FitForge application interface~~ FIXED
-2. ❌ **User Can Start Workout**: Complete workout tracking flow must work
-3. ❌ **Real Data Display**: No hardcoded/fake progress values
-4. ❌ **Working Navigation**: All menu links lead to functional pages
-5. ❌ **Exercise Database Access**: Users can browse 38 available exercises
-6. ❌ **Progress Tracking**: Users can view their actual workout history and stats
+### Phase 1: User Profile Foundation (Days 1-2)
+```typescript
+// Core data structures and storage
+interface UserProfile {
+  bodyWeight: number;
+  heightFeet: number;
+  heightInches: number;
+  age: number;
+  goals: {
+    calorieTarget?: number;
+    volumeIncreasePreference: number; // percentage
+  };
+}
+```
 
-## Root Cause Investigation Plan
-1. **Console Errors**: Check browser dev tools for JavaScript errors
-2. **Build Output**: Verify production build artifacts are valid
-3. **Environment Variables**: Confirm all required vars are set in Digital Ocean
-4. **Vite Configuration**: Check if vite.config.ts is production-ready
-5. **Import Paths**: Verify all imports resolve correctly in production
-6. **Static Assets**: Ensure assets are served correctly from production build
+**Tasks:**
+- Create user profile schema and TypeScript interfaces
+- Build profile storage system (JSON file-based for development)
+- Design profile completion/editing UI components
+- Implement profile data hooks and context providers
 
-## Timeline
-- **Immediate**: Diagnose root cause through browser inspection and logs
-- **Hour 1**: Fix critical build/configuration issues
-- **Hour 2**: Test and verify working deployment
-- **Hour 3**: Document fix and ensure reproducible solution
+### Phase 2: Exercise Detection & Auto-Population (Days 3-4)
+```typescript
+// Exercise classification and weight logic
+interface BodyweightExerciseConfig {
+  baseWeight: number;
+  additionalWeight: number;
+  totalWeight: number;
+  additionalEquipment?: string;
+}
+```
 
-## Technical Debugging Steps
-1. Inspect https://fitforge-free-9zezd.ondigitalocean.app in browser dev tools
-2. Check Digital Ocean deployment logs for build errors
-3. Compare local development vs production build outputs
-4. Verify environment variable configuration in Digital Ocean
-5. Test production build locally: `npm run build && npm run preview`
-6. Fix identified issues and redeploy
+**Tasks:**
+- Enhance exercise database queries to detect bodyweight exercises
+- Modify SetLogger component to auto-populate weight for bodyweight exercises
+- Add additional weight input UI with equipment selection
+- Update volume calculation logic to use total weight
 
-## User Experience Target
-Users visiting the production URL should see the same FitForge application they would see in development - homepage with navigation, ability to register/login, and access to workout features.
+### Phase 3: Integration & Polish (Days 5-6)
+**Tasks:**
+- Integrate profile completion prompts into workout flow
+- Add preference persistence for additional weights per exercise
+- Implement data migration for existing users
+- Add comprehensive error handling and edge cases
+- Mobile responsiveness and UX polish
 
-## Critical Priority
-This is a **production-breaking bug** that must be fixed immediately. The application is completely non-functional for end users.
+## 🧪 Testing Strategy
 
-## Dependencies
-- ✅ Digital Ocean deployment infrastructure (working)
-- ✅ GitHub CI/CD pipeline (working)
-- ❌ Application actually loading and running (BROKEN)
-- ❌ Environment variables properly configured (unknown)
-- ❌ Production build configuration (unknown)
+### Unit Testing
+- [ ] User profile data validation and storage
+- [ ] Exercise type detection algorithms
+- [ ] Weight calculation logic (bodyweight + additional)
+- [ ] Volume calculation accuracy
 
-## Integration Points
-- Fix Vite production build configuration for React SPA
-- Ensure Digital Ocean environment variables match development needs
-- Verify static asset serving and routing configuration
-- Test Supabase connectivity in production environment
+### Integration Testing
+- [ ] Profile completion workflow end-to-end
+- [ ] Workout logging with auto-populated weights
+- [ ] Data persistence across browser sessions
+- [ ] Migration from existing workout data
 
-## Implementation Progress
-Track all fixes in [masterfix.md](./masterfix.md)
+### User Experience Testing
+- [ ] First-time user onboarding flow
+- [ ] Existing user profile setup
+- [ ] Bodyweight vs weighted exercise workflows
+- [ ] Mobile device compatibility
 
-### Completed
-- [x] **Deployment Fixed**: Site loads in production
-- [x] **Black Screen Fixed**: CSS theme adjustments made
-- [x] **Root Cause Found**: Core features disabled in code
+## 📊 Foundation for Future Features
 
-### Current Work
-- [ ] **Phase 1**: Enable core workout functionality (Fix #1-3)
-- [ ] **Phase 2**: Connect real data (Fix #4, 6, 7)
-- [ ] **Phase 3**: Add missing features (Fix #5, 10)
-- [ ] **Phase 4**: Polish UX (Fix #8-9)
+This implementation creates the **user data infrastructure** that enables:
 
-**Branch Status**: Production loads but app is non-functional - fixing core features
+- **Progressive Overload Algorithm** (Issue #23) - needs user weight and preferences
+- **Chart.js Progress Dashboard** (Issue #13) - needs user metrics for context
+- **Recovery Tracking** (Issue #24) - needs user body composition data
+- **Smart Exercise Selection** (Issue #11) - needs user equipment and preferences
 
-## Fix Strategy
-1. **Immediate**: Uncomment workout routes to restore core functionality
-2. **Next**: Replace all fake data with real API calls
-3. **Then**: Add missing UI for exercise browsing and progress
-4. **Finally**: Polish rough edges and UX issues
+## 🎛️ Technical Architecture
 
-**Estimated Time to Functional**: 4 days following masterfix.md plan
+### Data Flow
+```
+User Profile → Exercise Detection → Weight Auto-Population → Volume Calculation → Progress Tracking
+```
+
+### Key Components
+- `useUserProfile()` - Profile data management hook
+- `ProfileSetupDialog` - Profile completion UI
+- `EnhancedSetLogger` - Modified workout logging with auto-population
+- `BodyweightExerciseService` - Exercise classification and weight logic
+
+### Integration Points
+- Exercise database (`universal-exercise-database.json`)
+- Workout session management (`use-workout-session.tsx`)
+- User data storage (file-based system)
+- Volume calculation services
+
+## 🚀 Estimated Timeline
+
+**Total Duration**: 6 days
+- **Days 1-2**: User profile foundation and data structures
+- **Days 3-4**: Exercise detection and auto-population logic  
+- **Days 5-6**: Integration, testing, and polish
+
+**Daily Commitment**: 4-6 hours focused development
+**Complexity**: Medium (new data infrastructure + UI integration)
+
+## ✅ Definition of Done
+
+- [ ] All acceptance criteria from Issue #26 completed
+- [ ] TypeScript compilation with zero errors (`npm run check`)
+- [ ] Integration tests passing for user workflows
+- [ ] Mobile-responsive design verified
+- [ ] User profile system ready for future feature expansion
+- [ ] Documentation updated with new user data architecture
+- [ ] CodeRabbit review completed and approved
+- [ ] Successfully merged to master with clean git history
+
+---
+**Branch Status**: 🟡 In Progress  
+**Last Updated**: 2025-06-03  
+**Next Milestone**: User profile schema and storage foundation
