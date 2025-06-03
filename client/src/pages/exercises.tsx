@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Filter, Dumbbell, Target, ChevronRight, Activity } from "lucide-react";
+import { workoutService } from "@/services/supabase-workout-service";
 import type { Exercise } from "@/lib/supabase";
 
 interface ExerciseWithDetails {
@@ -39,19 +40,47 @@ export default function Exercises() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
   const [selectedExercise, setSelectedExercise] = useState<ExerciseWithDetails | null>(null);
 
-  // Fetch exercises from API
-  const { data: exercisesResponse, isLoading } = useQuery({
-    queryKey: ["/api/exercises"],
+  // Fetch exercises from Supabase
+  const { data: exercisesData, isLoading, error: exercisesError } = useQuery<Exercise[]>({
+    queryKey: ["supabase-all-exercises"],
     queryFn: async () => {
-      const response = await fetch("/api/exercises");
-      if (!response.ok) throw new Error("Failed to fetch exercises");
-      const data = await response.json();
-      return data;
-    }
+      console.log('🔍 Fetching all exercises from Supabase...');
+      try {
+        const exercises = await workoutService.getAllExercises();
+        console.log(`✅ Found ${exercises.length} exercises`);
+        return exercises;
+      } catch (error) {
+        console.error('❌ Failed to fetch exercises:', error);
+        throw new Error('Failed to load exercises. Please try again.');
+      }
+    },
+    retry: 2,
+    retryDelay: 1000
   });
 
-  // Extract exercises array from response
-  const exercises: ExerciseWithDetails[] = exercisesResponse?.data?.exercises || exercisesResponse?.exercises || [];
+  // Convert Supabase exercises to the expected format
+  const exercises: ExerciseWithDetails[] = (exercisesData || []).map(exercise => ({
+    id: exercise.id,
+    exerciseName: exercise.exercise_name,
+    name: exercise.exercise_name, // For compatibility
+    category: exercise.category,
+    movementPattern: exercise.movement_pattern || '',
+    workoutType: exercise.workout_type || '',
+    workout_type: exercise.workout_type, // For compatibility
+    equipmentType: exercise.equipment_type || [],
+    equipment: exercise.equipment_type?.[0] || '', // For compatibility - take first equipment
+    primaryMuscles: [], // Would need to fetch from exercise_primary_muscles table
+    secondaryMuscles: [], // Would need to fetch from exercise_secondary_muscles table
+    difficulty: exercise.difficulty_level || 'beginner',
+    difficultyLevel: exercise.difficulty_level || 'beginner',
+    description: exercise.description || '',
+    restTimeSeconds: exercise.rest_time_seconds || 60,
+    rest_time_seconds: exercise.rest_time_seconds || 60,
+    defaultSets: 3, // Default value since this field doesn't exist in Exercise type
+    default_sets: 3, // Default value since this field doesn't exist in Exercise type
+    defaultReps: exercise.default_reps || 10,
+    default_reps: exercise.default_reps || 10
+  }));
 
   // Get unique values for filters
   const workoutTypes = useMemo(() => {
@@ -230,8 +259,26 @@ export default function Exercises() {
         {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading exercises...</p>
+            <p className="text-muted-foreground">Loading exercises from Supabase...</p>
           </div>
+        ) : exercisesError ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <div className="text-red-500 text-6xl mb-4">⚠️</div>
+              <p className="text-lg text-muted-foreground mb-2">Unable to Load Exercises</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                {exercisesError instanceof Error ? exercisesError.message : 'An unexpected error occurred'}
+              </p>
+              <div className="space-y-2">
+                <Button onClick={() => window.location.reload()} className="mr-2">
+                  Try Again
+                </Button>
+                <Button variant="outline" onClick={() => window.location.href = '/workouts'}>
+                  Back to Workouts
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         ) : filteredExercises.length === 0 ? (
           <Card className="text-center py-12">
             <CardContent>
