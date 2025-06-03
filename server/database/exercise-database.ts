@@ -267,6 +267,139 @@ class ExerciseDatabase {
     return sortedExercises.slice(0, exerciseCount);
   }
 
+  // Check if an exercise is a bodyweight exercise
+  async isBodyweightExercise(exerciseId: string): Promise<boolean> {
+    const exercise = await this.getExerciseById(exerciseId);
+    if (!exercise) return false;
+    
+    // An exercise is considered bodyweight if it primarily uses bodyweight equipment
+    return exercise.equipmentType.includes('Bodyweight');
+  }
+
+  // Get all bodyweight exercises
+  async getBodyweightExercises(query?: Omit<ExerciseQuery, 'equipmentTypes'>): Promise<UniversalExercise[]> {
+    const bodyweightQuery: ExerciseQuery = {
+      ...query,
+      equipmentTypes: ['Bodyweight']
+    };
+    
+    return this.getAllExercises(bodyweightQuery);
+  }
+
+  // Get bodyweight exercises by workout type
+  async getBodyweightExercisesByWorkoutType(workoutType: WorkoutType): Promise<UniversalExercise[]> {
+    return this.getBodyweightExercises({ workoutType });
+  }
+
+  // Check if multiple exercises are bodyweight
+  async checkBodyweightExercises(exerciseIds: string[]): Promise<{
+    exerciseId: string;
+    isBodyweight: boolean;
+    exerciseName: string;
+  }[]> {
+    await this.ensureLoaded();
+    
+    return exerciseIds.map(id => {
+      const exercise = this.exercises.find(ex => ex.id === id);
+      return {
+        exerciseId: id,
+        isBodyweight: exercise ? exercise.equipmentType.includes('Bodyweight') : false,
+        exerciseName: exercise?.exerciseName || 'Unknown Exercise'
+      };
+    });
+  }
+
+  // Get bodyweight exercise recommendations for user profile
+  async getBodyweightRecommendations(params: {
+    workoutType?: WorkoutType;
+    difficultyLevel?: DifficultyLevel;
+    targetMuscles?: string[];
+    exerciseCount?: number;
+  }): Promise<UniversalExercise[]> {
+    const query: ExerciseQuery = {
+      equipmentTypes: ['Bodyweight'],
+      workoutType: params.workoutType,
+      difficultyLevel: params.difficultyLevel
+    };
+    
+    let exercises = await this.getAllExercises(query);
+    
+    // Filter by target muscles if specified
+    if (params.targetMuscles && params.targetMuscles.length > 0) {
+      exercises = exercises.filter(exercise => {
+        return params.targetMuscles!.some(targetMuscle => {
+          const hasPrimaryMatch = exercise.primaryMuscles.some(muscle => 
+            muscle.muscle.toLowerCase().includes(targetMuscle.toLowerCase())
+          );
+          const hasSecondaryMatch = exercise.secondaryMuscles?.some(muscle => 
+            muscle.muscle.toLowerCase().includes(targetMuscle.toLowerCase())
+          ) || false;
+          
+          return hasPrimaryMatch || hasSecondaryMatch;
+        });
+      });
+    }
+    
+    // Sort by total muscle engagement for best bodyweight exercises
+    const sortedExercises = exercises.sort((a, b) => {
+      const aTotalEngagement = a.primaryMuscles.reduce((sum, m) => sum + m.percentage, 0) +
+                               (a.secondaryMuscles?.reduce((sum, m) => sum + m.percentage, 0) || 0);
+      const bTotalEngagement = b.primaryMuscles.reduce((sum, m) => sum + m.percentage, 0) +
+                               (b.secondaryMuscles?.reduce((sum, m) => sum + m.percentage, 0) || 0);
+      
+      return bTotalEngagement - aTotalEngagement;
+    });
+    
+    const exerciseCount = params.exerciseCount || 6;
+    return sortedExercises.slice(0, exerciseCount);
+  }
+
+  // Get bodyweight exercise analysis
+  async getBodyweightAnalysis(): Promise<{
+    totalBodyweightExercises: number;
+    bodyweightByWorkoutType: Record<WorkoutType, number>;
+    bodyweightByDifficulty: Record<DifficultyLevel, number>;
+    bodyweightByCategory: Record<ExerciseCategory, number>;
+    popularBodyweightExercises: { exercise: UniversalExercise; totalEngagement: number; }[];
+  }> {
+    const bodyweightExercises = await this.getBodyweightExercises();
+    
+    const analysis = {
+      totalBodyweightExercises: bodyweightExercises.length,
+      bodyweightByWorkoutType: {} as Record<WorkoutType, number>,
+      bodyweightByDifficulty: {} as Record<DifficultyLevel, number>,
+      bodyweightByCategory: {} as Record<ExerciseCategory, number>,
+      popularBodyweightExercises: [] as { exercise: UniversalExercise; totalEngagement: number; }[]
+    };
+    
+    // Analyze bodyweight exercises
+    bodyweightExercises.forEach(exercise => {
+      // Count by workout type
+      analysis.bodyweightByWorkoutType[exercise.workoutType] = 
+        (analysis.bodyweightByWorkoutType[exercise.workoutType] || 0) + 1;
+      
+      // Count by difficulty
+      analysis.bodyweightByDifficulty[exercise.difficultyLevel] = 
+        (analysis.bodyweightByDifficulty[exercise.difficultyLevel] || 0) + 1;
+      
+      // Count by category
+      analysis.bodyweightByCategory[exercise.category] = 
+        (analysis.bodyweightByCategory[exercise.category] || 0) + 1;
+    });
+    
+    // Find most engaging bodyweight exercises
+    analysis.popularBodyweightExercises = bodyweightExercises
+      .map(exercise => {
+        const totalEngagement = exercise.primaryMuscles.reduce((sum, m) => sum + m.percentage, 0) +
+                                (exercise.secondaryMuscles?.reduce((sum, m) => sum + m.percentage, 0) || 0);
+        return { exercise, totalEngagement };
+      })
+      .sort((a, b) => b.totalEngagement - a.totalEngagement)
+      .slice(0, 10);
+    
+    return analysis;
+  }
+
   // Get database statistics
   async getDatabaseStats(): Promise<{
     totalExercises: number;
@@ -342,4 +475,44 @@ export async function getWorkoutRecommendations(params: {
   exerciseCount?: number;
 }): Promise<UniversalExercise[]> {
   return exerciseDatabase.getWorkoutRecommendations(params);
+}
+
+// Bodyweight exercise convenience functions
+export async function isBodyweightExercise(exerciseId: string): Promise<boolean> {
+  return exerciseDatabase.isBodyweightExercise(exerciseId);
+}
+
+export async function getBodyweightExercises(query?: Omit<ExerciseQuery, 'equipmentTypes'>): Promise<UniversalExercise[]> {
+  return exerciseDatabase.getBodyweightExercises(query);
+}
+
+export async function getBodyweightExercisesByWorkoutType(workoutType: WorkoutType): Promise<UniversalExercise[]> {
+  return exerciseDatabase.getBodyweightExercisesByWorkoutType(workoutType);
+}
+
+export async function checkBodyweightExercises(exerciseIds: string[]): Promise<{
+  exerciseId: string;
+  isBodyweight: boolean;
+  exerciseName: string;
+}[]> {
+  return exerciseDatabase.checkBodyweightExercises(exerciseIds);
+}
+
+export async function getBodyweightRecommendations(params: {
+  workoutType?: WorkoutType;
+  difficultyLevel?: DifficultyLevel;
+  targetMuscles?: string[];
+  exerciseCount?: number;
+}): Promise<UniversalExercise[]> {
+  return exerciseDatabase.getBodyweightRecommendations(params);
+}
+
+export async function getBodyweightAnalysis(): Promise<{
+  totalBodyweightExercises: number;
+  bodyweightByWorkoutType: Record<WorkoutType, number>;
+  bodyweightByDifficulty: Record<DifficultyLevel, number>;
+  bodyweightByCategory: Record<ExerciseCategory, number>;
+  popularBodyweightExercises: { exercise: UniversalExercise; totalEngagement: number; }[];
+}> {
+  return exerciseDatabase.getBodyweightAnalysis();
 }

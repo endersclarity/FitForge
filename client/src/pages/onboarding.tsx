@@ -98,6 +98,8 @@ export default function OnboardingPage() {
         onboardingCompleted: true,
         coachingEnabled: formData.coachingEnabled || true,
         achievementNotifications: formData.achievementNotifications || true,
+        bodyStats: undefined,
+        bodyweightExerciseConfigs: []
       };
 
       await completeOnboarding(completePreferences);
