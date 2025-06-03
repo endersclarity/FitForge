@@ -1,157 +1,151 @@
-# Feature Branch: Auto-Populate Body Weight for Bodyweight Exercises
+# Branch: Auto-Populate Body Weight for Bodyweight Exercises
 
-**Branch**: `feature/auto-populate-bodyweight-issue-26`  
-**GitHub Issue**: #26  
+**Issue**: [#26 Auto-Populate Body Weight for Bodyweight Exercises](https://github.com/endersclarity/FitForge/issues/26)  
+**Branch**: `feature/auto-populate-body-weight-issue-26`  
 **Created**: 2025-06-03  
-**Status**: 🚀 Ready to Start
+**Type**: Enhancement - User Experience & Data Foundation
 
 ## 🎯 Success Criteria
 
 ### Core Functionality
-- [ ] **Bodyweight Detection**: Automatically detect bodyweight exercises from exercise database
-- [ ] **Auto-Population**: Weight field auto-fills with user's current body weight
-- [ ] **Clear Labeling**: Display weight as "200 lbs (body weight)" for transparency
-- [ ] **Additional Weight**: "+ Additional Weight" option for extra equipment (dumbbells, weighted vest)
-- [ ] **Total Weight Calculation**: `bodyWeight + additionalWeight` for accurate volume
-- [ ] **Missing Data Handling**: Prompt users who haven't entered body weight
-- [ ] **Equipment Preferences**: Save additional weight preferences per exercise
+- [ ] **Detect bodyweight exercises** from exercise database (`equipmentType: ["Bodyweight"]`)
+- [ ] **Auto-populate weight field** with user's body weight from profile
+- [ ] **Display clear weight indication** showing "200 lbs (body weight)" format
+- [ ] **Provide additional weight option** for extra equipment (dumbbells, weighted vest)
+- [ ] **Calculate total weight accurately** as `bodyWeight + additionalWeight`
+- [ ] **Handle missing body weight** by prompting user for profile completion
+- [ ] **Save additional weight preferences** per exercise for future sessions
+
+### Data Infrastructure 
+- [ ] **User profile system** for storing body weight and preferences
+- [ ] **Profile completion workflow** when body weight is missing
+- [ ] **Integration with existing volume calculations** (weight × reps × sets)
+- [ ] **Data persistence** across sessions and page refreshes
 
 ### User Experience
-- [ ] **Seamless Integration**: Works with existing workout logging flow
-- [ ] **Accurate Volume**: Body weight included in volume calculations
-- [ ] **Progressive Overload**: Total weight (body + additional) used for progression
-- [ ] **Clear Feedback**: Users understand what weight is being calculated
+- [ ] **Seamless workflow integration** with existing workout logging
+- [ ] **Clear visual distinction** between body weight and additional weight
+- [ ] **Progressive enhancement** - works without breaking existing functionality
+- [ ] **Responsive design** across mobile and desktop interfaces
 
-### Technical Implementation
-- [ ] **User Profile System**: Body weight storage and retrieval
-- [ ] **Exercise Database Integration**: Identify bodyweight exercises via `equipmentType`
-- [ ] **SetLogger Enhancement**: Modified weight entry component
-- [ ] **Type Safety**: Full TypeScript coverage for new interfaces
+## 🏗️ Implementation Plan
 
-## 📋 Implementation Plan
-
-### Phase 1: Foundation (Days 1-2)
-1. **User Profile Infrastructure**
-   - Extend user preferences system for body weight storage
-   - Create body weight entry/update UI component
-   - Implement data persistence and retrieval
-
-2. **Exercise Database Enhancement**
-   - Verify bodyweight exercise identification in universal database
-   - Add utility functions to detect bodyweight exercises
-   - Test with common bodyweight exercises (push-ups, pull-ups, step-ups)
-
-### Phase 2: Core Logic (Days 3-4)
-3. **SetLogger Component Enhancement**
-   - Detect when current exercise is bodyweight-based
-   - Auto-populate weight field with user's body weight
-   - Display clear labeling: "X lbs (body weight)"
-
-4. **Additional Weight System**
-   - Add "+ Additional Weight" input field
-   - Equipment type selector (dumbbell, weighted vest, etc.)
-   - Calculate and display total weight
-
-### Phase 3: Integration (Days 5-6)
-5. **Volume Calculation Updates**
-   - Ensure total weight (body + additional) used in volume calculations
-   - Update progressive overload calculations
-   - Test with real workout scenarios
-
-6. **Missing Data Handling**
-   - Detect users without body weight in profile
-   - Create streamlined body weight entry flow
-   - Handle edge cases gracefully
-
-### Phase 4: Polish & Testing (Day 7)
-7. **User Experience Refinement**
-   - Save additional weight preferences per exercise
-   - Optimize UI flow and feedback
-   - Test with multiple bodyweight exercise types
-
-8. **Quality Assurance**
-   - TypeScript validation (`npm run check`)
-   - Real user flow testing with browser automation
-   - Edge case testing and error handling
-
-## 🏗️ Technical Architecture
-
-### Data Models
+### Phase 1: User Profile Foundation (Days 1-2)
 ```typescript
+// Core data structures and storage
 interface UserProfile {
-  bodyWeight: number;  // User's current body weight in lbs
-  bodyWeightUnit: 'lbs' | 'kg';
-  lastUpdated: string;
-}
-
-interface BodyweightExerciseConfig {
-  baseWeight: number;          // User's body weight
-  additionalWeight: number;    // Extra equipment weight
-  totalWeight: number;         // baseWeight + additionalWeight
-  additionalEquipment?: string; // "dumbbell", "weighted vest", etc.
-}
-
-interface ExerciseSetWithBodyweight extends ExerciseSet {
-  isBodyweight: boolean;
-  bodyweightConfig?: BodyweightExerciseConfig;
+  bodyWeight: number;
+  heightFeet: number;
+  heightInches: number;
+  age: number;
+  goals: {
+    calorieTarget?: number;
+    volumeIncreasePreference: number; // percentage
+  };
 }
 ```
 
-### Key Files to Modify
-- `client/src/hooks/use-user-preferences.tsx` - User profile data
-- `client/src/components/workout/SetLogger.tsx` - Weight entry component
-- `data/exercises/universal-exercise-database.json` - Exercise equipment types
-- `client/src/services/supabase-workout-service.ts` - Workout logging service
+**Tasks:**
+- Create user profile schema and TypeScript interfaces
+- Build profile storage system (JSON file-based for development)
+- Design profile completion/editing UI components
+- Implement profile data hooks and context providers
 
-## 🎯 Business Value
+### Phase 2: Exercise Detection & Auto-Population (Days 3-4)
+```typescript
+// Exercise classification and weight logic
+interface BodyweightExerciseConfig {
+  baseWeight: number;
+  additionalWeight: number;
+  totalWeight: number;
+  additionalEquipment?: string;
+}
+```
 
-### User Benefits
-- **Reduced Friction**: No manual weight entry for bodyweight exercises
-- **Accurate Tracking**: Body weight included in volume calculations
-- **Better Progression**: Progressive overload accounts for total weight
-- **Equipment Flexibility**: Support for weighted bodyweight exercises
+**Tasks:**
+- Enhance exercise database queries to detect bodyweight exercises
+- Modify SetLogger component to auto-populate weight for bodyweight exercises
+- Add additional weight input UI with equipment selection
+- Update volume calculation logic to use total weight
 
-### Foundation Benefits
-- **User Profile System**: Infrastructure for other features requiring user data
-- **Data Collection**: Establishes pattern for user data entry and management
-- **Calculation Framework**: Foundation for body composition and goal tracking
-
-## 📊 Progress Tracking
-
-### Completion Status: 0% (0 of 8 tasks complete)
-
-**Current Status**: Branch created, ready to begin implementation
-
-**Estimated Timeline**: 7 days
-- Setup & Foundation: 2 days
-- Core Implementation: 2 days  
-- Integration & Testing: 2 days
-- Polish & QA: 1 day
-
-**Next Steps**:
-1. Set up user profile body weight infrastructure
-2. Test bodyweight exercise detection in exercise database
-3. Begin SetLogger component modifications
+### Phase 3: Integration & Polish (Days 5-6)
+**Tasks:**
+- Integrate profile completion prompts into workout flow
+- Add preference persistence for additional weights per exercise
+- Implement data migration for existing users
+- Add comprehensive error handling and edge cases
+- Mobile responsiveness and UX polish
 
 ## 🧪 Testing Strategy
 
-### Manual Testing Scenarios
-1. **New User**: User without body weight logs bodyweight exercise
-2. **Existing User**: User with body weight logs bodyweight exercise
-3. **Additional Weight**: User adds dumbbells to bodyweight exercise
-4. **Equipment Preferences**: User's additional weight choices are remembered
-5. **Volume Calculations**: Verify body weight included in volume metrics
+### Unit Testing
+- [ ] User profile data validation and storage
+- [ ] Exercise type detection algorithms
+- [ ] Weight calculation logic (bodyweight + additional)
+- [ ] Volume calculation accuracy
 
-### Automated Testing
-- TypeScript compilation validation
-- Component rendering tests for new UI elements
-- User preference data persistence tests
-- Exercise detection utility function tests
+### Integration Testing
+- [ ] Profile completion workflow end-to-end
+- [ ] Workout logging with auto-populated weights
+- [ ] Data persistence across browser sessions
+- [ ] Migration from existing workout data
+
+### User Experience Testing
+- [ ] First-time user onboarding flow
+- [ ] Existing user profile setup
+- [ ] Bodyweight vs weighted exercise workflows
+- [ ] Mobile device compatibility
+
+## 📊 Foundation for Future Features
+
+This implementation creates the **user data infrastructure** that enables:
+
+- **Progressive Overload Algorithm** (Issue #23) - needs user weight and preferences
+- **Chart.js Progress Dashboard** (Issue #13) - needs user metrics for context
+- **Recovery Tracking** (Issue #24) - needs user body composition data
+- **Smart Exercise Selection** (Issue #11) - needs user equipment and preferences
+
+## 🎛️ Technical Architecture
+
+### Data Flow
+```
+User Profile → Exercise Detection → Weight Auto-Population → Volume Calculation → Progress Tracking
+```
+
+### Key Components
+- `useUserProfile()` - Profile data management hook
+- `ProfileSetupDialog` - Profile completion UI
+- `EnhancedSetLogger` - Modified workout logging with auto-population
+- `BodyweightExerciseService` - Exercise classification and weight logic
+
+### Integration Points
+- Exercise database (`universal-exercise-database.json`)
+- Workout session management (`use-workout-session.tsx`)
+- User data storage (file-based system)
+- Volume calculation services
+
+## 🚀 Estimated Timeline
+
+**Total Duration**: 6 days
+- **Days 1-2**: User profile foundation and data structures
+- **Days 3-4**: Exercise detection and auto-population logic  
+- **Days 5-6**: Integration, testing, and polish
+
+**Daily Commitment**: 4-6 hours focused development
+**Complexity**: Medium (new data infrastructure + UI integration)
+
+## ✅ Definition of Done
+
+- [ ] All acceptance criteria from Issue #26 completed
+- [ ] TypeScript compilation with zero errors (`npm run check`)
+- [ ] Integration tests passing for user workflows
+- [ ] Mobile-responsive design verified
+- [ ] User profile system ready for future feature expansion
+- [ ] Documentation updated with new user data architecture
+- [ ] CodeRabbit review completed and approved
+- [ ] Successfully merged to master with clean git history
 
 ---
-
-**Branch Focus**: Building the foundation for user data collection through bodyweight exercise auto-population, enabling future features that require user profile data.
-
-**Key Dependencies**: User profile/preferences system enhancement, exercise database integration
-
-**Success Metric**: Seamless bodyweight exercise logging with automatic weight population and accurate volume calculations including body weight.
+**Branch Status**: 🟡 In Progress  
+**Last Updated**: 2025-06-03  
+**Next Milestone**: User profile schema and storage foundation
