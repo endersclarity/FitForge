@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-supabase-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserStats } from "@shared/schema";
+import { bodyStatsService, type BodyStats } from "@/services/supabase-body-stats-service";
 import { 
   User, 
   Settings, 
@@ -48,13 +48,42 @@ export default function Profile() {
     dailyCalories: 2200
   });
 
-  const { data: userStats, isLoading: statsLoading, error: statsError } = useQuery<UserStats>({
-    queryKey: ["/api/user-stats/latest"],
+  // Fetch latest body stats from Supabase
+  const { data: latestBodyStats, isLoading: statsLoading, error: statsError } = useQuery<BodyStats | null>({
+    queryKey: ["supabase-body-stats-latest", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      console.log('🔍 Fetching latest body stats...');
+      try {
+        return await bodyStatsService.getLatestBodyStats(user.id);
+      } catch (error) {
+        console.error('❌ Failed to fetch body stats:', error);
+        throw new Error('Failed to load body stats');
+      }
+    },
+    enabled: !!user,
+    retry: 2,
+    retryDelay: 1000
+  });
+
+  // Fetch body stats history for progress tracking
+  const { data: bodyStatsHistory = [] } = useQuery<BodyStats[]>({
+    queryKey: ["supabase-body-stats-history", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      try {
+        return await bodyStatsService.getBodyStatsHistory(user.id, 10);
+      } catch (error) {
+        console.error('❌ Failed to fetch body stats history:', error);
+        return [];
+      }
+    },
+    enabled: !!user
   });
 
   const fitnessGoals = {
     weeklyWorkouts: 4,
-    targetWeight: userStats?.weight || 180,
+    targetWeight: latestBodyStats?.weight_lbs || 180,
     dailyCalories: 2200,
   };
 
@@ -120,21 +149,65 @@ export default function Profile() {
     }
   });
 
+  // Body stats save mutation
+  const saveBodyStatsMutation = useMutation({
+    mutationFn: async (data: any) => {
+      console.log('💪 Saving body stats...');
+      return await bodyStatsService.logBodyStats({
+        weight_lbs: data.weight ? parseFloat(data.weight) : undefined,
+        body_fat_percentage: data.bodyFat ? parseFloat(data.bodyFat) : undefined,
+        chest_inches: data.chest ? parseFloat(data.chest) : undefined,
+        waist_inches: data.waist ? parseFloat(data.waist) : undefined,
+        hips_inches: data.hips ? parseFloat(data.hips) : undefined,
+        bicep_inches: data.biceps ? parseFloat(data.biceps) : undefined,
+        thigh_inches: data.thighs ? parseFloat(data.thighs) : undefined,
+        notes: data.notes || undefined
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supabase-body-stats-latest'] });
+      queryClient.invalidateQueries({ queryKey: ['supabase-body-stats-history'] });
+      setIsEditing(false);
+      toast({
+        title: "Body Metrics Saved!",
+        description: "Your body measurements have been successfully recorded.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save body metrics. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Handle form submissions
   const handleEditToggle = () => {
     if (!isEditing) {
       // Initialize forms with current values when starting to edit
       setProfileForm({
-        firstName: user?.firstName || '',
-        lastName: user?.lastName || '',
+        firstName: user?.email?.split('@')[0] || '', // Use email username since User doesn't have firstName
+        lastName: '',
         email: user?.email || '',
         height: '170',
-        weight: userStats?.weight?.toString() || ''
+        weight: latestBodyStats?.weight_lbs?.toString() || ''
       });
       setGoalsForm({
         weeklyWorkouts: fitnessGoals.weeklyWorkouts,
         targetWeight: fitnessGoals.targetWeight,
         dailyCalories: fitnessGoals.dailyCalories
+      });
+      setBodyMetricsForm({
+        weight: latestBodyStats?.weight_lbs?.toString() || '',
+        height: '170', // Default height
+        bodyFat: latestBodyStats?.body_fat_percentage?.toString() || '',
+        chest: latestBodyStats?.chest_inches?.toString() || '',
+        waist: latestBodyStats?.waist_inches?.toString() || '',
+        hips: latestBodyStats?.hips_inches?.toString() || '',
+        biceps: latestBodyStats?.bicep_inches?.toString() || '',
+        thighs: latestBodyStats?.thigh_inches?.toString() || '',
+        calves: '' // Not in Supabase schema
       });
     }
     setIsEditing(!isEditing);
@@ -164,6 +237,17 @@ export default function Profile() {
     updateGoalsMutation.mutate(goalsForm);
   };
 
+  const handleSaveBodyMetrics = () => {
+    if (!user) {
+      toast({
+        title: "Please Sign In",
+        description: "You need to be signed in to save body metrics.",
+        variant: "destructive",
+      });
+      return;
+    }
+    saveBodyStatsMutation.mutate(bodyMetricsForm);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -174,16 +258,16 @@ export default function Profile() {
             <div className="flex items-center space-x-6">
               <div className="w-24 h-24 gradient-bg rounded-full flex items-center justify-center">
                 <span className="text-white text-3xl font-bold">
-                  {user ? `${user.firstName[0]}${user.lastName[0]}` : "U"}
+                  {user ? user.email?.[0]?.toUpperCase() || "U" : "U"}
                 </span>
               </div>
               <div>
                 <h1 className="text-4xl font-bold mb-2">
-                  {user?.firstName} {user?.lastName}
+                  {user?.email?.split('@')[0] || 'User'}
                 </h1>
                 <p className="text-xl text-muted-foreground">{user?.email}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Member since {user ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                  Member since {user ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
                 </p>
               </div>
             </div>
@@ -215,7 +299,7 @@ export default function Profile() {
                   <Label htmlFor="firstName">First Name</Label>
                   <Input 
                     id="firstName" 
-                    value={isEditing ? profileForm.firstName : (user?.firstName || '')} 
+                    value={isEditing ? profileForm.firstName : (user?.email?.split('@')[0] || '')} 
                     disabled={!isEditing}
                     onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
                   />
@@ -224,7 +308,7 @@ export default function Profile() {
                   <Label htmlFor="lastName">Last Name</Label>
                   <Input 
                     id="lastName" 
-                    value={isEditing ? profileForm.lastName : (user?.lastName || '')} 
+                    value={isEditing ? profileForm.lastName : ''} 
                     disabled={!isEditing}
                     onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
                   />
@@ -255,7 +339,7 @@ export default function Profile() {
                   <Label htmlFor="weight">Current Weight (lbs)</Label>
                   <Input 
                     id="weight" 
-                    value={isEditing ? profileForm.weight : (userStats?.weight || '')} 
+                    value={isEditing ? profileForm.weight : (latestBodyStats?.weight_lbs?.toString() || '')} 
                     disabled={!isEditing}
                     type="number"
                     onChange={(e) => setProfileForm(prev => ({ ...prev, weight: e.target.value }))}
@@ -343,7 +427,7 @@ export default function Profile() {
                   <Label htmlFor="metric-weight">Weight (lbs)</Label>
                   <Input 
                     id="metric-weight" 
-                    value={isEditing ? bodyMetricsForm.weight : (userStats?.weight || '')} 
+                    value={isEditing ? bodyMetricsForm.weight : (latestBodyStats?.weight_lbs?.toString() || '')} 
                     disabled={!isEditing}
                     type="number"
                     placeholder="Enter weight"
@@ -365,7 +449,7 @@ export default function Profile() {
                   <Label htmlFor="body-fat">Body Fat %</Label>
                   <Input 
                     id="body-fat" 
-                    value={isEditing ? bodyMetricsForm.bodyFat : ''} 
+                    value={isEditing ? bodyMetricsForm.bodyFat : (latestBodyStats?.body_fat_percentage?.toString() || '')} 
                     disabled={!isEditing}
                     type="number"
                     placeholder="Enter body fat %"
@@ -381,7 +465,7 @@ export default function Profile() {
                   <Label htmlFor="chest">Chest</Label>
                   <Input 
                     id="chest" 
-                    value={isEditing ? bodyMetricsForm.chest : ''} 
+                    value={isEditing ? bodyMetricsForm.chest : (latestBodyStats?.chest_inches?.toString() || '')} 
                     disabled={!isEditing}
                     type="number"
                     placeholder="Chest measurement"
@@ -392,7 +476,7 @@ export default function Profile() {
                   <Label htmlFor="waist">Waist</Label>
                   <Input 
                     id="waist" 
-                    value={isEditing ? bodyMetricsForm.waist : ''} 
+                    value={isEditing ? bodyMetricsForm.waist : (latestBodyStats?.waist_inches?.toString() || '')} 
                     disabled={!isEditing}
                     type="number"
                     placeholder="Waist measurement"
@@ -403,7 +487,7 @@ export default function Profile() {
                   <Label htmlFor="hips">Hips</Label>
                   <Input 
                     id="hips" 
-                    value={isEditing ? bodyMetricsForm.hips : ''} 
+                    value={isEditing ? bodyMetricsForm.hips : (latestBodyStats?.hips_inches?.toString() || '')} 
                     disabled={!isEditing}
                     type="number"
                     placeholder="Hips measurement"
@@ -419,7 +503,7 @@ export default function Profile() {
                   <Label htmlFor="biceps">Biceps</Label>
                   <Input 
                     id="biceps" 
-                    value={isEditing ? bodyMetricsForm.biceps : ''} 
+                    value={isEditing ? bodyMetricsForm.biceps : (latestBodyStats?.bicep_inches?.toString() || '')} 
                     disabled={!isEditing}
                     type="number"
                     placeholder="Biceps measurement"
@@ -430,7 +514,7 @@ export default function Profile() {
                   <Label htmlFor="thighs">Thighs</Label>
                   <Input 
                     id="thighs" 
-                    value={isEditing ? bodyMetricsForm.thighs : ''} 
+                    value={isEditing ? bodyMetricsForm.thighs : (latestBodyStats?.thigh_inches?.toString() || '')} 
                     disabled={!isEditing}
                     type="number"
                     placeholder="Thighs measurement"
@@ -455,15 +539,10 @@ export default function Profile() {
               <div className="mt-6 text-center">
                 <Button 
                   className="gradient-bg"
-                  onClick={() => {
-                    toast({
-                      title: "Body Metrics Updated!",
-                      description: "Your measurements have been saved.",
-                    });
-                    setIsEditing(false);
-                  }}
+                  onClick={handleSaveBodyMetrics}
+                  disabled={saveBodyStatsMutation.isPending}
                 >
-                  Save Body Metrics
+                  {saveBodyStatsMutation.isPending ? 'Saving...' : 'Save Body Metrics'}
                 </Button>
               </div>
             )}

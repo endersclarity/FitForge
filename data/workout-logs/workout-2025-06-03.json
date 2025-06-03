@@ -1,0 +1,37 @@
+[
+  {
+    "timestamp": "2025-06-02T21:08:11-07:00",
+    "sessionId": "test-session-123",
+    "workoutType": "ChestTriceps",
+    "exerciseName": "Bench Press",
+    "set": {
+      "setNumber": 1,
+      "weight": 185,
+      "reps": 8,
+      "equipment": "Barbell",
+      "volume": 1480,
+      "timestamp": "2025-06-02T21:08:11-07:00"
+    }
+  },
+  {
+    "timestamp": "2025-06-03T04:10:56.906Z",
+    "sessionId": "local-1748923844611",
+    "workoutType": "backbiceps",
+    "exerciseName": "Neutral Grip Pull-ups",
+    "set": {
+      "setNumber": 1,
+      "weight": 20,
+      "reps": 1,
+      "equipment": "bodyweight",
+      "volume": 20,
+      "timestamp": "2025-06-03T04:10:56.906Z"
+    }
+  },
+  {
+    "timestamp": "2025-06-02T21:13:59-07:00",
+    "sessionId": "local-test-session",
+    "workoutType": "BackBiceps",
+    "exerciseName": "WORKOUT_COMPLETED",
+    "set": {}
+  }
+]

@@ -6,7 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { ArrowLeft, Dumbbell, Clock, Target, Plus, Minus, Play } from "lucide-react";
 import { WorkoutSession } from "@/components/workout/WorkoutSession";
-import { useWorkoutSession } from "@/hooks/use-workout-session";
+import { useWorkoutSession, SessionConflictError, type SessionConflictData } from "@/hooks/use-workout-session";
+import { SessionConflictDialog } from "@/components/SessionConflictDialog";
+import { WorkoutProgressErrorBoundary } from "@/components/workout-progress-error-boundary";
 import { workoutService } from "@/services/supabase-workout-service";
 import { useAuth } from "@/hooks/use-supabase-auth";
 import type { Exercise } from "@/lib/supabase";
@@ -50,44 +52,63 @@ export default function StartWorkout() {
   
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
   const [workoutStarted, setWorkoutStarted] = useState(false);
+  const [sessionConflict, setSessionConflict] = useState<SessionConflictData | null>(null);
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
   const { user } = useAuth();
-  const { session, startWorkout, loading: sessionLoading, error } = useWorkoutSession();
+  const { session, startWorkout, abandonActiveSession, resumeActiveSession, loading: sessionLoading, error } = useWorkoutSession();
 
-  // Fetch exercises from Supabase by workout type
-  const { data: supabaseExercises, isLoading } = useQuery<Exercise[]>({
-    queryKey: ["supabase-exercises", workoutType],
+  // Fetch exercises from working API endpoint by workout type
+  const { data: exercisesResponse, isLoading, error: exercisesError } = useQuery({
+    queryKey: ["exercises", workoutType],
     queryFn: async () => {
-      if (!workoutType) return [];
-      return await workoutService.getExercisesByType(workoutType);
+      if (!workoutType) return { exercises: [] };
+      console.log(`🔍 Fetching exercises for workout type: ${workoutType}`);
+      try {
+        const response = await fetch('/api/exercises');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        console.log(`✅ Found ${data.data.exercises.length} total exercises`);
+        
+        // Filter by workout type (convert backbiceps -> BackBiceps for matching)
+        const workoutTypeMapping: Record<string, string> = {
+          'backbiceps': 'BackBiceps',
+          'chesttriceps': 'ChestTriceps', 
+          'legs': 'Legs',
+          'abs': 'Abs',
+          'warmup': 'Warmup'
+        };
+        
+        const mappedType = workoutTypeMapping[workoutType] || workoutType;
+        const filteredExercises = data.data.exercises.filter((ex: any) => 
+          ex.workoutType === mappedType
+        );
+        console.log(`✅ Found ${filteredExercises.length} exercises for ${workoutType} (${mappedType})`);
+        
+        return { exercises: filteredExercises };
+      } catch (error) {
+        console.error(`❌ Failed to fetch exercises for ${workoutType}:`, error);
+        throw new Error(`Failed to load ${workoutType} exercises. Please try again.`);
+      }
     },
-    enabled: !!workoutType
+    enabled: !!workoutType,
+    retry: 2,
+    retryDelay: 1000
   });
 
-  // Convert Supabase exercises to legacy format for UI compatibility
-  const allExercises: LegacyExercise[] = (supabaseExercises || []).map(exercise => ({
-    exerciseName: exercise.exercise_name,
-    equipmentType: exercise.equipment_type || [],
-    category: exercise.category,
-    workoutType: exercise.workout_type || workoutType,
-    variation: exercise.variation || '',
-    weight: exercise.default_weight_lbs || 0,
-    restTime: `${exercise.rest_time_seconds || 60}s`,
-    reps: exercise.default_reps || 10,
-    primaryMuscles: [], // Would need to fetch from exercise_primary_muscles table
-    secondaryMuscles: [] // Would need to fetch from exercise_secondary_muscles table
-  }));
+  // Use exercises from API (already in the correct format)
+  const allExercises: LegacyExercise[] = exercisesResponse?.exercises || [];
 
   // Available exercises (already filtered by workout type from Supabase)
   const availableExercises = allExercises;
 
   // Auto-select exercises when they load
   useEffect(() => {
-    if (availableExercises.length > 0 && selectedExerciseIds.length === 0 && supabaseExercises) {
-      // Use the actual Supabase exercise IDs for selection
-      const defaultExerciseIds = supabaseExercises.slice(0, 6).map(exercise => exercise.id);
+    if (availableExercises.length > 0 && selectedExerciseIds.length === 0) {
+      // Use exercise IDs from the API response
+      const defaultExerciseIds = exercisesResponse?.exercises.slice(0, 6).map((exercise: any) => exercise.id) || [];
       setSelectedExerciseIds(defaultExerciseIds);
     }
-  }, [availableExercises, selectedExerciseIds.length, supabaseExercises]);
+  }, [availableExercises, selectedExerciseIds.length, exercisesResponse]);
 
   const workoutTypeNames: Record<string, string> = {
     'abs': 'Abs & Core',
@@ -101,36 +122,66 @@ export default function StartWorkout() {
 
   // If we have an active session or workout has been started, show the WorkoutSession component
   if (session || workoutStarted) {
-    return <WorkoutSession workoutType={workoutName} selectedExercises={selectedExerciseIds} />;
-  }
-
-  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
+      <WorkoutProgressErrorBoundary 
+        context="workout-session"
+        onRetry={() => {
+          console.log('🔄 Retrying workout session...');
+          setWorkoutStarted(false);
+          // Session will be maintained by the hook
+        }}
+      >
+        <WorkoutSession workoutType={workoutName} selectedExercises={selectedExerciseIds} />
+      </WorkoutProgressErrorBoundary>
     );
   }
 
-  if (!workoutType) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">No Workout Type Selected</h1>
-          <Button onClick={() => window.location.href = '/workouts'}>
-            Back to Workouts
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
+  // Show loading state with proper background and feedback
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading {workoutName} exercises...</p>
+          <h2 className="text-xl font-semibold mb-2">Loading {workoutName} exercises...</h2>
+          <p className="text-muted-foreground">Please wait while we fetch your workout exercises</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state with actionable feedback
+  if (exercisesError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold mb-2">Unable to Load Exercises</h2>
+          <p className="text-muted-foreground mb-4">
+            {exercisesError instanceof Error ? exercisesError.message : 'An unexpected error occurred'}
+          </p>
+          <div className="space-y-2">
+            <Button onClick={() => window.location.reload()} className="w-full">
+              Try Again
+            </Button>
+            <Button variant="outline" onClick={() => window.location.href = '/workouts'} className="w-full">
+              Back to Workouts
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show no workout type selected
+  if (!workoutType) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">No Workout Type Selected</h1>
+          <p className="text-muted-foreground mb-4">Please select a workout type to continue</p>
+          <Button onClick={() => window.location.href = '/workouts'}>
+            Back to Workouts
+          </Button>
         </div>
       </div>
     );
@@ -161,17 +212,17 @@ export default function StartWorkout() {
 
       // Create legacy exercise objects for the workout session
       const selectedExercises = selectedExerciseIds
-        .map(id => supabaseExercises?.find(ex => ex.id === id))
+        .map(id => exercisesResponse?.exercises.find((ex: any) => ex.id === id))
         .filter(Boolean)
-        .map(exercise => ({
-          id: exercise!.id,
-          name: exercise!.exercise_name,
-          primaryMuscles: [], // TODO: Fetch from muscles tables
-          secondaryMuscles: [],
-          equipment: exercise!.equipment_type || [],
-          restTime: exercise!.rest_time_seconds || 60,
-          difficulty: exercise!.difficulty_level || 'beginner',
-          workoutType: exercise!.workout_type || workoutType
+        .map((exercise: any) => ({
+          id: exercise.id,
+          name: exercise.exerciseName,
+          primaryMuscles: exercise.primaryMuscles || [],
+          secondaryMuscles: exercise.secondaryMuscles || [],
+          equipment: exercise.equipmentType || [],
+          restTime: exercise.restTimeSeconds || 60,
+          difficulty: exercise.difficultyLevel || 'beginner',
+          workoutType: exercise.workoutType || workoutType
         }));
 
       await startWorkout(workoutType, selectedExercises);
@@ -179,8 +230,52 @@ export default function StartWorkout() {
       console.log('✅ Workout started successfully');
     } catch (error) {
       console.error('❌ Failed to start workout:', error);
-      alert(error instanceof Error ? error.message : 'Failed to start workout');
+      
+      // Handle session conflict with proper dialog
+      if (error instanceof SessionConflictError) {
+        console.log('🔄 Session conflict detected, showing dialog...');
+        setSessionConflict(error.conflictData);
+        setShowConflictDialog(true);
+      } else {
+        // Handle other errors with alert
+        alert(error instanceof Error ? error.message : 'Failed to start workout');
+      }
     }
+  };
+
+  // Session conflict dialog handlers
+  const handleAbandonAndStart = async () => {
+    try {
+      console.log('🗑️ Abandoning previous session and starting new workout...');
+      await abandonActiveSession();
+      setShowConflictDialog(false);
+      setSessionConflict(null);
+      
+      // Retry starting the workout
+      await startWorkoutSession();
+    } catch (error) {
+      console.error('❌ Failed to abandon session and start new workout:', error);
+      alert(error instanceof Error ? error.message : 'Failed to abandon previous session');
+    }
+  };
+
+  const handleResumeExisting = async () => {
+    try {
+      console.log('🔄 Resuming previous workout session...');
+      await resumeActiveSession();
+      setShowConflictDialog(false);
+      setSessionConflict(null);
+      setWorkoutStarted(true);
+    } catch (error) {
+      console.error('❌ Failed to resume previous session:', error);
+      alert(error instanceof Error ? error.message : 'Failed to resume previous session');
+    }
+  };
+
+  const handleCancelConflict = () => {
+    console.log('❌ User cancelled session conflict resolution');
+    setShowConflictDialog(false);
+    setSessionConflict(null);
   };
 
   return (
@@ -219,7 +314,7 @@ export default function StartWorkout() {
               </p>
             </div>
 
-            {supabaseExercises?.map((exercise, index) => {
+            {exercisesResponse?.exercises.map((exercise: any, index: number) => {
               const exerciseId = exercise.id;
               const isSelected = selectedExerciseIds.includes(exerciseId);
               
@@ -234,21 +329,21 @@ export default function StartWorkout() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold">{exercise.exercise_name}</h3>
+                        <h3 className="font-semibold">{exercise.exerciseName}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {exercise.category} • {exercise.difficulty_level}
+                          {exercise.category} • {exercise.difficultyLevel}
                         </p>
                         <div className="flex gap-2 mt-2">
                           <Badge variant="outline">{exercise.category}</Badge>
-                          {exercise.equipment_type?.map((eq, idx) => (
+                          {exercise.equipmentType?.map((eq: string, idx: number) => (
                             <Badge key={idx} variant="outline">{eq}</Badge>
                           ))}
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        {exercise.default_weight_lbs && (
+                        {exercise.defaultWeight && exercise.defaultWeight !== 'Bodyweight' && (
                           <div className="text-sm text-muted-foreground">
-                            {exercise.default_weight_lbs} lbs
+                            {exercise.defaultWeight} lbs
                           </div>
                         )}
                         <Badge variant={isSelected ? "default" : "secondary"}>
@@ -296,20 +391,47 @@ export default function StartWorkout() {
           </div>
         ) : (
           <div className="text-center py-12">
+            <div className="text-yellow-500 text-6xl mb-4">📭</div>
+            <h2 className="text-xl font-semibold mb-2">No Exercises Available</h2>
             <p className="text-muted-foreground mb-4">
-              {isLoading 
-                ? `Loading ${workoutName} exercises from Supabase...`
-                : `No exercises found for ${workoutName} in Supabase database`
-              }
+              We couldn't find any exercises for <strong>{workoutName}</strong> in the database.
             </p>
-            {!isLoading && (
-              <Button onClick={() => window.location.href = '/workouts'}>
-                Choose Different Workout
-              </Button>
-            )}
+            <div className="space-y-2 max-w-sm mx-auto">
+              <p className="text-sm text-muted-foreground mb-4">
+                This might be because:
+              </p>
+              <ul className="text-sm text-muted-foreground text-left space-y-1 mb-4">
+                <li>• The exercise database hasn't been populated yet</li>
+                <li>• There's a connection issue with the database</li>
+                <li>• No exercises are configured for this workout type</li>
+              </ul>
+              <div className="space-y-2">
+                <Button onClick={() => window.location.reload()} className="w-full">
+                  Refresh Page
+                </Button>
+                <Button variant="outline" onClick={() => window.location.href = '/workouts'} className="w-full">
+                  Choose Different Workout
+                </Button>
+                <Button variant="outline" onClick={() => window.location.href = '/exercises'} className="w-full">
+                  Browse All Exercises
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Session Conflict Dialog */}
+      {sessionConflict && (
+        <SessionConflictDialog
+          open={showConflictDialog}
+          conflictData={sessionConflict}
+          onAbandonAndStart={handleAbandonAndStart}
+          onResumeExisting={handleResumeExisting}
+          onCancel={handleCancelConflict}
+          loading={sessionLoading}
+        />
+      )}
     </div>
   );
 }

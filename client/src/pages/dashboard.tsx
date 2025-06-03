@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-supabase-auth";
 import { useQuery } from "@tanstack/react-query";
-import { WorkoutSession, UserStats, Challenge } from "@shared/schema";
+import { workoutService } from "@/services/supabase-workout-service";
+import type { WorkoutSession } from "@/lib/supabase";
 
 // Custom achievement type for calculated achievements
 interface CalculatedAchievement {
@@ -32,13 +33,30 @@ import { Link } from "wouter";
 export default function Dashboard() {
   const { user } = useAuth();
 
-  const { data: recentSessions = [] } = useQuery<WorkoutSession[]>({
-    queryKey: ["/api/workout-sessions"],
+  // Fetch recent workout sessions from Supabase
+  const { data: recentSessions = [], isLoading: sessionsLoading, error: sessionsError } = useQuery<WorkoutSession[]>({
+    queryKey: ["supabase-workout-history", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      console.log('🔍 Fetching workout history from Supabase...');
+      try {
+        const sessions = await workoutService.getWorkoutHistory(user.id, 10); // Get last 10 sessions
+        console.log(`✅ Found ${sessions.length} workout sessions`);
+        return sessions;
+      } catch (error) {
+        console.error('❌ Failed to fetch workout history:', error);
+        throw new Error('Failed to load workout history');
+      }
+    },
+    enabled: !!user,
+    retry: 2,
+    retryDelay: 1000
   });
 
-  const { data: userStats } = useQuery<UserStats>({
-    queryKey: ["/api/user-stats/latest"],
-  });
+  // Mock user stats for now (would be replaced with real Supabase data)
+  const userStats = {
+    caloriesConsumed: 1650
+  };
 
   const { data: achievementsData = [] } = useQuery({
     queryKey: ["/api/achievements"],
@@ -56,7 +74,7 @@ export default function Dashboard() {
         title: "First Steps",
         description: "Completed your first workout session",
         category: "milestone",
-        unlockedAt: recentSessions[recentSessions.length - 1].createdAt.toISOString(),
+        unlockedAt: recentSessions[recentSessions.length - 1].created_at,
         icon: "🎯"
       });
     }
@@ -68,7 +86,7 @@ export default function Dashboard() {
         title: "Getting Consistent",
         description: "Completed 5 workout sessions",
         category: "milestone",
-        unlockedAt: recentSessions[recentSessions.length - 5].createdAt.toISOString(),
+        unlockedAt: recentSessions[recentSessions.length - 5].created_at,
         icon: "💪"
       });
     }
@@ -80,13 +98,13 @@ export default function Dashboard() {
         title: "Dedicated Athlete",
         description: "Completed 10 workout sessions",
         category: "milestone",
-        unlockedAt: recentSessions[recentSessions.length - 10].createdAt.toISOString(),
+        unlockedAt: recentSessions[recentSessions.length - 10].created_at,
         icon: "🏆"
       });
     }
     
     // Volume Achievements
-    const totalVolumeLifted = recentSessions.reduce((sum, session) => sum + (session.totalVolume || 0), 0);
+    const totalVolumeLifted = recentSessions.reduce((sum, session) => sum + (session.total_volume_lbs || 0), 0);
     if (totalVolumeLifted >= 10000) {
       calculatedAchievements.push({
         id: 4,
@@ -115,15 +133,15 @@ export default function Dashboard() {
   
   const achievements = Array.isArray(achievementsData) && achievementsData.length > 0 ? achievementsData : calculateAchievements();
 
-  const { data: challenges = [] } = useQuery<Challenge[]>({
+  const { data: challenges = [] } = useQuery({
     queryKey: ["/api/challenges"],
   });
 
-  // Calculate real progress based on actual data
+  // Calculate real progress based on actual Supabase data
   const today = new Date();
   const todaysSessions = recentSessions.filter(session => {
-    const sessionDate = new Date(session.createdAt);
-    return sessionDate.toDateString() === today.toDateString();
+    const sessionDate = new Date(session.start_time);
+    return sessionDate.toDateString() === today.toDateString() && session.completion_status === 'completed';
   });
   
   // Progress is based on whether user completed a workout today (0 or 100)
@@ -134,10 +152,10 @@ export default function Dashboard() {
     calorieGoal: 2200,
     caloriesConsumed: userStats?.caloriesConsumed || 0,
     workoutsThisWeek: recentSessions.filter(session => {
-      const sessionDate = new Date(session.createdAt);
+      const sessionDate = new Date(session.start_time);
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      return sessionDate >= weekAgo;
+      return sessionDate >= weekAgo && session.completion_status === 'completed';
     }).length,
   };
 
@@ -172,7 +190,7 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl font-bold mb-4">
-              Welcome back, {user?.firstName}! 👋
+              Welcome back, {user?.email?.split('@')[0]}! 👋
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
               Ready to crush your fitness goals today?
@@ -284,19 +302,19 @@ export default function Dashboard() {
                 {recentSessions.length > 0 ? (
                   <div className="space-y-4">
                     {recentSessions.slice(0, 5).map((session) => {
-                      const sessionDate = new Date(session.createdAt);
+                      const sessionDate = new Date(session.created_at);
                       const isToday = sessionDate.toDateString() === new Date().toDateString();
-                      const exercises = Array.isArray(session.exercises) ? session.exercises : [];
-                      const exerciseCount = exercises.length;
-                      const totalSets = exercises.reduce((sum: number, ex: {sets?: any[]}) => sum + (ex.sets?.length || 0), 0);
+                      // Note: exercises data would need to be fetched separately from workout_exercises table
+                      const exerciseCount = 0; // Placeholder - would need separate query
+                      const totalSets = 0; // Placeholder - would need separate query
                       
                       return (
                         <div key={session.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <p className="font-medium">
-                                {session.workoutType ? 
-                                  session.workoutType.replace(/([A-Z])/g, ' $1').trim() : 
+                                {session.workout_type ? 
+                                  session.workout_type.replace(/([A-Z])/g, ' $1').trim() : 
                                   'Workout Session'}
                               </p>
                               {isToday && (
@@ -314,11 +332,11 @@ export default function Dashboard() {
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-primary">
-                              {session.totalDuration || 0} min
+                              {session.total_duration_seconds ? Math.round(session.total_duration_seconds / 60) : 0} min
                             </p>
-                            {session.totalVolume && session.totalVolume > 0 && (
+                            {session.total_volume_lbs && session.total_volume_lbs > 0 && (
                               <p className="text-sm text-muted-foreground">
-                                {session.totalVolume.toLocaleString()} lbs
+                                {session.total_volume_lbs.toLocaleString()} lbs
                               </p>
                             )}
                           </div>
@@ -389,6 +407,124 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
+        </div>
+      </section>
+
+      {/* Workout History */}
+      <section className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold">Recent Workouts</h2>
+            <Link href="/progress">
+              <Button variant="outline" size="sm">
+                View All
+              </Button>
+            </Link>
+          </div>
+
+          {sessionsLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading workout history...</p>
+            </div>
+          ) : sessionsError ? (
+            <Card className="text-center py-8">
+              <CardContent>
+                <div className="text-red-500 text-4xl mb-4">⚠️</div>
+                <p className="text-muted-foreground mb-4">Unable to load workout history</p>
+                <Button onClick={() => window.location.reload()} size="sm">
+                  Try Again
+                </Button>
+              </CardContent>
+            </Card>
+          ) : recentSessions.length === 0 ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <Activity className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                <p className="text-lg text-muted-foreground mb-2">No workouts yet</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Start your first workout to see your progress here
+                </p>
+                <Link href="/workouts">
+                  <Button>Start Your First Workout</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {recentSessions.slice(0, 5).map((session) => {
+                const sessionDate = new Date(session.start_time);
+                const duration = session.total_duration_seconds 
+                  ? Math.round(session.total_duration_seconds / 60) 
+                  : 0;
+                
+                return (
+                  <Card key={session.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                            <Activity className="w-6 h-6 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">
+                              {session.session_name || session.workout_type || 'Workout'}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              {sessionDate.toLocaleDateString()} at {sessionDate.toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-6 text-sm">
+                          {duration > 0 && (
+                            <div className="text-center">
+                              <div className="flex items-center text-muted-foreground">
+                                <Clock className="w-4 h-4 mr-1" />
+                                {duration}m
+                              </div>
+                            </div>
+                          )}
+                          
+                          {session.total_volume_lbs > 0 && (
+                            <div className="text-center">
+                              <div className="font-semibold">{session.total_volume_lbs}</div>
+                              <div className="text-muted-foreground">lbs</div>
+                            </div>
+                          )}
+                          
+                          {session.calories_burned && (
+                            <div className="text-center">
+                              <div className="flex items-center text-muted-foreground">
+                                <Flame className="w-4 h-4 mr-1" />
+                                {session.calories_burned}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <Badge 
+                            variant={session.completion_status === 'completed' ? 'default' : 'secondary'}
+                          >
+                            {session.completion_status === 'completed' ? 'Completed' : 
+                             session.completion_status === 'in_progress' ? 'In Progress' : 'Cancelled'}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      {session.notes && (
+                        <div className="mt-4 pt-4 border-t">
+                          <p className="text-sm text-muted-foreground">{session.notes}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 

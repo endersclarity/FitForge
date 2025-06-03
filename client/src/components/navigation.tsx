@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-supabase-auth";
+import { useNavigationErrorHandler } from "@/components/navigation-error-boundary";
 import { Dumbbell, Moon, Sun, Bell, Menu, User } from "lucide-react";
 import { useState } from "react";
 import {
@@ -19,6 +20,25 @@ export function Navigation() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const { handleNavigationError } = useNavigationErrorHandler();
+
+  // Safe navigation handler with error recovery
+  const handleNavigation = (path: string) => {
+    try {
+      // Close mobile menu if open
+      setMobileMenuOpen(false);
+      
+      // Add small delay to ensure state updates
+      setTimeout(() => {
+        // The Link component will handle the navigation
+        // This is just for additional error tracking
+        console.log(`🧭 Navigating to: ${path}`);
+      }, 0);
+    } catch (error) {
+      console.error('Navigation error:', error);
+      handleNavigationError(error as Error, '/dashboard');
+    }
+  };
 
   const navItems = [
     { path: "/dashboard", label: "Dashboard" },
@@ -59,9 +79,7 @@ export function Navigation() {
                 <Link
                   key={item.path}
                   href={item.path}
-                  onClick={() => {
-                    // Navigation analytics could be added here if needed
-                  }}
+                  onClick={() => handleNavigation(item.path)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                     isActive(item.path)
                       ? "text-primary bg-primary/10"
@@ -102,9 +120,7 @@ export function Navigation() {
                         <Link
                           key={item.path}
                           href={item.path}
-                          onClick={() => {
-                            setMobileMenuOpen(false);
-                          }}
+                          onClick={() => handleNavigation(item.path)}
                           className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                             isActive(item.path)
                               ? "text-primary bg-primary/10"

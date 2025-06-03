@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/hooks/use-supabase-auth";
 import { WorkoutSessionProvider } from "@/hooks/use-workout-session";
 import { useDataMigration, MigrationStatus } from "@/hooks/use-data-migration";
 import { Navigation } from "@/components/navigation";
+import NavigationErrorBoundary from "@/components/navigation-error-boundary";
 import { LiveWorkoutSession } from "@/components/live-workout-session";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
@@ -68,8 +69,11 @@ function Router() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-      <Switch>
+      <NavigationErrorBoundary>
+        <Navigation />
+      </NavigationErrorBoundary>
+      <NavigationErrorBoundary>
+        <Switch>
         <Route path="/" component={Home} />
         <Route path="/auth" component={Auth} />
         <Route path="/dashboard">
@@ -140,7 +144,8 @@ function Router() {
           </ProtectedRoute>
         </Route> */}
         <Route component={NotFound} />
-      </Switch>
+        </Switch>
+      </NavigationErrorBoundary>
       
       {/* Migration status indicator (only shows when migration is needed/in progress) */}
       <MigrationStatus />
