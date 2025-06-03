@@ -228,7 +228,7 @@ export function SetLogger({ exerciseIndex, onSetCompleted, showHistory = true }:
         // Validate additional weight with edge case handling
         const validAdditionalWeight = typeof additionalWeight === 'number' 
           && !isNaN(additionalWeight)
-          && isFinite(additionalWeight)
+          && Number.isFinite(additionalWeight)
           && additionalWeight >= 0 
           && additionalWeight <= 500;
         
@@ -389,7 +389,7 @@ export function SetLogger({ exerciseIndex, onSetCompleted, showHistory = true }:
       if (!trimmedReps) {
         newErrors.reps = 'Reps are required';
       } else {
-        const repsNum = parseInt(trimmedReps);
+        const repsNum = parseInt(trimmedReps, 10);
         if (isNaN(repsNum)) {
           newErrors.reps = 'Reps must be a valid number';
         } else if (repsNum <= 0) {
@@ -422,7 +422,7 @@ export function SetLogger({ exerciseIndex, onSetCompleted, showHistory = true }:
     try {
       // Parse and validate data one more time before submission
       const weightNum = parseFloat(weight.trim());
-      const repsNum = parseInt(reps.trim());
+      const repsNum = parseInt(reps.trim(), 10);
       
       // Final sanity checks
       if (!Number.isFinite(weightNum) || !Number.isFinite(repsNum)) {
@@ -496,7 +496,7 @@ export function SetLogger({ exerciseIndex, onSetCompleted, showHistory = true }:
   };
 
   const adjustReps = (increment: number) => {
-    const currentReps = parseInt(reps) || 0;
+    const currentReps = parseInt(reps, 10) || 0;
     const newReps = Math.max(0, currentReps + increment);
     setReps(newReps.toString());
   };
@@ -526,12 +526,12 @@ export function SetLogger({ exerciseIndex, onSetCompleted, showHistory = true }:
   const handleAdditionalWeightChange = async (totalWeight: number, additionalWt: number, equipment: string) => {
     try {
       // Enhanced validation for parameters
-      if (typeof totalWeight !== 'number' || isNaN(totalWeight) || !isFinite(totalWeight)) {
+      if (typeof totalWeight !== 'number' || isNaN(totalWeight) || !Number.isFinite(totalWeight)) {
         console.warn('Invalid totalWeight parameter:', totalWeight);
         return;
       }
       
-      if (typeof additionalWt !== 'number' || isNaN(additionalWt) || !isFinite(additionalWt)) {
+      if (typeof additionalWt !== 'number' || isNaN(additionalWt) || !Number.isFinite(additionalWt)) {
         console.warn('Invalid additionalWeight parameter:', additionalWt);
         return;
       }
@@ -638,14 +638,14 @@ export function SetLogger({ exerciseIndex, onSetCompleted, showHistory = true }:
       }
       
       const weightNum = parseFloat(weight.trim());
-      const repsNum = parseInt(reps.trim());
+      const repsNum = parseInt(reps.trim(), 10);
       
       // Comprehensive validation
       if (isNaN(weightNum) || isNaN(repsNum)) {
         return null;
       }
       
-      if (!isFinite(weightNum) || !isFinite(repsNum)) {
+      if (!Number.isFinite(weightNum) || !Number.isFinite(repsNum)) {
         return null;
       }
       
@@ -662,7 +662,7 @@ export function SetLogger({ exerciseIndex, onSetCompleted, showHistory = true }:
         const oneRM = calculateOneRepMax(weightNum, repsNum);
         
         // Validate the calculated result
-        if (typeof oneRM !== 'number' || isNaN(oneRM) || !isFinite(oneRM) || oneRM <= 0) {
+        if (typeof oneRM !== 'number' || isNaN(oneRM) || !Number.isFinite(oneRM) || oneRM <= 0) {
           console.warn('Invalid 1RM calculation result:', oneRM);
           return null;
         }

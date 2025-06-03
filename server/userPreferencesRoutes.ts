@@ -133,7 +133,7 @@ router.put("/bodyweight-configs/:userId/:exerciseId", async (req, res) => {
     const { userId, exerciseId } = req.params;
     const configData = BodyweightExerciseConfigSchema.parse({
       ...req.body,
-      exerciseId: parseInt(exerciseId)
+      exerciseId: parseInt(exerciseId, 10)
     });
     
     let preferences = await storage.getUserPreferences(userId);
@@ -143,14 +143,14 @@ router.put("/bodyweight-configs/:userId/:exerciseId", async (req, res) => {
     
     const updatedPreferences = UserProfileUtils.updateBodyweightExerciseConfig(
       preferences, 
-      parseInt(exerciseId), 
+      parseInt(exerciseId, 10), 
       configData
     );
     
     await storage.saveUserPreferences(userId, updatedPreferences);
     res.json({ 
       success: true, 
-      config: UserProfileUtils.getBodyweightExerciseConfig(updatedPreferences, parseInt(exerciseId))
+      config: UserProfileUtils.getBodyweightExerciseConfig(updatedPreferences, parseInt(exerciseId, 10))
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

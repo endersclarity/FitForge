@@ -28,7 +28,7 @@ export function AdditionalWeightInput({
     // Validate initial additional weight
     if (typeof initialAdditionalWeight !== 'number' || 
         isNaN(initialAdditionalWeight) || 
-        !isFinite(initialAdditionalWeight) ||
+        !Number.isFinite(initialAdditionalWeight) ||
         initialAdditionalWeight < 0 ||
         initialAdditionalWeight > 500) {
       console.warn('Invalid initialAdditionalWeight, using 0:', initialAdditionalWeight);
@@ -88,14 +88,14 @@ export function AdditionalWeightInput({
   const handleAdditionalWeightChange = (newAdditionalWeight: number) => {
     try {
       // Enhanced validation for input parameters
-      if (typeof newAdditionalWeight !== 'number' || isNaN(newAdditionalWeight) || !isFinite(newAdditionalWeight)) {
+      if (typeof newAdditionalWeight !== 'number' || isNaN(newAdditionalWeight) || !Number.isFinite(newAdditionalWeight)) {
         console.warn('Invalid additional weight input:', newAdditionalWeight);
         setComponentError('Invalid weight value entered.');
         return;
       }
       
       // Validate bodyWeight prop
-      if (typeof bodyWeight !== 'number' || isNaN(bodyWeight) || !isFinite(bodyWeight) || bodyWeight <= 0) {
+      if (typeof bodyWeight !== 'number' || isNaN(bodyWeight) || !Number.isFinite(bodyWeight) || bodyWeight <= 0) {
         console.warn('Invalid bodyWeight prop:', bodyWeight);
         setComponentError('Invalid body weight. Please refresh and try again.');
         return;
@@ -178,7 +178,7 @@ export function AdditionalWeightInput({
 
   const adjustWeight = (increment: number) => {
     try {
-      if (typeof increment !== 'number' || isNaN(increment) || !isFinite(increment)) {
+      if (typeof increment !== 'number' || isNaN(increment) || !Number.isFinite(increment)) {
         console.warn('Invalid weight increment:', increment);
         return;
       }
