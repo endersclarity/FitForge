@@ -379,7 +379,8 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
           return {
             ...prev,
             exercises: newExercises,
-            totalVolume: prev.totalVolume + volume
+            totalVolume: prev.totalVolume + volume,
+            estimatedCalories: prev.estimatedCalories + Math.round(volume * 0.1)
           };
         });
 

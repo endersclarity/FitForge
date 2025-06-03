@@ -22,8 +22,8 @@ echo -e "${BLUE}====================================${NC}"
 # Change to project directory
 cd "$PROJECT_DIR"
 
-# Get WSL IP for Windows access
-WSL_IP=$(ip addr show eth0 | grep "inet " | awk '{print $2}' | cut -d/ -f1)
+# Get WSL IP for Windows access (cross-platform fallback)
+WSL_IP=$(ip -4 route get 1 2>/dev/null | awk '{print $7; exit}' || ip addr show eth0 2>/dev/null | grep "inet " | awk '{print $2}' | cut -d/ -f1 || echo "localhost")
 echo -e "${GREEN}📍 Windows Access URL: http://$WSL_IP:$PORT${NC}"
 echo -e "${GREEN}📍 Local Access URL: http://localhost:$PORT${NC}"
 echo ""

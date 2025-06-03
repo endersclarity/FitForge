@@ -8,7 +8,6 @@
   "scripts": {
     "dev": "NODE_ENV=development HOST=0.0.0.0 PORT=5000 tsx watch --clear-screen=false server/index.ts",
     "dev-stable": "./run-node-dev.sh",
-    "server": "./flask-monitor.sh",
     "frontend": "vite --port 3000",
     "electron": "NODE_ENV=development electron .",
     "electron-dev": "concurrently \"npm run frontend\" \"wait-on http://localhost:3000 && npm run electron\"",
