@@ -1,95 +1,157 @@
-# Branch: fix/production-deployment-broken
+# Feature Branch: Auto-Populate Body Weight for Bodyweight Exercises
 
-## ⚠️ UPDATE: Production deployment fixed, but app is non-functional for users
+**Branch**: `feature/auto-populate-bodyweight-issue-26`  
+**GitHub Issue**: #26  
+**Created**: 2025-06-03  
+**Status**: 🚀 Ready to Start
 
-**Previous Issue**: ~~Blank white page~~ ✅ FIXED  
-**Current Issue**: Core features broken - users cannot actually use the app
+## 🎯 Success Criteria
 
-## 📋 Master Fix Document
-**See [masterfix.md](./masterfix.md) for the comprehensive fix plan and progress tracking**
+### Core Functionality
+- [ ] **Bodyweight Detection**: Automatically detect bodyweight exercises from exercise database
+- [ ] **Auto-Population**: Weight field auto-fills with user's current body weight
+- [ ] **Clear Labeling**: Display weight as "200 lbs (body weight)" for transparency
+- [ ] **Additional Weight**: "+ Additional Weight" option for extra equipment (dumbbells, weighted vest)
+- [ ] **Total Weight Calculation**: `bodyWeight + additionalWeight` for accurate volume
+- [ ] **Missing Data Handling**: Prompt users who haven't entered body weight
+- [ ] **Equipment Preferences**: Save additional weight preferences per exercise
 
-## Critical Issues Discovered
-1. **Cannot Start Workouts**: Main feature is disabled (route commented out)
-2. **Dead Navigation Links**: Menu items lead to 404 pages
-3. **Fake Data Displayed**: Dashboard shows hardcoded 70% progress
-4. **Empty Progress Page**: Shows only "--" placeholders
-5. **No Exercise Browser**: 38 exercises exist but are invisible to users
+### User Experience
+- [ ] **Seamless Integration**: Works with existing workout logging flow
+- [ ] **Accurate Volume**: Body weight included in volume calculations
+- [ ] **Progressive Overload**: Total weight (body + additional) used for progression
+- [ ] **Clear Feedback**: Users understand what weight is being calculated
 
-## Original Issue (RESOLVED)
-FitForge production deployment at https://fitforge-free-9zezd.ondigitalocean.app ~~shows only a blank white page~~ now loads but with broken functionality.
+### Technical Implementation
+- [ ] **User Profile System**: Body weight storage and retrieval
+- [ ] **Exercise Database Integration**: Identify bodyweight exercises via `equipmentType`
+- [ ] **SetLogger Enhancement**: Modified weight entry component
+- [ ] **Type Safety**: Full TypeScript coverage for new interfaces
 
-## New Purpose
-Transform FitForge from a beautiful but broken app into a fully functional fitness tracking system. While the blank page issue is fixed, the app currently fails at its primary purpose - users cannot track workouts.
+## 📋 Implementation Plan
 
-## Updated Success Criteria
-1. ✅ **Application Loads**: ~~Production URL shows the FitForge application interface~~ FIXED
-2. ❌ **User Can Start Workout**: Complete workout tracking flow must work
-3. ❌ **Real Data Display**: No hardcoded/fake progress values
-4. ❌ **Working Navigation**: All menu links lead to functional pages
-5. ❌ **Exercise Database Access**: Users can browse 38 available exercises
-6. ❌ **Progress Tracking**: Users can view their actual workout history and stats
+### Phase 1: Foundation (Days 1-2)
+1. **User Profile Infrastructure**
+   - Extend user preferences system for body weight storage
+   - Create body weight entry/update UI component
+   - Implement data persistence and retrieval
 
-## Root Cause Investigation Plan
-1. **Console Errors**: Check browser dev tools for JavaScript errors
-2. **Build Output**: Verify production build artifacts are valid
-3. **Environment Variables**: Confirm all required vars are set in Digital Ocean
-4. **Vite Configuration**: Check if vite.config.ts is production-ready
-5. **Import Paths**: Verify all imports resolve correctly in production
-6. **Static Assets**: Ensure assets are served correctly from production build
+2. **Exercise Database Enhancement**
+   - Verify bodyweight exercise identification in universal database
+   - Add utility functions to detect bodyweight exercises
+   - Test with common bodyweight exercises (push-ups, pull-ups, step-ups)
 
-## Timeline
-- **Immediate**: Diagnose root cause through browser inspection and logs
-- **Hour 1**: Fix critical build/configuration issues
-- **Hour 2**: Test and verify working deployment
-- **Hour 3**: Document fix and ensure reproducible solution
+### Phase 2: Core Logic (Days 3-4)
+3. **SetLogger Component Enhancement**
+   - Detect when current exercise is bodyweight-based
+   - Auto-populate weight field with user's body weight
+   - Display clear labeling: "X lbs (body weight)"
 
-## Technical Debugging Steps
-1. Inspect https://fitforge-free-9zezd.ondigitalocean.app in browser dev tools
-2. Check Digital Ocean deployment logs for build errors
-3. Compare local development vs production build outputs
-4. Verify environment variable configuration in Digital Ocean
-5. Test production build locally: `npm run build && npm run preview`
-6. Fix identified issues and redeploy
+4. **Additional Weight System**
+   - Add "+ Additional Weight" input field
+   - Equipment type selector (dumbbell, weighted vest, etc.)
+   - Calculate and display total weight
 
-## User Experience Target
-Users visiting the production URL should see the same FitForge application they would see in development - homepage with navigation, ability to register/login, and access to workout features.
+### Phase 3: Integration (Days 5-6)
+5. **Volume Calculation Updates**
+   - Ensure total weight (body + additional) used in volume calculations
+   - Update progressive overload calculations
+   - Test with real workout scenarios
 
-## Critical Priority
-This is a **production-breaking bug** that must be fixed immediately. The application is completely non-functional for end users.
+6. **Missing Data Handling**
+   - Detect users without body weight in profile
+   - Create streamlined body weight entry flow
+   - Handle edge cases gracefully
 
-## Dependencies
-- ✅ Digital Ocean deployment infrastructure (working)
-- ✅ GitHub CI/CD pipeline (working)
-- ❌ Application actually loading and running (BROKEN)
-- ❌ Environment variables properly configured (unknown)
-- ❌ Production build configuration (unknown)
+### Phase 4: Polish & Testing (Day 7)
+7. **User Experience Refinement**
+   - Save additional weight preferences per exercise
+   - Optimize UI flow and feedback
+   - Test with multiple bodyweight exercise types
 
-## Integration Points
-- Fix Vite production build configuration for React SPA
-- Ensure Digital Ocean environment variables match development needs
-- Verify static asset serving and routing configuration
-- Test Supabase connectivity in production environment
+8. **Quality Assurance**
+   - TypeScript validation (`npm run check`)
+   - Real user flow testing with browser automation
+   - Edge case testing and error handling
 
-## Implementation Progress
-Track all fixes in [masterfix.md](./masterfix.md)
+## 🏗️ Technical Architecture
 
-### Completed
-- [x] **Deployment Fixed**: Site loads in production
-- [x] **Black Screen Fixed**: CSS theme adjustments made
-- [x] **Root Cause Found**: Core features disabled in code
+### Data Models
+```typescript
+interface UserProfile {
+  bodyWeight: number;  // User's current body weight in lbs
+  bodyWeightUnit: 'lbs' | 'kg';
+  lastUpdated: string;
+}
 
-### Current Work
-- [ ] **Phase 1**: Enable core workout functionality (Fix #1-3)
-- [ ] **Phase 2**: Connect real data (Fix #4, 6, 7)
-- [ ] **Phase 3**: Add missing features (Fix #5, 10)
-- [ ] **Phase 4**: Polish UX (Fix #8-9)
+interface BodyweightExerciseConfig {
+  baseWeight: number;          // User's body weight
+  additionalWeight: number;    // Extra equipment weight
+  totalWeight: number;         // baseWeight + additionalWeight
+  additionalEquipment?: string; // "dumbbell", "weighted vest", etc.
+}
 
-**Branch Status**: Production loads but app is non-functional - fixing core features
+interface ExerciseSetWithBodyweight extends ExerciseSet {
+  isBodyweight: boolean;
+  bodyweightConfig?: BodyweightExerciseConfig;
+}
+```
 
-## Fix Strategy
-1. **Immediate**: Uncomment workout routes to restore core functionality
-2. **Next**: Replace all fake data with real API calls
-3. **Then**: Add missing UI for exercise browsing and progress
-4. **Finally**: Polish rough edges and UX issues
+### Key Files to Modify
+- `client/src/hooks/use-user-preferences.tsx` - User profile data
+- `client/src/components/workout/SetLogger.tsx` - Weight entry component
+- `data/exercises/universal-exercise-database.json` - Exercise equipment types
+- `client/src/services/supabase-workout-service.ts` - Workout logging service
 
-**Estimated Time to Functional**: 4 days following masterfix.md plan
+## 🎯 Business Value
+
+### User Benefits
+- **Reduced Friction**: No manual weight entry for bodyweight exercises
+- **Accurate Tracking**: Body weight included in volume calculations
+- **Better Progression**: Progressive overload accounts for total weight
+- **Equipment Flexibility**: Support for weighted bodyweight exercises
+
+### Foundation Benefits
+- **User Profile System**: Infrastructure for other features requiring user data
+- **Data Collection**: Establishes pattern for user data entry and management
+- **Calculation Framework**: Foundation for body composition and goal tracking
+
+## 📊 Progress Tracking
+
+### Completion Status: 0% (0 of 8 tasks complete)
+
+**Current Status**: Branch created, ready to begin implementation
+
+**Estimated Timeline**: 7 days
+- Setup & Foundation: 2 days
+- Core Implementation: 2 days  
+- Integration & Testing: 2 days
+- Polish & QA: 1 day
+
+**Next Steps**:
+1. Set up user profile body weight infrastructure
+2. Test bodyweight exercise detection in exercise database
+3. Begin SetLogger component modifications
+
+## 🧪 Testing Strategy
+
+### Manual Testing Scenarios
+1. **New User**: User without body weight logs bodyweight exercise
+2. **Existing User**: User with body weight logs bodyweight exercise
+3. **Additional Weight**: User adds dumbbells to bodyweight exercise
+4. **Equipment Preferences**: User's additional weight choices are remembered
+5. **Volume Calculations**: Verify body weight included in volume metrics
+
+### Automated Testing
+- TypeScript compilation validation
+- Component rendering tests for new UI elements
+- User preference data persistence tests
+- Exercise detection utility function tests
+
+---
+
+**Branch Focus**: Building the foundation for user data collection through bodyweight exercise auto-population, enabling future features that require user profile data.
+
+**Key Dependencies**: User profile/preferences system enhancement, exercise database integration
+
+**Success Metric**: Seamless bodyweight exercise logging with automatic weight population and accurate volume calculations including body weight.
