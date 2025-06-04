@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { BarChart3, Apple, Brain, TrendingUp, Calendar, Target, Activity } from "lucide-react";
 import MuscleHeatMap from "@/components/muscle-heatmap/MuscleHeatMap";
 import { useMuscleRecovery } from "@/hooks/use-muscle-recovery";
-import { useAuth } from "@/hooks/use-supabase-auth";
+import { useAuth } from "@/hooks/use-auth";
 
 export function DashboardOverview() {
   // Real Data Only - No Mock Data

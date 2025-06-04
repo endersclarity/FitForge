@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useAuth } from "@/hooks/use-supabase-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { workoutService } from "@/services/supabase-workout-service";
 import type { WorkoutSession } from "@/lib/supabase";
@@ -40,7 +40,7 @@ export default function Dashboard() {
       if (!user) return [];
       console.log('🔍 Fetching workout history from Supabase...');
       try {
-        const sessions = await workoutService.getWorkoutHistory(user.id, 10); // Get last 10 sessions
+        const sessions = await workoutService.getWorkoutHistory(user.id.toString(), 10); // Get last 10 sessions
         console.log(`✅ Found ${sessions.length} workout sessions`);
         return sessions;
       } catch (error) {

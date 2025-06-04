@@ -1,32 +1,77 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Activity, Target, Calendar, Weight, ChevronDown, ChevronUp, Dumbbell, Clock } from "lucide-react";
+import { TrendingUp, Activity, Target, Calendar, Weight, ChevronDown, ChevronUp, Dumbbell, Clock, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { WorkoutSession } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ProgressCharts } from "@/components/progress-charts";
 
 export default function Progress() {
   const [expandedSession, setExpandedSession] = useState<number | null>(null);
+  const [timeRange, setTimeRange] = useState<'1M' | '3M' | '6M' | '1Y'>('3M');
   
-  // Fetch real workout data
+  // Fetch comprehensive workout data (both sessions and logs)
   const { data: workoutSessions = [], isLoading } = useQuery<WorkoutSession[]>({
     queryKey: ["/api/workout-sessions"],
   });
 
-  // Calculate real statistics
-  const totalWorkouts = workoutSessions.length;
-  
-  const totalVolume = workoutSessions.reduce((total, session) => {
-    return total + (session.totalVolume || 0);
-  }, 0);
-  
-  const totalCalories = workoutSessions.reduce((total, session) => {
-    // Estimate: 0.1 calories per pound lifted
-    return total + (session.totalVolume || 0) * 0.1;
-  }, 0);
+  // Fetch comprehensive analytics that aggregates all data sources
+  const { data: analytics } = useQuery({
+    queryKey: ["/api/workout-analytics"],
+    queryFn: async () => {
+      const response = await fetch("/api/workout-analytics");
+      if (!response.ok) throw new Error("Failed to fetch analytics");
+      return response.json();
+    }
+  });
+
+  // Use real comprehensive statistics
+  const totalWorkouts = analytics?.totalCompletedWorkouts || workoutSessions.filter(session => session.status === 'completed').length;
+  const totalVolume = analytics?.totalVolume || workoutSessions.reduce((total, session) => total + (session.totalVolume || 0), 0);
+  const totalCalories = analytics?.totalCalories || Math.round(totalVolume * 0.1);
   
   const currentStreak = calculateStreak(workoutSessions);
+  
+  // Transform data for charts component
+  const chartsData = {
+    sessions: workoutSessions.map(session => ({
+      date: (session.createdAt || session.startTime).toString(),
+      workoutType: session.workoutType || 'Mixed',
+      duration: session.totalDuration || 0,
+      totalVolume: Array.isArray(session.exercises) ? session.exercises.reduce((sum: number, ex: any) => 
+        sum + (Array.isArray(ex.sets) ? ex.sets.reduce((setSum: number, set: any) => setSum + ((set.weight || 0) * (set.reps || 0)), 0) : 0), 0) : 0,
+      caloriesBurned: Math.round((session.totalDuration || 0) * 5.5), // 5.5 cal/min estimate
+      formScore: session.formScore || 8,
+      exercises: Array.isArray(session.exercises) ? session.exercises.map((ex: any) => ({
+        name: ex.exerciseName || 'Unknown Exercise',
+        sets: Array.isArray(ex.sets) ? ex.sets.map((set: any) => ({
+          weight: set.weight || 0,
+          reps: set.reps || 0,
+          volume: (set.weight || 0) * (set.reps || 0)
+        })) : []
+      })) : []
+    })),
+    bodyStats: [], // TODO: Add body stats when available
+    exerciseProgress: [] // TODO: Add exercise progression data
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await fetch('/api/progress/export?format=csv');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fitforge-progress-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    }
+  };
   
   function calculateStreak(sessions: WorkoutSession[]): number {
     if (sessions.length === 0) return 0;
@@ -221,23 +266,35 @@ export default function Progress() {
           </CardContent>
         </Card>
 
-        {/* Progress Message */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle className="text-center">Track Your Real Progress</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center py-8">
-            <TrendingUp className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">
-              {totalWorkouts === 0 
-                ? "Start your first workout to begin tracking progress"
-                : "Your progress is being tracked! Charts coming soon."}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Formula: Volume = Sets × Reps × Weight | Calories ≈ Volume × 0.1
-            </p>
-          </CardContent>
-        </Card>
+        {/* Progress Charts */}
+        {totalWorkouts > 0 && (
+          <div className="mt-8">
+            <ProgressCharts
+              data={chartsData}
+              timeRange={timeRange}
+              onTimeRangeChange={setTimeRange}
+              onExport={handleExport}
+            />
+          </div>
+        )}
+
+        {/* Getting Started Message */}
+        {totalWorkouts === 0 && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="text-center">Start Tracking Your Progress</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center py-8">
+              <TrendingUp className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-4">
+                Complete your first workout to begin tracking detailed progress with charts and analytics
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Formula: Volume = Sets × Reps × Weight | Calories ≈ Volume × 0.1
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

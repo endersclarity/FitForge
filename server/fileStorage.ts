@@ -250,6 +250,28 @@ export class FileStorage {
     return filtered.slice(offset, offset + limit);
   }
 
+  async getWorkoutLogs(): Promise<any[]> {
+    try {
+      const logsPath = path.join(this.dataDir, 'workout-logs');
+      const files = await fs.readdir(logsPath).catch(() => []);
+      
+      let allLogs: any[] = [];
+      
+      for (const file of files) {
+        if (file.endsWith('.json')) {
+          const filePath = path.join(logsPath, file);
+          const logs = await this.readJsonFile<any[]>(filePath, []);
+          allLogs = allLogs.concat(logs);
+        }
+      }
+      
+      return allLogs;
+    } catch (error) {
+      console.warn('Could not read workout logs:', error);
+      return [];
+    }
+  }
+
   async getActiveWorkoutSession(userId: string): Promise<WorkoutSession | null> {
     // First cleanup old sessions
     await this.cleanupOldSessions(userId);

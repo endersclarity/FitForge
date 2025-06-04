@@ -16,7 +16,7 @@ import {
   MuscleRecoveryCalculator, 
   createMuscleRecoveryCalculator 
 } from '@/services/muscle-recovery';
-import { useAuth } from '@/hooks/use-supabase-auth';
+import { useAuth } from '@/hooks/use-auth';
 
 interface UseMuscleRecoveryReturn {
   // Data State
@@ -49,7 +49,7 @@ export function useMuscleRecovery(): UseMuscleRecoveryReturn {
   // Initialize recovery calculator when user changes
   useEffect(() => {
     if (user) {
-      const calculator = createMuscleRecoveryCalculator(user.id);
+      const calculator = createMuscleRecoveryCalculator(user.id.toString());
       setRecoveryCalculator(calculator);
       refreshRecoveryData();
     } else {
@@ -80,7 +80,7 @@ export function useMuscleRecovery(): UseMuscleRecoveryReturn {
       setError(null);
 
       // Get recovery states for all muscle groups
-      const states = await recoveryCalculator.getMuscleRecoveryStates(user.id);
+      const states = await recoveryCalculator.getMuscleRecoveryStates(user.id.toString());
       
       // If no workout data exists, provide fresh muscle states
       const finalStates = states.length > 0 ? states : generateDefaultFreshMuscleStates();
