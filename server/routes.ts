@@ -378,6 +378,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/workout-logs - Raw workout log data
+  app.get("/api/workout-logs", authenticateToken, async (req: any, res) => {
+    try {
+      console.log("📝 FETCHING RAW WORKOUT LOGS");
+      
+      // Import fileStorage for real workout logs
+      const { fileStorage } = await import("./fileStorage");
+      await fileStorage.initialize();
+      
+      // Get raw workout logs
+      const workoutLogs = await fileStorage.getWorkoutLogs();
+      console.log(`📋 Found ${workoutLogs.length} workout log entries`);
+      
+      res.json(workoutLogs);
+    } catch (error: any) {
+      console.error("Error fetching workout logs:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // GET /api/workout-analytics - Comprehensive workout data including logs
   app.get("/api/workout-analytics", authenticateToken, async (req: any, res) => {
     try {

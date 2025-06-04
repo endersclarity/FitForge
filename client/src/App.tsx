@@ -27,6 +27,7 @@ import Nutrition from "@/pages/nutrition";
 import Exercises from "@/pages/exercises";
 import StartWorkout from "@/pages/start-workout";
 import TestSupabase from "@/pages/test-supabase";
+import Intake from "@/pages/intake";
 // import WorkoutDetail from "@/pages/workout-detail";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -131,6 +132,11 @@ function Router() {
         <Route path="/nutrition">
           <ProtectedRoute>
             <Nutrition />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/intake">
+          <ProtectedRoute>
+            <Intake />
           </ProtectedRoute>
         </Route>
         {process.env.NODE_ENV === 'development' && (

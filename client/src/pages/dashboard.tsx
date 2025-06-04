@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { workoutService } from "@/services/supabase-workout-service";
+import { localWorkoutService } from "@/services/local-workout-service";
+import { userPreferencesService } from "@/services/user-preferences-service";
 import type { WorkoutSession } from "@/lib/supabase";
 
 // Custom achievement type for calculated achievements
@@ -33,18 +34,18 @@ import { Link } from "wouter";
 export default function Dashboard() {
   const { user } = useAuth();
 
-  // Fetch recent workout sessions from Supabase
+  // Fetch recent workout sessions from local API
   const { data: recentSessions = [], isLoading: sessionsLoading, error: sessionsError } = useQuery<WorkoutSession[]>({
-    queryKey: ["supabase-workout-history", user?.id],
+    queryKey: ["local-workout-history", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      console.log('🔍 Fetching workout history from Supabase...');
+      console.log('🔍 Fetching workout history from local API...');
       try {
-        const sessions = await workoutService.getWorkoutHistory(user.id.toString(), 10); // Get last 10 sessions
-        console.log(`✅ Found ${sessions.length} workout sessions`);
+        const sessions = await localWorkoutService.getWorkoutHistory(user.id.toString(), 10);
+        console.log(`✅ Found ${sessions.length} workout sessions from local data`);
         return sessions;
       } catch (error) {
-        console.error('❌ Failed to fetch workout history:', error);
+        console.error('❌ Failed to fetch local workout history:', error);
         throw new Error('Failed to load workout history');
       }
     },
@@ -53,10 +54,25 @@ export default function Dashboard() {
     retryDelay: 1000
   });
 
-  // Mock user stats for now (would be replaced with real Supabase data)
-  const userStats = {
-    caloriesConsumed: 1650
-  };
+  // Fetch user preferences and nutrition data
+  const { data: userPreferences } = useQuery({
+    queryKey: ["user-preferences", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      console.log('🔍 Fetching user preferences...');
+      return userPreferencesService.getUserPreferences(user.id.toString());
+    },
+    enabled: !!user,
+  });
+
+  const { data: nutritionData } = useQuery({
+    queryKey: ["nutrition-data", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      return userPreferencesService.getTodayNutrition(user.id.toString());
+    },
+    enabled: !!user,
+  });
 
   const { data: achievementsData = [] } = useQuery({
     queryKey: ["/api/achievements"],
@@ -74,8 +90,10 @@ export default function Dashboard() {
   
   const todayStats = {
     workoutProgress,
-    calorieGoal: 2200,
-    caloriesConsumed: userStats?.caloriesConsumed || 0,
+    calorieGoal: userPreferences?.targetGoals?.dailyCalorieGoal || 2200,
+    caloriesConsumed: nutritionData?.caloriesConsumed || 0,
+    proteinGoal: userPreferences?.targetGoals?.dailyProteinGoal || 150,
+    proteinConsumed: nutritionData?.proteinConsumed || 0,
     workoutsThisWeek: recentSessions.filter(session => {
       const sessionDate = new Date(session.start_time);
       const weekAgo = new Date();

@@ -203,18 +203,29 @@ export function ProgressCharts({ data, timeRange, onTimeRangeChange, onExport }:
     ]
   };
 
-  // Workout Types Distribution Chart Data
+  // Workout Types Distribution Chart Data - Fixed to properly categorize workout types
   const workoutTypeData: ChartData<'bar'> = {
     labels: ['Chest & Triceps', 'Back & Biceps', 'Legs', 'Abs', 'Mixed'],
     datasets: [
       {
         label: 'Workout Count',
         data: [
-          data.sessions.filter(s => s.workoutType.includes('Chest')).length,
-          data.sessions.filter(s => s.workoutType.includes('Back')).length,
-          data.sessions.filter(s => s.workoutType.includes('Legs')).length,
-          data.sessions.filter(s => s.workoutType.includes('Abs')).length,
-          data.sessions.filter(s => !['Chest', 'Back', 'Legs', 'Abs'].some(type => s.workoutType.includes(type))).length
+          data.sessions.filter(s => 
+            s.workoutType.toLowerCase().includes('chest') || 
+            s.workoutType.toLowerCase().includes('tricep') ||
+            s.workoutType.toLowerCase() === 'chesttriceps'
+          ).length,
+          data.sessions.filter(s => 
+            s.workoutType.toLowerCase().includes('back') || 
+            s.workoutType.toLowerCase().includes('bicep') ||
+            s.workoutType.toLowerCase() === 'backbiceps'
+          ).length,
+          data.sessions.filter(s => s.workoutType.toLowerCase().includes('legs')).length,
+          data.sessions.filter(s => s.workoutType.toLowerCase().includes('abs')).length,
+          data.sessions.filter(s => {
+            const type = s.workoutType.toLowerCase();
+            return !['chest', 'tricep', 'chesttriceps', 'back', 'bicep', 'backbiceps', 'legs', 'abs'].some(t => type.includes(t));
+          }).length
         ],
         backgroundColor: [
           `${chartTheme.primary}80`,
@@ -410,7 +421,7 @@ export function ProgressCharts({ data, timeRange, onTimeRangeChange, onExport }:
           </CardContent>
         </Card>
 
-        {/* Exercise Progress - Real data only */}
+        {/* Exercise Progress - Real data implementation */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -419,15 +430,38 @@ export function ProgressCharts({ data, timeRange, onTimeRangeChange, onExport }:
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="p-8 text-center text-muted-foreground">
-              <p className="text-lg font-medium">Real Exercise Progression</p>
-              <p className="text-sm mt-2">
-                Formula: Track max weight × reps for each exercise over time
-              </p>
-              <p className="text-xs mt-1">
-                Data source: Exercise sets from workout sessions
-              </p>
-            </div>
+            {recentPRs.length > 0 ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Latest personal records from your workout sessions
+                </p>
+                <div className="grid gap-3">
+                  {recentPRs.slice(0, 3).map((pr, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div>
+                        <p className="font-medium">{pr.exercise}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {pr.reps} reps on {new Date(pr.date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="font-bold">
+                        {pr.weight === 0 ? 'Bodyweight' : `${pr.weight} lbs`}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="p-8 text-center text-muted-foreground">
+                <p className="text-lg font-medium">Real Exercise Progression</p>
+                <p className="text-sm mt-2">
+                  Complete more workouts to see exercise progression
+                </p>
+                <p className="text-xs mt-1">
+                  Formula: Track max weight × reps for each exercise over time
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
