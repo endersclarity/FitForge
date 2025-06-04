@@ -183,7 +183,7 @@ export function useRealWorkoutSession(sessionId: string | null) {
         // Convert workout data to format expected by muscle recovery service
         const workoutSessionData = {
           id: completedSession.id,
-          userId: user?.id || '',
+          userId: user?.id?.toString() || '',
           date: new Date(completedSession.end_time || completedSession.created_at),
           exercises: workoutData.exercises.map(ex => ({
             exerciseId: ex.exercise_id,

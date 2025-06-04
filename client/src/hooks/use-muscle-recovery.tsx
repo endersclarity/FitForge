@@ -10,7 +10,8 @@ import {
   HEAT_MAP_COLORS,
   RECOVERY_THRESHOLDS,
   MuscleGroupType,
-  MUSCLE_GROUPS
+  MUSCLE_GROUPS,
+  WorkoutSession
 } from '@/types/muscle-recovery';
 import { 
   MuscleRecoveryCalculator, 
@@ -27,7 +28,7 @@ interface UseMuscleRecoveryReturn {
 
   // Actions
   refreshRecoveryData: () => Promise<void>;
-  updateMuscleRecovery: (workoutData: any) => Promise<void>;
+  updateMuscleRecovery: (workoutData: WorkoutSession) => Promise<void>;
   getMuscleColor: (muscleGroup: MuscleGroupType) => string;
   getMuscleRecommendation: (muscleGroup: MuscleGroupType) => string;
 
@@ -102,7 +103,7 @@ export function useMuscleRecovery(): UseMuscleRecoveryReturn {
   /**
    * Update muscle recovery after workout completion
    */
-  const updateMuscleRecovery = useCallback(async (workoutData: any) => {
+  const updateMuscleRecovery = useCallback(async (workoutData: WorkoutSession) => {
     if (!recoveryCalculator) return;
 
     try {
