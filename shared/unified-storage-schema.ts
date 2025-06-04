@@ -42,7 +42,7 @@ export const SetDataSchema = z.object({
  * Supports both planned and executed exercises
  */
 export const WorkoutExerciseSchema = z.object({
-  exerciseId: z.number(),
+  exerciseId: z.string(),
   exerciseName: z.string(),
   muscleGroups: z.array(z.string()).optional(), // For heat map integration
   category: z.enum(['strength', 'hypertrophy', 'endurance', 'mobility']).optional(),
@@ -168,7 +168,7 @@ export const UserWorkoutDataSchema = z.object({
  */
 export const SetLogEventSchema = z.object({
   sessionId: z.string().uuid(),
-  exerciseId: z.number(),
+  exerciseId: z.string(),
   exerciseName: z.string(),
   setData: SetDataSchema,
   timestamp: z.string().datetime(),
@@ -224,7 +224,7 @@ export function convertWorkoutLogToSession(
 
   // Convert to unified format
   const exercises: WorkoutExercise[] = Array.from(exerciseGroups.entries()).map(([exerciseName, logs], index) => ({
-    exerciseId: index + 1,
+    exerciseId: (index + 1).toString(),
     exerciseName,
     exerciseOrder: index + 1,
     sets: logs.map((log, setIndex) => ({
@@ -233,11 +233,15 @@ export function convertWorkoutLogToSession(
       reps: log.set?.reps || 0,
       volume: (log.set?.weight || 0) * (log.set?.reps || 0),
       timestamp: log.timestamp,
+      isWarmup: false,
+      isDropSet: false,
+      isFailure: false,
       formScore: log.set?.formScore || 8
     })),
     targetSets: logs.length,
     targetReps: logs[0]?.set?.reps || 8,
-    restTimeSeconds: 60
+    restTimeSeconds: 60,
+    personalRecord: false
   }));
 
   const totalVolume = exercises.reduce((sum, ex) => 
