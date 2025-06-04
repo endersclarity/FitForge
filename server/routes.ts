@@ -15,7 +15,6 @@ import bodyStatsRoutes from "./bodyStatsRoutes";
 import progressRoutes from "./progressRoutes";
 import userPreferencesRoutes from "./userPreferencesRoutes";
 import exerciseRoutes from "./routes/exercises";
-import logWorkoutRoutes from "./routes/log-workout";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fitforge-secret-key";
 
@@ -375,6 +374,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(convertedSessions);
     } catch (error: any) {
       console.error("Error fetching real workout sessions:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/workout-logs - Raw workout log data
+  app.get("/api/workout-logs", authenticateToken, async (req: any, res) => {
+    try {
+      console.log("📝 FETCHING RAW WORKOUT LOGS");
+      
+      // Import fileStorage for real workout logs
+      const { fileStorage } = await import("./fileStorage");
+      await fileStorage.initialize();
+      
+      // Get raw workout logs
+      const workoutLogs = await fileStorage.getWorkoutLogs();
+      console.log(`📋 Found ${workoutLogs.length} workout log entries`);
+      
+      res.json(workoutLogs);
+    } catch (error: any) {
+      console.error("Error fetching workout logs:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/workout-analytics - Comprehensive workout data including logs
+  app.get("/api/workout-analytics", authenticateToken, async (req: any, res) => {
+    try {
+      console.log("📊 COMPREHENSIVE WORKOUT ANALYTICS - AGGREGATING ALL DATA!");
+      
+      // Import fileStorage for real user data
+      const { fileStorage } = await import("./fileStorage");
+      await fileStorage.initialize();
+      
+      // Get both workout sessions and logs
+      const workoutSessions = await fileStorage.getWorkoutSessions(req.userId.toString());
+      const workoutLogs = await fileStorage.getWorkoutLogs();
+      
+      console.log(`📋 Found ${workoutSessions.length} workout sessions`);
+      console.log(`📝 Found ${workoutLogs.length} workout log entries`);
+      
+      // Aggregate completed workouts from logs
+      const completedSessionIds = new Set();
+      const logsBySession = new Map();
+      
+      workoutLogs.forEach(log => {
+        if (log.exerciseName === 'WORKOUT_COMPLETED') {
+          completedSessionIds.add(log.sessionId);
+        } else {
+          if (!logsBySession.has(log.sessionId)) {
+            logsBySession.set(log.sessionId, []);
+          }
+          logsBySession.get(log.sessionId).push(log);
+        }
+      });
+      
+      // Calculate comprehensive stats
+      let totalCompletedWorkouts = workoutSessions.filter(s => s.status === 'completed').length;
+      totalCompletedWorkouts += completedSessionIds.size; // Add completed sessions from logs
+      
+      let totalVolume = workoutSessions.reduce((sum, session) => sum + (session.totalVolume || 0), 0);
+      
+      // Add volume from workout logs
+      logsBySession.forEach((logs, sessionId) => {
+        if (completedSessionIds.has(sessionId)) {
+          const sessionVolume = logs.reduce((sum: number, log: any) => sum + (log.set?.volume || 0), 0);
+          totalVolume += sessionVolume;
+        }
+      });
+      
+      const totalCalories = Math.round(totalVolume * 0.1); // Estimate: 0.1 cal per lb
+      
+      console.log(`✅ COMPREHENSIVE STATS: ${totalCompletedWorkouts} workouts, ${totalVolume} lbs total volume`);
+      
+      res.json({
+        totalCompletedWorkouts,
+        totalVolume,
+        totalCalories,
+        sessionsFromDatabase: workoutSessions.length,
+        completedFromLogs: completedSessionIds.size,
+        logEntries: workoutLogs.length,
+        message: "Comprehensive workout analytics aggregated from all sources"
+      });
+    } catch (error: any) {
+      console.error("Error fetching comprehensive workout analytics:", error);
       res.status(500).json({ message: error.message });
     }
   });
@@ -753,7 +836,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/progress", progressRoutes);
   app.use("/api/users", userPreferencesRoutes);
   app.use("/api/exercises", exerciseRoutes);
-  app.use("/api/log-workout", logWorkoutRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

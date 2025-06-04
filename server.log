@@ -1,6 +1,6 @@
 
 > fitforge-desktop@1.0.0 dev
-> NODE_ENV=development tsx server/index.ts
+> NODE_ENV=development HOST=0.0.0.0 PORT=5000 tsx watch --clear-screen=false server/index.ts
 
 Ender's Exercise Database Summary:
 Total exercises: 38
@@ -11,22 +11,25 @@ ChestTriceps: 14 exercises, 75min
 Legs: 7 exercises, 50min
 No fake data generated - using only real user workout sessions
 [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
-5:50:13 PM [express] serving on port 5000
-5:50:29 PM [vite] ✨ new dependencies optimized: @supabase/supabase-js
-5:50:29 PM [vite] ✨ optimized dependencies changed. reloading
-5:51:19 PM [vite] hmr update /src/components/workout/WorkoutSession.tsx, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-5:51:26 PM [vite] hmr update /src/components/workout/WorkoutSession.tsx, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-5:51:32 PM [vite] hmr update /src/components/workout/WorkoutSession.tsx, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-5:52:13 PM [vite] page reload src/services/supabase-workout-service.ts
-5:53:39 PM [vite] hmr update /src/App.tsx?v=9Ycp0XwOxpDIH_UrID0H9, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-5:53:48 PM [vite] hmr update /src/App.tsx?v=9Ycp0XwOxpDIH_UrID0H9, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-5:54:06 PM [vite] hmr update /src/App.tsx?v=9Ycp0XwOxpDIH_UrID0H9, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-5:54:13 PM [vite] hmr update /src/App.tsx?v=9Ycp0XwOxpDIH_UrID0H9, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-5:54:19 PM [vite] hmr update /src/App.tsx?v=9Ycp0XwOxpDIH_UrID0H9, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-5:54:26 PM [vite] hmr update /src/App.tsx?v=9Ycp0XwOxpDIH_UrID0H9, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-6:11:55 PM [vite] hmr update /src/components/workout/WorkoutSession.tsx, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-6:12:49 PM [vite] hmr update /src/components/live-workout-session.tsx, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-6:13:22 PM [vite] hmr update /src/pages/test-supabase.tsx, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-7:21:34 PM [vite] hmr update /src/pages/start-workout.tsx, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-7:21:51 PM [vite] hmr update /src/pages/workouts.tsx, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
-7:22:00 PM [vite] hmr update /src/App.tsx?v=9Ycp0XwOxpDIH_UrID0H9, /src/index.css?v=9Ycp0XwOxpDIH_UrID0H9
+node:events:495
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at __node_internal_captureLargerStackTrace (node:internal/errors:496:5)
+    at __node_internal_uvExceptionWithHostPort (node:internal/errors:593:12)
+    at Server.setupListenHandle [as _listen2] (node:net:1811:16)
+    at listenInCluster (node:net:1859:12)
+    at doListen (node:net:2008:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:83:21)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1838:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+
+Node.js v18.19.1

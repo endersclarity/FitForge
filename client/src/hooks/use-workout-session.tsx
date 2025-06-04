@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
-import { useAuth } from "./use-supabase-auth";
-import { workoutService } from "@/services/supabase-workout-service";
+import { useAuth } from "./use-auth";
+import { localWorkoutService } from "@/services/local-workout-service";
 import type { WorkoutSession, WorkoutExercise, WorkoutSet, Exercise } from "@/lib/supabase";
 
 // Legacy WorkoutSet interface for backward compatibility
@@ -117,13 +117,30 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       console.log("🏋️ Workout type:", workoutType);
       console.log("🏋️ Exercises:", exercises.length);
 
-      // In development mode or when Supabase is unavailable, create a local session
+      // In development mode or when Supabase is unavailable, create a unified storage session
       if (process.env.NODE_ENV === 'development' || !user) {
-        console.log("🔧 Creating local workout session (development mode)");
+        console.log("🔧 Creating unified storage workout session (development mode)");
         
-        // Create a local session without Supabase
+        // Register session with unified storage system first
+        try {
+          const sessionId = `local-${Date.now()}`;
+          await fetch('/api/workouts/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              workoutType,
+              plannedExercises: exercises.map(ex => ex.name)
+            })
+          });
+          console.log("✅ Session registered with unified storage");
+        } catch (error) {
+          console.warn("⚠️ Could not register with unified storage, continuing with local session:", error);
+        }
+        
+        // Create a local session that matches unified storage format
+        const sessionId = `local-${Date.now()}`;
         const newSession: WorkoutSessionState = {
-          sessionId: `local-${Date.now()}`,
+          sessionId,
           startTime: new Date(),
           currentExerciseIndex: 0,
           exercises: exercises.map(ex => ({
@@ -140,7 +157,7 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
         };
 
         setSession(newSession);
-        console.log("✅ Local workout session created successfully");
+        console.log("✅ Local workout session created successfully with unified storage compatibility");
         return;
       }
 
@@ -154,11 +171,11 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       }
 
       // Start workout using Supabase service
-      const result = await workoutService.startWorkout({
+      const result = await localWorkoutService.startWorkout(
         workoutType,
-        exerciseIds: exercises.map(ex => ex.id),
-        sessionName: `${workoutType} Workout`
-      });
+        exercises.map(ex => ex.id),
+        `${workoutType} Workout`
+      );
 
       setCurrentSupabaseSession(result.session);
 
@@ -167,13 +184,7 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
         sessionId: result.session.id,
         startTime: new Date(result.session.start_time),
         currentExerciseIndex: 0,
-        exercises: result.exercises.map(ex => ({
-          exerciseId: ex.exercise.id,
-          exerciseName: ex.exercise.exercise_name,
-          sets: [],
-          completed: false,
-          restTimeRemaining: ex.exercise.rest_time_seconds || 60
-        })),
+        exercises: [], // New workouts start with no exercises
         status: "in_progress",
         totalVolume: 0,
         estimatedCalories: 0,
@@ -229,35 +240,49 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
         };
         setSession(updatedSession);
         
-        // Log workout completion to local file
+        // UNIFIED STORAGE: Save workout session using the proper storage service
         try {
-          const completionData = {
+          // Create a structured workout session for unified storage
+          const sessionData = {
+            userId: 1, // Default user for local development
             sessionId: session.sessionId,
             workoutType: session.workoutType,
             startTime: session.startTime.toISOString(),
             endTime: new Date().toISOString(),
-            totalExercises: session.exercises.length,
-            totalSets: session.exercises.reduce((total, ex) => total + ex.sets.length, 0),
+            totalDuration: Math.floor((Date.now() - session.startTime.getTime()) / 1000),
             totalVolume: session.totalVolume,
-            rating: rating || 5,
+            caloriesBurned: session.estimatedCalories || Math.floor(session.totalVolume * 0.1),
+            status: "completed",
+            exercises: session.exercises.map(ex => ({
+              exerciseId: ex.exerciseId,
+              exerciseName: ex.exerciseName,
+              sets: ex.sets.map((set, index) => ({
+                setNumber: index + 1,
+                weight: set.weight,
+                reps: set.reps,
+                completed: true,
+                timestamp: set.timestamp.toISOString(),
+                volume: set.weight * set.reps
+              })),
+              restTimes: [],
+              totalVolume: ex.sets.reduce((vol, set) => vol + (set.weight * set.reps), 0)
+            })),
             notes: notes || `Workout completed: ${session.exercises.length} exercises, ${session.totalVolume} lbs total volume`
           };
 
-          await fetch('/api/log-workout', {
-            method: 'POST',
+          // Save to unified storage using the proper completion endpoint
+          await fetch(`/api/workouts/${session.sessionId}/complete`, {
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              sessionId: session.sessionId,
-              exerciseName: "WORKOUT_COMPLETED",
-              set: completionData,
-              workoutType: session.workoutType,
-              timestamp: new Date().toISOString()
+              rating: rating || 5,
+              notes: notes || `Workout completed: ${session.exercises.length} exercises, ${session.totalVolume} lbs total volume`
             })
           });
           
-          console.log("✅ Workout completion logged to local file");
+          console.log("✅ Workout session saved to unified storage format");
         } catch (error) {
-          console.warn("⚠️ Could not log workout completion, session still marked complete:", error);
+          console.warn("⚠️ Could not save to unified storage, session still marked complete:", error);
         }
         
         console.log("✅ Local workout session completed successfully");
@@ -267,11 +292,12 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       // Production mode: Complete workout using Supabase service
       console.log("🏁 Completing Supabase workout session...");
 
-      const completedSession = await workoutService.completeWorkout({
-        sessionId: currentSupabaseSession.id,
-        rating: rating || 5,
-        notes: notes || `Workout completed: ${session.exercises.length} exercises, ${session.totalVolume} lbs total volume, ${session.estimatedCalories} calories burned.`
-      });
+      const result = await localWorkoutService.completeWorkout(
+        currentSupabaseSession.id, 
+        rating || 5, 
+        notes || `Workout completed: ${session.exercises.length} exercises, ${session.totalVolume} lbs total volume, ${session.estimatedCalories} calories burned.`
+      );
+      const completedSession = result?.session || currentSupabaseSession;
 
       // Update local session state
       const updatedSession = { 
@@ -316,26 +342,25 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
           volume
         };
 
-        // Log to local file (via API endpoint)
+        // Log to unified storage (via proper API endpoint)
         try {
-          const workoutData = {
-            sessionId: session.sessionId,
-            exerciseName: currentExercise.exerciseName,
-            set: newSet,
-            workoutType: session.workoutType,
-            timestamp: new Date().toISOString()
-          };
-
-          // Send to server to log to file
-          await fetch('/api/log-workout', {
+          // Send to unified storage system
+          await fetch(`/api/workouts/${session.sessionId}/sets`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(workoutData)
+            body: JSON.stringify({
+              exerciseId: parseInt(currentExercise.exerciseId), // Convert to number for fileStorage
+              exerciseName: currentExercise.exerciseName,
+              setNumber: newSet.setNumber,
+              weight: newSet.weight,
+              reps: newSet.reps,
+              equipment: newSet.equipment
+            })
           });
           
-          console.log("✅ Set logged to local file");
+          console.log("✅ Set logged to unified storage");
         } catch (error) {
-          console.warn("⚠️ Could not log to file, continuing with local state only:", error);
+          console.warn("⚠️ Could not log to unified storage, continuing with local state only:", error);
         }
 
         // Update local session state
@@ -349,7 +374,8 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
           return {
             ...prev,
             exercises: newExercises,
-            totalVolume: prev.totalVolume + volume
+            totalVolume: prev.totalVolume + volume,
+            estimatedCalories: prev.estimatedCalories + Math.round(volume * 0.1)
           };
         });
 
@@ -360,14 +386,16 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       console.log("📝 Logging set to Supabase...");
 
       // Log set using Supabase service
-      const loggedSet = await workoutService.logSet({
-        sessionId: currentSupabaseSession.id,
-        exerciseId: currentExercise.exerciseId,
-        setNumber: currentExercise.sets.length + 1,
-        reps,
-        weight,
-        equipment
-      });
+      const loggedSet = await localWorkoutService.logSet(
+        currentSupabaseSession.id,
+        currentExercise.exerciseId,
+        {
+          setNumber: currentExercise.sets.length + 1,
+          reps,
+          weight,
+          equipment
+        }
+      );
 
       // Create legacy set for frontend compatibility
       const newSet: LegacyWorkoutSet = {
@@ -478,7 +506,7 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       console.log('🗑️ Abandoning Supabase workout session...');
 
       // Cancel workout using Supabase service
-      await workoutService.cancelWorkout(currentSupabaseSession.id);
+      await localWorkoutService.cancelWorkout(currentSupabaseSession.id);
       
       // Clear local session state
       setSession(null);
@@ -510,16 +538,16 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
         console.log('🔧 Development mode: No user available for resume');
         return;
       }
-      const workoutHistory = await workoutService.getWorkoutHistory(user.id, 5);
-      const activeSession = workoutHistory.find(session => session.completion_status === 'in_progress');
+      const workoutHistory = await localWorkoutService.getWorkoutHistory(user.id.toString(), 5);
+      const activeSession = workoutHistory.find((session: any) => session.completion_status === 'in_progress');
       
       if (!activeSession) {
         throw new Error('No active session to resume');
       }
 
       // Get full session details with exercises and sets
-      const sessionData = await workoutService.getWorkoutSession(activeSession.id);
-      if (!sessionData) {
+      const sessionData = await localWorkoutService.getWorkoutSession(activeSession.id);
+      if (!sessionData || !sessionData.session) {
         throw new Error('Failed to load session details');
       }
 
@@ -567,8 +595,8 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
 
     try {
       // Get user's recent workout history to check for active sessions
-      const workoutHistory = await workoutService.getWorkoutHistory(user.id, 5);
-      const activeSession = workoutHistory.find(session => session.completion_status === 'in_progress');
+      const workoutHistory = await localWorkoutService.getWorkoutHistory(user.id.toString(), 5);
+      const activeSession = workoutHistory.find((session: any) => session.completion_status === 'in_progress');
       
       if (activeSession) {
         return {

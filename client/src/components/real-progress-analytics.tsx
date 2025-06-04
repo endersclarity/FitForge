@@ -6,38 +6,86 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useToast } from "@/hooks/use-toast";
+import { analyticsService } from '@/services/workout-analytics-service';
+import { useAuth } from '@/hooks/use-supabase-auth';
 
 export function RealProgressAnalytics() {
   const [timePeriod, setTimePeriod] = useState<"1M" | "3M" | "6M" | "1Y" | "ALL">("3M");
   const { toast } = useToast();
+  const { user } = useAuth();
   
-  // Fetch real progress metrics
+  // Get timeframe in days
+  const getTimeframeDays = (period: string) => {
+    switch (period) {
+      case "1M": return 30;
+      case "3M": return 90;
+      case "6M": return 180;
+      case "1Y": return 365;
+      case "ALL": return 365 * 2; // 2 years max
+      default: return 90;
+    }
+  };
+  
+  // Fetch real progress metrics using our analytics service
   const { data: metrics, isLoading: metricsLoading } = useQuery({
     queryKey: ['progressMetrics', timePeriod],
-    queryFn: async () => {
-      const response = await fetch(`/api/progress/metrics?period=${timePeriod}`);
-      if (!response.ok) throw new Error('Failed to fetch progress metrics');
-      return response.json();
-    }
+    queryFn: () => analyticsService.getProgressMetrics(getTimeframeDays(timePeriod)),
+    enabled: !!user
   });
   
-  // Fetch chart data
-  const { data: chartData, isLoading: chartLoading } = useQuery({
-    queryKey: ['progressChart', timePeriod],
-    queryFn: async () => {
-      const response = await fetch(`/api/progress/chart-data?period=${timePeriod}`);
-      if (!response.ok) throw new Error('Failed to fetch chart data');
-      return response.json();
-    }
+  // Fetch weekly trends for chart data
+  const { data: weeklyTrends, isLoading: trendsLoading } = useQuery({
+    queryKey: ['weeklyTrends', timePeriod],
+    queryFn: () => analyticsService.getWeeklyTrends(Math.floor(getTimeframeDays(timePeriod) / 7)),
+    enabled: !!user
+  });
+  
+  // Fetch daily analytics for detailed view
+  const { data: dailyAnalytics, isLoading: dailyLoading } = useQuery({
+    queryKey: ['dailyAnalytics', timePeriod],
+    queryFn: () => {
+      const endDate = new Date().toISOString().split('T')[0];
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - getTimeframeDays(timePeriod));
+      return analyticsService.getDailyAnalytics(startDate.toISOString().split('T')[0], endDate);
+    },
+    enabled: !!user
   });
   
   // Export progress data
   const handleExportData = async () => {
     try {
-      const response = await fetch('/api/progress/export?format=csv');
-      if (!response.ok) throw new Error('Failed to export data');
+      if (!dailyAnalytics || dailyAnalytics.length === 0) {
+        toast({
+          title: "No data to export",
+          description: "Complete some workouts to generate analytics data.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Convert analytics data to CSV
+      const headers = [
+        'Date', 'Workouts', 'Total Volume (lbs)', 'Duration (minutes)', 
+        'Chest Volume', 'Back Volume', 'Legs Volume', 'Abs Volume', 'Personal Records'
+      ];
       
-      const blob = await response.blob();
+      const csvData = [
+        headers.join(','),
+        ...dailyAnalytics.map(day => [
+          day.date,
+          day.totalWorkouts,
+          day.totalVolume,
+          Math.round(day.totalDuration / 60),
+          day.chestVolume,
+          day.backVolume,
+          day.legsVolume,
+          day.absVolume,
+          day.newPersonalRecords
+        ].join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvData], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -60,7 +108,7 @@ export function RealProgressAnalytics() {
     }
   };
   
-  if (metricsLoading || chartLoading) {
+  if (metricsLoading || trendsLoading || dailyLoading) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-48 bg-muted rounded-lg" />
@@ -68,50 +116,71 @@ export function RealProgressAnalytics() {
       </div>
     );
   }
+
+  // Process chart data from weekly trends
+  const chartData = weeklyTrends?.map(week => ({
+    month: week.weekStart.split('-').slice(1).join('/'), // MM/DD format
+    volume: week.totalVolume,
+    workouts: week.workoutCount,
+    avgDuration: Math.round(week.avgDuration / 60) // Convert to minutes
+  })) || [];
   
-  // Default values if no data
-  const {
-    muscle = { change: 0, changePercent: 0, current: 0 },
-    bodyFat = { change: 0, changePercent: 0, current: 0 },
-    strength = { overall: { changePercent: 0 } },
-    consistency = { workoutsPerWeek: 0, streak: 0, totalWorkouts: 0 }
-  } = metrics || {};
+  // Default values if no data, using real analytics
+  const defaultMetrics = {
+    strengthGain: 0,
+    volumeIncrease: 0,
+    consistencyStreak: 0,
+    totalWorkouts: 0,
+    avgWorkoutDuration: 0,
+    strongestMuscleGroup: 'chest',
+    mostImprovedExercise: 'Bench Press'
+  };
+  
+  const actualMetrics = metrics || defaultMetrics;
+  
+  // Calculate summary stats from daily analytics
+  const totalVolume = dailyAnalytics?.reduce((sum, day) => sum + day.totalVolume, 0) || 0;
+  const totalWorkouts = dailyAnalytics?.reduce((sum, day) => sum + day.totalWorkouts, 0) || 0;
+  const totalPRs = dailyAnalytics?.reduce((sum, day) => sum + day.newPersonalRecords, 0) || 0;
+  const workoutsPerWeek = totalWorkouts > 0 ? (totalWorkouts / (getTimeframeDays(timePeriod) / 7)) : 0;
   
   const achievements = [
     {
       icon: Trophy,
-      title: "Consistency King",
-      description: `${consistency.streak} day streak`,
+      title: "Consistency Champion",
+      description: `${actualMetrics.consistencyStreak} day streak`,
       date: "Current",
       color: "text-yellow-600"
     },
     {
       icon: Flame,
       title: "Volume Master",
-      description: `${consistency.totalWorkouts} workouts completed`,
-      date: `${consistency.workoutsPerWeek.toFixed(1)}/week avg`,
+      description: `${totalWorkouts} workouts completed`,
+      date: `${workoutsPerWeek.toFixed(1)}/week avg`,
       color: "text-orange-600"
     },
     {
       icon: Medal,
       title: "Strength Gains",
-      description: `${strength.overall.changePercent > 0 ? '+' : ''}${strength.overall.changePercent.toFixed(1)}% increase`,
+      description: `${actualMetrics.strengthGain > 0 ? '+' : ''}${actualMetrics.strengthGain.toFixed(1)}% increase`,
       date: "This period",
       color: "text-blue-600"
     },
     {
       icon: TrendingUp,
-      title: "Body Composition",
-      description: muscle.change > 0 ? `+${muscle.change.toFixed(1)}kg muscle` : "Track more data",
-      date: bodyFat.change < 0 ? `${bodyFat.change.toFixed(1)}% fat` : "No change",
+      title: "Personal Records",
+      description: `${totalPRs} new PRs set`,
+      date: `Strongest: ${actualMetrics.strongestMuscleGroup}`,
       color: "text-green-600"
     }
   ];
   
-  // Format strength exercises for display
-  const topStrengthGains = Object.entries(strength.exercises || {})
-    .sort((a, b) => (b[1] as any).changePercent - (a[1] as any).changePercent)
-    .slice(0, 3);
+  // Since we don't have individual exercise data yet, we'll show volume trends
+  const topVolumeGains = [
+    { exercise: 'Chest Exercises', volume: dailyAnalytics?.reduce((sum, day) => sum + day.chestVolume, 0) || 0 },
+    { exercise: 'Back Exercises', volume: dailyAnalytics?.reduce((sum, day) => sum + day.backVolume, 0) || 0 },
+    { exercise: 'Leg Exercises', volume: dailyAnalytics?.reduce((sum, day) => sum + day.legsVolume, 0) || 0 }
+  ].sort((a, b) => b.volume - a.volume);
   
   return (
     <div className="space-y-6">
@@ -149,30 +218,30 @@ export function RealProgressAnalytics() {
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="text-center p-4 bg-primary/10 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Muscle Gained</p>
+              <p className="text-sm text-muted-foreground mb-1">Total Volume</p>
               <p className="text-2xl font-bold">
-                {muscle.change > 0 ? '+' : ''}{muscle.change.toFixed(1)}kg
+                {(totalVolume / 1000).toFixed(1)}k lbs
               </p>
               <p className="text-xs text-muted-foreground">
-                Current: {muscle.current.toFixed(1)}kg
+                {timePeriod} period
               </p>
             </div>
-            <div className="text-center p-4 bg-red-500/10 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Body Fat Lost</p>
+            <div className="text-center p-4 bg-orange-500/10 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-1">Personal Records</p>
               <p className="text-2xl font-bold">
-                {bodyFat.change.toFixed(1)}%
+                {totalPRs}
               </p>
               <p className="text-xs text-muted-foreground">
-                Current: {bodyFat.current.toFixed(1)}%
+                New achievements
               </p>
             </div>
             <div className="text-center p-4 bg-green-500/10 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Strength Increase</p>
+              <p className="text-sm text-muted-foreground mb-1">Consistency</p>
               <p className="text-2xl font-bold">
-                {strength.overall.changePercent > 0 ? '+' : ''}{strength.overall.changePercent.toFixed(1)}%
+                {workoutsPerWeek.toFixed(1)}/wk
               </p>
               <p className="text-xs text-muted-foreground">
-                Avg across exercises
+                {actualMetrics.consistencyStreak} day streak
               </p>
             </div>
           </div>
@@ -189,16 +258,16 @@ export function RealProgressAnalytics() {
                   <Legend />
                   <Line 
                     type="monotone" 
-                    dataKey="muscle" 
+                    dataKey="volume" 
                     stroke="#3b82f6" 
-                    name="Muscle Mass (kg)"
+                    name="Weekly Volume (lbs)"
                     strokeWidth={2}
                   />
                   <Line 
                     type="monotone" 
-                    dataKey="fat" 
+                    dataKey="workouts" 
                     stroke="#ef4444" 
-                    name="Body Fat (%)"
+                    name="Weekly Workouts"
                     strokeWidth={2}
                   />
                 </LineChart>
@@ -217,24 +286,24 @@ export function RealProgressAnalytics() {
         </CardContent>
       </Card>
       
-      {/* Top Strength Gains */}
-      {topStrengthGains.length > 0 && (
+      {/* Top Volume Gains */}
+      {topVolumeGains.some(group => group.volume > 0) && (
         <Card>
           <CardHeader>
-            <CardTitle>Top Strength Gains</CardTitle>
+            <CardTitle>Volume by Muscle Group</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {topStrengthGains.map(([exercise, data]) => (
-                <div key={exercise} className="flex items-center justify-between">
+              {topVolumeGains.filter(group => group.volume > 0).map((group) => (
+                <div key={group.exercise} className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">{exercise}</p>
+                    <p className="font-medium">{group.exercise}</p>
                     <p className="text-sm text-muted-foreground">
-                      {(data as any).start.toFixed(0)}kg → {(data as any).current.toFixed(0)}kg
+                      Total training volume
                     </p>
                   </div>
-                  <Badge variant={(data as any).changePercent > 10 ? "default" : "secondary"}>
-                    +{(data as any).changePercent.toFixed(1)}%
+                  <Badge variant="secondary">
+                    {(group.volume / 1000).toFixed(1)}k lbs
                   </Badge>
                 </div>
               ))}

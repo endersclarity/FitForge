@@ -1,10 +1,207 @@
 import { Router } from "express";
 import { z } from "zod";
 import { FileStorage } from "./fileStorage";
-import { UserPreferencesSchema, AchievementSchema, WorkoutRecommendationSchema, DEFAULT_USER_PREFERENCES, CORE_ACHIEVEMENTS } from "../shared/user-profile";
+import { 
+  UserPreferencesSchema, 
+  BodyStatsSchema,
+  BodyweightExerciseConfigSchema,
+  AchievementSchema, 
+  WorkoutRecommendationSchema, 
+  DEFAULT_USER_PREFERENCES, 
+  CORE_ACHIEVEMENTS,
+  UserProfileUtils
+} from "../shared/user-profile";
 
 const router = Router();
 const storage = new FileStorage();
+
+// Body Stats Management Routes
+
+// Get user body stats
+router.get("/body-stats/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const preferences = await storage.getUserPreferences(userId);
+    
+    if (!preferences) {
+      res.status(404).json({ error: "User preferences not found" });
+      return;
+    }
+    
+    res.json({
+      bodyStats: preferences.bodyStats || null,
+      hasBodyWeight: UserProfileUtils.hasBodyWeight(preferences)
+    });
+  } catch (error) {
+    console.error("Error fetching body stats:", error);
+    res.status(500).json({ error: "Failed to fetch body stats" });
+  }
+});
+
+// Update user body stats
+router.put("/body-stats/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const bodyStatsData = BodyStatsSchema.parse(req.body);
+    
+    let preferences = await storage.getUserPreferences(userId);
+    if (!preferences) {
+      preferences = DEFAULT_USER_PREFERENCES;
+    }
+    
+    // Update body stats with timestamp
+    const updatedPreferences = {
+      ...preferences,
+      bodyStats: {
+        ...bodyStatsData,
+        updatedAt: new Date().toISOString()
+      }
+    };
+    
+    await storage.saveUserPreferences(userId, updatedPreferences);
+    res.json({ 
+      success: true, 
+      bodyStats: updatedPreferences.bodyStats,
+      hasBodyWeight: UserProfileUtils.hasBodyWeight(updatedPreferences)
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: "Invalid body stats data", details: error.errors });
+    } else {
+      console.error("Error saving body stats:", error);
+      res.status(500).json({ error: "Failed to save body stats" });
+    }
+  }
+});
+
+// Update just body weight (quick endpoint)
+router.put("/body-weight/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { bodyWeight } = req.body;
+    
+    if (typeof bodyWeight !== 'number' || bodyWeight < 50 || bodyWeight > 500) {
+      res.status(400).json({ error: "Invalid body weight. Must be between 50 and 500 pounds." });
+      return;
+    }
+    
+    let preferences = await storage.getUserPreferences(userId);
+    if (!preferences) {
+      preferences = DEFAULT_USER_PREFERENCES;
+    }
+    
+    const updatedPreferences = UserProfileUtils.updateBodyWeight(preferences, bodyWeight);
+    await storage.saveUserPreferences(userId, updatedPreferences);
+    
+    res.json({ 
+      success: true, 
+      bodyWeight,
+      bodyStats: updatedPreferences.bodyStats
+    });
+  } catch (error) {
+    console.error("Error updating body weight:", error);
+    res.status(500).json({ error: "Failed to update body weight" });
+  }
+});
+
+// Bodyweight Exercise Configuration Routes
+
+// Get bodyweight exercise configs for user
+router.get("/bodyweight-configs/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const preferences = await storage.getUserPreferences(userId);
+    
+    if (!preferences) {
+      res.status(404).json({ error: "User preferences not found" });
+      return;
+    }
+    
+    res.json({
+      configs: preferences.bodyweightExerciseConfigs || [],
+      hasBodyWeight: UserProfileUtils.hasBodyWeight(preferences)
+    });
+  } catch (error) {
+    console.error("Error fetching bodyweight configs:", error);
+    res.status(500).json({ error: "Failed to fetch bodyweight exercise configs" });
+  }
+});
+
+// Update bodyweight exercise configuration
+router.put("/bodyweight-configs/:userId/:exerciseId", async (req, res) => {
+  try {
+    const { userId, exerciseId } = req.params;
+    const configData = BodyweightExerciseConfigSchema.parse({
+      ...req.body,
+      exerciseId: parseInt(exerciseId, 10)
+    });
+    
+    let preferences = await storage.getUserPreferences(userId);
+    if (!preferences) {
+      preferences = DEFAULT_USER_PREFERENCES;
+    }
+    
+    const updatedPreferences = UserProfileUtils.updateBodyweightExerciseConfig(
+      preferences, 
+      parseInt(exerciseId, 10), 
+      configData
+    );
+    
+    await storage.saveUserPreferences(userId, updatedPreferences);
+    res.json({ 
+      success: true, 
+      config: UserProfileUtils.getBodyweightExerciseConfig(updatedPreferences, parseInt(exerciseId, 10))
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: "Invalid bodyweight config data", details: error.errors });
+    } else {
+      console.error("Error saving bodyweight config:", error);
+      res.status(500).json({ error: "Failed to save bodyweight exercise config" });
+    }
+  }
+});
+
+// Profile completion check
+router.get("/profile-complete/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const preferences = await storage.getUserPreferences(userId);
+    
+    if (!preferences) {
+      res.json({ 
+        complete: false, 
+        missingFields: ["preferences"],
+        recommendations: ["Complete onboarding first"]
+      });
+      return;
+    }
+    
+    const missingFields = [];
+    const recommendations = [];
+    
+    if (!UserProfileUtils.hasBodyWeight(preferences)) {
+      missingFields.push("bodyWeight");
+      recommendations.push("Add your body weight to enable bodyweight exercise auto-population");
+    }
+    
+    if (!preferences.bodyStats?.height) {
+      missingFields.push("height");
+      recommendations.push("Add your height for more accurate fitness calculations");
+    }
+    
+    res.json({
+      complete: missingFields.length === 0,
+      missingFields,
+      recommendations,
+      hasBodyWeight: UserProfileUtils.hasBodyWeight(preferences),
+      profileCompleteForBodyweight: UserProfileUtils.isProfileCompleteForBodyweight(preferences)
+    });
+  } catch (error) {
+    console.error("Error checking profile completion:", error);
+    res.status(500).json({ error: "Failed to check profile completion" });
+  }
+});
 
 // Get user preferences
 router.get("/preferences/:userId", async (req, res) => {

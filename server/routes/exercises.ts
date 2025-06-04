@@ -7,6 +7,8 @@ import {
   getExerciseById, 
   searchExercises, 
   getWorkoutRecommendations,
+  isBodyweightExercise,
+  getBodyweightExercises,
   exerciseDatabase 
 } from '../database/exercise-database';
 import { 
@@ -208,6 +210,37 @@ router.get('/muscle-groups/:muscleGroup', async (req, res) => {
     console.error('Error fetching exercises by muscle group:', error);
     res.status(500).json({
       error: 'Failed to fetch exercises by muscle group',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// GET /api/exercises/is-bodyweight/:id - Check if exercise is bodyweight
+router.get('/is-bodyweight/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || id.trim().length === 0) {
+      return res.status(400).json({
+        error: 'Invalid exercise ID',
+        message: 'Exercise ID is required'
+      });
+    }
+
+    const isBodyweight = await exerciseDatabase.isBodyweightExercise(id.trim());
+    
+    res.json({
+      success: true,
+      data: {
+        exerciseId: id.trim(),
+        isBodyweight
+      }
+    });
+
+  } catch (error) {
+    console.error('Error checking if exercise is bodyweight:', error);
+    res.status(500).json({
+      error: 'Failed to check exercise type',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
   }

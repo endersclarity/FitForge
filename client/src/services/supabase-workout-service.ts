@@ -193,10 +193,49 @@ export class SupabaseWorkoutService {
         .eq('workout_session_id', request.sessionId)
         .is('completed_at', null)
 
+      // Trigger analytics aggregation in background
+      this.triggerAnalyticsAggregation(request.sessionId).catch(error => {
+        console.warn('Analytics aggregation failed (non-blocking):', error)
+      })
+
       return completedSession
     } catch (error) {
       console.error('Error completing workout:', error)
       throw error
+    }
+  }
+
+  /**
+   * Trigger analytics aggregation after workout completion (non-blocking)
+   */
+  private async triggerAnalyticsAggregation(sessionId: string): Promise<void> {
+    try {
+      // Dynamic import to avoid circular dependencies
+      const { analyticsService } = await import('./workout-analytics-service')
+      
+      // Aggregate daily analytics
+      await analyticsService.aggregateDailyAnalytics(sessionId)
+      
+      // Update any related goal progress
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: activeGoals } = await supabase
+          .from('user_goals')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+
+        if (activeGoals) {
+          for (const goal of activeGoals) {
+            await analyticsService.updateGoalProgress(goal.id)
+          }
+        }
+      }
+
+      console.log('✅ Analytics aggregation completed for session:', sessionId)
+    } catch (error) {
+      console.error('Analytics aggregation error:', error)
+      // Don't throw - this is a background operation
     }
   }
 

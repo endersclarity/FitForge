@@ -1,0 +1,258 @@
+{
+  "tasks": [
+    {
+      "id": "26-1",
+      "title": "Create User Profile Schema and TypeScript Interfaces",
+      "description": "Design and implement the core user profile data structure for body weight storage and preferences",
+      "priority": "high",
+      "status": "pending",
+      "category": "foundation",
+      "estimatedHours": 4,
+      "phase": "Phase 1: User Profile Foundation",
+      "dependencies": [],
+      "acceptanceCriteria": [
+        "Define UserProfile interface with bodyWeight, height, age, and goals",
+        "Create TypeScript interfaces for BodyweightExerciseConfig",
+        "Add user preferences storage schema",
+        "Implement data validation with Zod schemas",
+        "Ensure compatibility with existing user data structure"
+      ],
+      "branchContext": "Issue #26 - Auto-populate body weight for bodyweight exercises",
+      "implementation": "shared/user-profile.ts"
+    },
+    {
+      "id": "26-2", 
+      "title": "Build Profile Storage System with JSON File Backend",
+      "description": "Implement file-based storage system for user profile data persistence",
+      "priority": "high",
+      "status": "pending",
+      "category": "backend",
+      "estimatedHours": 3,
+      "phase": "Phase 1: User Profile Foundation",
+      "dependencies": ["26-1"],
+      "acceptanceCriteria": [
+        "Create profile storage service in server/storage.ts",
+        "Implement JSON file-based persistence for development",
+        "Add profile data CRUD operations",
+        "Handle missing profile data gracefully", 
+        "Integrate with existing fileStorage patterns"
+      ],
+      "branchContext": "Issue #26 - User profile infrastructure",
+      "implementation": "server/userPreferencesRoutes.ts"
+    },
+    {
+      "id": "26-3",
+      "title": "Design Profile Completion/Editing UI Components", 
+      "description": "Create responsive UI components for user profile setup and editing",
+      "priority": "high",
+      "status": "pending",
+      "category": "frontend",
+      "estimatedHours": 5,
+      "phase": "Phase 1: User Profile Foundation",
+      "dependencies": ["26-1"],
+      "acceptanceCriteria": [
+        "Create ProfileSetupDialog component using Radix UI",
+        "Design responsive form for body weight, height, age input",
+        "Add form validation with error feedback",
+        "Implement mobile-friendly input controls",
+        "Integrate with existing theme and design system"
+      ],
+      "branchContext": "Issue #26 - Profile completion workflow",
+      "implementation": "client/src/components/ProfileSetupDialog.tsx"
+    },
+    {
+      "id": "26-4",
+      "title": "Implement Profile Data Hooks and Context Providers",
+      "description": "Create React hooks and context for global profile data management",
+      "priority": "medium",
+      "status": "pending", 
+      "category": "frontend",
+      "estimatedHours": 3,
+      "phase": "Phase 1: User Profile Foundation",
+      "dependencies": ["26-2", "26-3"],
+      "acceptanceCriteria": [
+        "Create useUserProfile hook for profile data access",
+        "Implement UserProfileProvider context",
+        "Add profile data loading and caching",
+        "Handle profile completion state management",
+        "Integrate with existing auth and data patterns"
+      ],
+      "branchContext": "Issue #26 - User profile infrastructure",
+      "implementation": "client/src/hooks/use-user-profile.tsx"
+    },
+    {
+      "id": "26-5",
+      "title": "Enhance Exercise Database Queries for Bodyweight Detection",
+      "description": "Modify exercise database service to identify and classify bodyweight exercises",
+      "priority": "high",
+      "status": "pending",
+      "category": "backend",
+      "estimatedHours": 2,
+      "phase": "Phase 2: Exercise Detection & Auto-Population", 
+      "dependencies": ["26-1"],
+      "acceptanceCriteria": [
+        "Add isBodyweightExercise detection function",
+        "Filter exercises by equipmentType: ['Bodyweight']",
+        "Update exercise query service with bodyweight classification",
+        "Test detection against universal-exercise-database.json",
+        "Ensure compatibility with existing exercise selection"
+      ],
+      "branchContext": "Issue #26 - Auto-detect bodyweight exercises",
+      "implementation": "server/database/exercise-database.ts"
+    },
+    {
+      "id": "26-6",
+      "title": "Modify SetLogger Component for Weight Auto-Population",
+      "description": "Enhance the workout logging component to auto-populate body weight for bodyweight exercises",
+      "priority": "high", 
+      "status": "pending",
+      "category": "frontend",
+      "estimatedHours": 4,
+      "phase": "Phase 2: Exercise Detection & Auto-Population",
+      "dependencies": ["26-4", "26-5"],
+      "acceptanceCriteria": [
+        "Detect when selected exercise is bodyweight type",
+        "Auto-populate weight field with user's body weight",
+        "Display '200 lbs (body weight)' format clearly",
+        "Maintain existing SetLogger functionality",
+        "Handle missing body weight with profile prompt"
+      ],
+      "branchContext": "Issue #26 - Core auto-population functionality", 
+      "implementation": "client/src/components/workout/SetLogger.tsx"
+    },
+    {
+      "id": "26-7",
+      "title": "Add Additional Weight Input UI with Equipment Selection",
+      "description": "Create UI for adding extra weight (dumbbells, weighted vest) on top of body weight",
+      "priority": "medium",
+      "status": "pending",
+      "category": "frontend", 
+      "estimatedHours": 3,
+      "phase": "Phase 2: Exercise Detection & Auto-Population",
+      "dependencies": ["26-6"],
+      "acceptanceCriteria": [
+        "Add additional weight input field for bodyweight exercises",
+        "Provide equipment selection (dumbbells, weighted vest, etc.)",
+        "Calculate and display total weight (bodyWeight + additional)",
+        "Save additional weight preferences per exercise",
+        "Clear visual distinction between body weight and additional weight"
+      ],
+      "branchContext": "Issue #26 - Additional weight support",
+      "implementation": "client/src/components/workout/AdditionalWeightInput.tsx"
+    },
+    {
+      "id": "26-8", 
+      "title": "Update Volume Calculation Logic for Total Weight",
+      "description": "Modify volume calculations to use total weight (body weight + additional weight)",
+      "priority": "medium",
+      "status": "pending",
+      "category": "backend",
+      "estimatedHours": 2,
+      "phase": "Phase 2: Exercise Detection & Auto-Population",
+      "dependencies": ["26-6", "26-7"],
+      "acceptanceCriteria": [
+        "Update volume calculation: (bodyWeight + additionalWeight) × reps × sets",
+        "Modify existing volume calculation services",
+        "Ensure accuracy for both bodyweight and traditional exercises",
+        "Test volume calculations with new weight logic",
+        "Maintain compatibility with existing workout data"
+      ],
+      "branchContext": "Issue #26 - Accurate volume calculations",
+      "implementation": "client/src/services/progress-data.ts"
+    },
+    {
+      "id": "26-9",
+      "title": "Integrate Profile Completion Prompts into Workout Flow",
+      "description": "Add seamless profile completion prompts when body weight is missing during workout",
+      "priority": "medium",
+      "status": "pending",
+      "category": "frontend",
+      "estimatedHours": 3,
+      "phase": "Phase 3: Integration & Polish",
+      "dependencies": ["26-3", "26-6"],
+      "acceptanceCriteria": [
+        "Detect missing body weight during bodyweight exercise selection",
+        "Show profile completion dialog without disrupting workout flow", 
+        "Allow quick body weight entry during workout session",
+        "Resume workout logging after profile completion",
+        "Provide 'complete profile later' option"
+      ],
+      "branchContext": "Issue #26 - Handle missing body weight gracefully",
+      "implementation": "client/src/components/workout/WorkoutSession.tsx"
+    },
+    {
+      "id": "26-10",
+      "title": "Add Preference Persistence for Additional Weights",
+      "description": "Store and recall user's additional weight preferences per exercise",
+      "priority": "low",
+      "status": "pending",
+      "category": "backend",
+      "estimatedHours": 2,
+      "phase": "Phase 3: Integration & Polish", 
+      "dependencies": ["26-7", "26-8"],
+      "acceptanceCriteria": [
+        "Save additional weight preferences per exercise in user profile",
+        "Auto-populate additional weight based on previous sessions",
+        "Allow users to override saved preferences",
+        "Persist preferences across browser sessions",
+        "Clean up unused exercise preferences"
+      ],
+      "branchContext": "Issue #26 - User experience enhancement",
+      "implementation": "server/userPreferencesRoutes.ts"
+    },
+    {
+      "id": "26-11",
+      "title": "Implement Comprehensive Error Handling and Edge Cases",
+      "description": "Add robust error handling for edge cases in bodyweight exercise auto-population",
+      "priority": "medium",
+      "status": "pending",
+      "category": "full-stack",
+      "estimatedHours": 3,
+      "phase": "Phase 3: Integration & Polish",
+      "dependencies": ["26-8", "26-9"],
+      "acceptanceCriteria": [
+        "Handle missing exercise database gracefully",
+        "Manage invalid body weight input (negative, zero, too high)",
+        "Error recovery for failed profile saves",
+        "Fallback behavior when auto-population fails",
+        "Clear error messages for users"
+      ],
+      "branchContext": "Issue #26 - Production readiness",
+      "implementation": "Multiple files - error boundaries and validation"
+    },
+    {
+      "id": "26-12",
+      "title": "Mobile Responsiveness and UX Polish for Auto-Population Feature",
+      "description": "Optimize mobile experience and polish user interface for bodyweight auto-population",
+      "priority": "medium",
+      "status": "pending",
+      "category": "frontend",
+      "estimatedHours": 4,
+      "phase": "Phase 3: Integration & Polish",
+      "dependencies": ["26-7", "26-9"],
+      "acceptanceCriteria": [
+        "Test and optimize mobile responsiveness for all new components",
+        "Polish weight display formatting and visual clarity",
+        "Optimize touch targets for mobile devices",
+        "Test auto-population flow on various screen sizes",
+        "Add loading states and smooth transitions"
+      ],
+      "branchContext": "Issue #26 - Mobile and UX polish",
+      "implementation": "CSS/styling and mobile optimization"
+    }
+  ],
+  "metadata": {
+    "branchName": "feature/auto-populate-body-weight-issue-26",
+    "issueNumber": "26",
+    "generatedFrom": "BRANCH_README.md + activeContext.md",
+    "totalTasks": 12,
+    "estimatedTotalHours": 38,
+    "phases": [
+      "Phase 1: User Profile Foundation (Days 1-2)",
+      "Phase 2: Exercise Detection & Auto-Population (Days 3-4)", 
+      "Phase 3: Integration & Polish (Days 5-6)"
+    ],
+    "coreFeature": "Auto-populate user's body weight for bodyweight exercises with additional weight support",
+    "foundationValue": "Establishes user profile system for future features requiring user data"
+  }
+}

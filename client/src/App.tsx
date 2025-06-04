@@ -5,9 +5,10 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider, useAuth } from "@/hooks/use-supabase-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { WorkoutSessionProvider } from "@/hooks/use-workout-session";
 import { WorkoutQueueProvider } from "@/hooks/use-workout-queue";
+import { UserProfileProvider } from "@/hooks/use-user-profile";
 import { useDataMigration, MigrationStatus } from "@/hooks/use-data-migration";
 import { Navigation } from "@/components/navigation";
 import NavigationErrorBoundary from "@/components/navigation-error-boundary";
@@ -26,6 +27,7 @@ import Nutrition from "@/pages/nutrition";
 import Exercises from "@/pages/exercises";
 import StartWorkout from "@/pages/start-workout";
 import TestSupabase from "@/pages/test-supabase";
+import Intake from "@/pages/intake";
 // import WorkoutDetail from "@/pages/workout-detail";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -34,7 +36,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [location] = useLocation();
   
   // Debug route changes
@@ -57,7 +59,7 @@ function Router() {
   });
 
   // Show loading screen while auth is initializing
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -132,6 +134,11 @@ function Router() {
             <Nutrition />
           </ProtectedRoute>
         </Route>
+        <Route path="/intake">
+          <ProtectedRoute>
+            <Intake />
+          </ProtectedRoute>
+        </Route>
         {process.env.NODE_ENV === 'development' && (
           <Route path="/test-supabase">
             <ProtectedRoute>
@@ -161,11 +168,13 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <AuthProvider>
-            <WorkoutSessionProvider>
-              <WorkoutQueueProvider>
-                <Router />
-              </WorkoutQueueProvider>
-            </WorkoutSessionProvider>
+            <UserProfileProvider>
+              <WorkoutSessionProvider>
+                <WorkoutQueueProvider>
+                  <Router />
+                </WorkoutQueueProvider>
+              </WorkoutSessionProvider>
+            </UserProfileProvider>
           </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>

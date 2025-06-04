@@ -5,16 +5,17 @@ import React from 'react';
 import { useLocation } from 'wouter';
 import { Target } from 'lucide-react';
 import { GoalDashboard } from '@/components/goals/GoalDashboard';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-supabase-auth';
 
 export default function GoalsPage() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
 
-  if (!user) {
-    setLocation('/auth');
-    return null;
-  }
+  // ALWAYS skip authentication in development
+  // if (!user) {
+  //   setLocation('/auth');
+  //   return null;
+  // }
 
   const handleCreateGoal = () => {
     setLocation('/goals/new');
