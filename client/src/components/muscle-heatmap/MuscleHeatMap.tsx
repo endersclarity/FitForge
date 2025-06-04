@@ -58,6 +58,26 @@ export function MuscleHeatMap({
     data: MuscleRecoveryState | null;
   } | null>(null);
 
+  // Memoize expensive calculations for performance - MUST be before early returns
+  const memoizedMetrics = useMemo(() => {
+    if (isLoading || error) {
+      return {
+        overallFatigue: 0,
+        recommendedWorkout: 'recovery' as const,
+        mostRecovered: [],
+        mostFatigued: []
+      };
+    }
+    return {
+      overallFatigue: getOverallFatigueLevel(),
+      recommendedWorkout: getRecommendedWorkoutType(),
+      mostRecovered: getMostRecoveredMuscles(),
+      mostFatigued: getMostFatiguedMuscles()
+    };
+  }, [isLoading, error, getOverallFatigueLevel, getRecommendedWorkoutType, getMostRecoveredMuscles, getMostFatiguedMuscles]);
+
+  const { overallFatigue, recommendedWorkout, mostRecovered, mostFatigued } = memoizedMetrics;
+
   // Handle muscle interactions
   const handleMuscleHover = (muscle: MuscleGroupType, data: MuscleRecoveryState | null) => {
     setHoveredMuscle(data ? { muscle, data } : null);
@@ -152,16 +172,6 @@ export function MuscleHeatMap({
       </Card>
     );
   }
-
-  // Memoize expensive calculations for performance
-  const memoizedMetrics = useMemo(() => ({
-    overallFatigue: getOverallFatigueLevel(),
-    recommendedWorkout: getRecommendedWorkoutType(),
-    mostRecovered: getMostRecoveredMuscles(),
-    mostFatigued: getMostFatiguedMuscles()
-  }), [getOverallFatigueLevel, getRecommendedWorkoutType, getMostRecoveredMuscles, getMostFatiguedMuscles]);
-
-  const { overallFatigue, recommendedWorkout, mostRecovered, mostFatigued } = memoizedMetrics;
 
   return (
     <div className={cn("w-full space-y-6", className)}>

@@ -4,24 +4,24 @@ import { LiveTracking } from "@/components/live-tracking";
 import { ProgressAnalytics } from "@/components/progress-analytics";
 import { CommunityFeatures } from "@/components/community-features";
 import { Footer } from "@/components/footer";
-import { useAuth } from "@/hooks/use-supabase-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
   // Redirect authenticated users to dashboard
   useEffect(() => {
-    if (!loading && user) {
+    if (!isLoading && user) {
       console.log('🔄 Authenticated user detected, redirecting to dashboard...');
       setLocation('/dashboard');
     }
-  }, [user, loading, setLocation]);
+  }, [user, isLoading, setLocation]);
 
   // Show loading while checking auth
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

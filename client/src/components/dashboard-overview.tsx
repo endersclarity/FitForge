@@ -18,6 +18,14 @@ export function DashboardOverview() {
   const hasNutritionData = false; // Will check real API
   const hasInsights = user && hasWorkoutData; // Real AI data when implemented
   
+  // Debug logging
+  console.log('🏠 Dashboard Debug:', {
+    recoveryStatesLength: recoveryStates.length,
+    hasWorkoutData,
+    isLoadingRecovery,
+    user: !!user
+  });
+  
   // Handle workout suggestion from heat map
   const handleWorkoutSuggestion = (workoutType: 'upper' | 'lower' | 'full' | 'recovery') => {
     // Navigate to workout page with suggested type

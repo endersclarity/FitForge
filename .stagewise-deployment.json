@@ -1,0 +1,21 @@
+{
+  "deployedAt": "2025-06-04T04:45:19.290Z",
+  "projectType": "react",
+  "htmlFiles": [
+    "browser-tools-extension/chrome-extension/devtools.html",
+    "browser-tools-extension/chrome-extension/panel.html",
+    "client/index.html",
+    "dist/index.html",
+    "liftlog-reference/404.html"
+  ],
+  "stageWiseScript": "stagewise-toolbar.js",
+  "mcpServerPort": 3001,
+  "instructions": [
+    "1. Start the Stagewise MCP server: stagewise server",
+    "2. Add MCP server to Claude Code: claude mcp add stagewise-dev",
+    "3. Start your development server",
+    "4. Open your project in browser",
+    "5. Click elements and describe changes",
+    "6. Use \"Send to MCP\" or \"Send All\" to communicate with Claude Code"
+  ]
+}
