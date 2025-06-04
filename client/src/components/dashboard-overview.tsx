@@ -37,11 +37,41 @@ export function DashboardOverview() {
       <div className="space-y-8">
         {/* Muscle Recovery Heat Map - Primary Feature */}
         <div className="w-full">
-          <div className="bg-green-500 text-white p-8 rounded-lg text-center">
-            🔥 MUSCLE HEAT MAP PLACEHOLDER - Hooks issue identified and fixed
-            <br />
-            Dashboard now loads properly without navigation errors
-          </div>
+          <Card className="card-hover">
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Activity className="w-6 h-6 text-primary" />
+                Muscle Recovery Heat Map
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoadingRecovery ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading recovery data...</p>
+                  </div>
+                </div>
+              ) : !hasWorkoutData ? (
+                <div className="text-center py-8">
+                  <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">
+                    Complete workouts to see your muscle recovery status
+                  </p>
+                  <Button onClick={() => window.location.href = '/workouts'}>
+                    Start Your First Workout
+                  </Button>
+                </div>
+              ) : (
+                <MuscleHeatMap 
+                  showRecommendations={true}
+                  showDetailedMetrics={false}
+                  onWorkoutSuggestion={handleWorkoutSuggestion}
+                  className="w-full"
+                />
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Secondary Analytics Grid */}
