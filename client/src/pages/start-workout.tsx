@@ -10,7 +10,7 @@ import { useWorkoutSession, SessionConflictError, type SessionConflictData } fro
 import { SessionConflictDialog } from "@/components/SessionConflictDialog";
 import { WorkoutProgressErrorBoundary } from "@/components/workout-progress-error-boundary";
 import { workoutService } from "@/services/supabase-workout-service";
-import { useAuth } from "@/hooks/use-supabase-auth";
+import { useAuth } from "@/hooks/use-auth";
 import type { Exercise } from "@/lib/supabase";
 
 // Legacy Exercise interface for compatibility with existing UI

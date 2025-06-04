@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/hooks/use-supabase-auth'
-import { workoutService } from '@/services/supabase-workout-service'
+import { useAuth } from '@/hooks/use-auth'
+import { localWorkoutService } from '@/services/local-workout-service'
 import { useMuscleRecovery } from '@/hooks/use-muscle-recovery'
 import type { WorkoutSession, WorkoutExercise, WorkoutSet, Exercise } from '@/lib/supabase'
 
@@ -36,7 +36,7 @@ export function useRealWorkoutSession(sessionId: string | null) {
     setError(null)
 
     try {
-      const data = await workoutService.getWorkoutSession(sessionId)
+      const data = await localWorkoutService.getWorkoutSession(sessionId)
       if (data) {
         setWorkoutData(data)
       }
@@ -53,7 +53,7 @@ export function useRealWorkoutSession(sessionId: string | null) {
     if (!sessionId || !user) return
 
     // Subscribe to workout updates
-    const channel = workoutService.subscribeToWorkoutSession(sessionId, (payload) => {
+    const channel = localWorkoutService.subscribeToWorkoutSession(sessionId, (payload) => {
       console.log('Real-time workout update:', payload)
       
       // Reload data when changes occur
@@ -63,7 +63,7 @@ export function useRealWorkoutSession(sessionId: string | null) {
     setSubscription(channel)
 
     // Also subscribe to personal records for notifications
-    const prChannel = workoutService.subscribeToPersonalRecords(user.id, (payload) => {
+    const prChannel = localWorkoutService.subscribeToPersonalRecords(user.id.toString(), (payload) => {
       console.log('New personal record:', payload)
       
       if (payload.eventType === 'INSERT') {
@@ -99,18 +99,11 @@ export function useRealWorkoutSession(sessionId: string | null) {
     setError(null)
 
     try {
-      const result = await workoutService.startWorkout({
-        workoutType,
-        exerciseIds,
-        sessionName
-      })
+      const result = await localWorkoutService.startWorkout(workoutType, exerciseIds, sessionName)
 
       setWorkoutData({
         session: result.session,
-        exercises: result.exercises.map(ex => ({
-          ...ex,
-          sets: []
-        }))
+        exercises: [] // New workouts start with no exercises
       })
 
       return result.session
@@ -136,9 +129,7 @@ export function useRealWorkoutSession(sessionId: string | null) {
     if (!workoutData.session || !user) throw new Error('No active workout session')
 
     try {
-      const set = await workoutService.logSet({
-        sessionId: workoutData.session.id,
-        exerciseId,
+      const set = await localWorkoutService.logSet(workoutData.session.id, exerciseId, {
         setNumber,
         reps,
         weight,
@@ -179,11 +170,8 @@ export function useRealWorkoutSession(sessionId: string | null) {
     setError(null)
 
     try {
-      const completedSession = await workoutService.completeWorkout({
-        sessionId: workoutData.session.id,
-        rating,
-        notes
-      })
+      const result = await localWorkoutService.completeWorkout(workoutData.session.id, rating, notes)
+      const completedSession = result?.session || workoutData.session
 
       setWorkoutData(prev => ({
         ...prev,
@@ -235,7 +223,8 @@ export function useRealWorkoutSession(sessionId: string | null) {
     setError(null)
 
     try {
-      const cancelledSession = await workoutService.cancelWorkout(workoutData.session.id)
+      // For now, just set session to cancelled status locally
+      const cancelledSession = { ...workoutData.session, completion_status: 'cancelled' as const }
       
       setWorkoutData(prev => ({
         ...prev,
