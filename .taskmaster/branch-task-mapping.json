@@ -1,0 +1,24 @@
+{
+  "branches": {
+    "master": {
+      "taskFile": "tasks.json",
+      "description": "Main development branch with general project tasks"
+    },
+    "feature/storage-unification": {
+      "taskFile": "feature-storage-unification.json", 
+      "description": "Storage architecture unification - GitHub Issue #27",
+      "githubIssue": "27",
+      "objective": "Fix dual storage mismatch preventing workout progress visibility"
+    },
+    "feature/muscle-activation-heatmap-issue-22": {
+      "taskFile": "feature-muscle-heatmap.json",
+      "description": "Muscle activation heat map implementation - GitHub Issue #22", 
+      "githubIssue": "22",
+      "objective": "Visual muscle recovery tracking with interactive heat map"
+    }
+  },
+  "defaultBranch": "master",
+  "taskFileLocation": ".taskmaster/tasks/",
+  "sessionStateFile": "session_state.json",
+  "lastUpdated": "2025-06-04T13:45:00Z"
+}

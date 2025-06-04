@@ -6,7 +6,7 @@ import { Label } from './ui/label';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { User, Target, Activity, Calendar } from 'lucide-react';
-import { userPreferencesService } from '@/services/user-preferences-service';
+import { userPreferencesService, ExtendedUserPreferences } from '@/services/user-preferences-service';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface UserIntakeFormProps {
@@ -64,7 +64,7 @@ export function UserIntakeForm({ currentData, onComplete }: UserIntakeFormProps)
       const currentPreferences = await userPreferencesService.getUserPreferences('1');
       
       // Create complete preferences object with required fields
-      const updatedPreferences = {
+      const updatedPreferences: Partial<ExtendedUserPreferences> = {
         // Keep existing required fields or use defaults
         goals: currentPreferences?.goals || ["general_fitness"],
         experienceLevel: currentPreferences?.experienceLevel || "beginner",
@@ -74,13 +74,13 @@ export function UserIntakeForm({ currentData, onComplete }: UserIntakeFormProps)
         bodyweightExerciseConfigs: currentPreferences?.bodyweightExerciseConfigs || [],
         
         // Update with form data
-        bodyStats: {
-          bodyWeight: Number(formData.bodyWeight) || undefined,
-          height: Number(formData.height) || undefined,
-          age: Number(formData.age) || undefined,
-          gender: formData.gender || undefined,
+        bodyStats: formData.bodyWeight || formData.height || formData.age || formData.gender ? {
+          bodyWeight: formData.bodyWeight ? Number(formData.bodyWeight) : undefined,
+          height: formData.height ? Number(formData.height) : undefined,
+          age: formData.age ? Number(formData.age) : undefined,
+          gender: formData.gender as "male" | "female" | "other" | undefined,
           updatedAt: new Date().toISOString()
-        },
+        } : undefined,
         targetGoals: {
           targetWeight: Number(formData.targetWeight) || 0,
           targetStrengthIncrease: 30, // Default

@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { localWorkoutService } from "@/services/local-workout-service";
-import { userPreferencesService } from "@/services/user-preferences-service";
+import { userPreferencesService, ExtendedUserPreferences } from "@/services/user-preferences-service";
 import type { WorkoutSession } from "@/lib/supabase";
 
 // Custom achievement type for calculated achievements

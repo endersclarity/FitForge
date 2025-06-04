@@ -40,7 +40,10 @@ export function useGoalProgress(options: UseGoalProgressOptions = {}): UseGoalPr
       setIsCalculating(true);
       setError(null);
       
-      const result = await GoalProgressEngine.calculateGoalProgress(goal);
+      // Use unified storage for strength goals, fall back to original for others
+      const result = goal.goal_type === 'strength_gain' 
+        ? await GoalProgressEngine.calculateGoalProgressFromUnifiedStorage(goal)
+        : await GoalProgressEngine.calculateGoalProgress(goal);
       
       // Update local state
       setProgressResults(prev => new Map(prev).set(goal.id, result));

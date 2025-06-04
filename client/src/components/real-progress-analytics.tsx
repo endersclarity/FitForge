@@ -2,17 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Flame, Medal, TrendingUp, Download, Calendar, Activity } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useToast } from "@/hooks/use-toast";
-import { analyticsService } from '@/services/workout-analytics-service';
-import { useAuth } from '@/hooks/use-supabase-auth';
+// Analytics service and auth removed - using unified storage endpoints
 
 export function RealProgressAnalytics() {
   const [timePeriod, setTimePeriod] = useState<"1M" | "3M" | "6M" | "1Y" | "ALL">("3M");
   const { toast } = useToast();
-  const { user } = useAuth();
   
   // Get timeframe in days
   const getTimeframeDays = (period: string) => {
@@ -26,36 +24,71 @@ export function RealProgressAnalytics() {
     }
   };
   
-  // Fetch real progress metrics using our analytics service
+  // Fetch unified analytics from our new endpoint
   const { data: metrics, isLoading: metricsLoading } = useQuery({
-    queryKey: ['progressMetrics', timePeriod],
-    queryFn: () => analyticsService.getProgressMetrics(getTimeframeDays(timePeriod)),
-    enabled: !!user
+    queryKey: ['unified-analytics', timePeriod],
+    queryFn: async () => {
+      const response = await fetch("/api/workouts/analytics", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error("Failed to fetch analytics");
+      return response.json();
+    }
   });
   
-  // Fetch weekly trends for chart data
-  const { data: weeklyTrends, isLoading: trendsLoading } = useQuery({
-    queryKey: ['weeklyTrends', timePeriod],
-    queryFn: () => analyticsService.getWeeklyTrends(Math.floor(getTimeframeDays(timePeriod) / 7)),
-    enabled: !!user
+  // Fetch workout history for trend calculations from unified storage
+  const { data: workoutHistory, isLoading: trendsLoading } = useQuery({
+    queryKey: ['workout-history-trends', timePeriod],
+    queryFn: async () => {
+      const response = await fetch("/api/workouts/history", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error("Failed to fetch workout history");
+      return response.json();
+    }
   });
   
-  // Fetch daily analytics for detailed view
-  const { data: dailyAnalytics, isLoading: dailyLoading } = useQuery({
-    queryKey: ['dailyAnalytics', timePeriod],
-    queryFn: () => {
-      const endDate = new Date().toISOString().split('T')[0];
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - getTimeframeDays(timePeriod));
-      return analyticsService.getDailyAnalytics(startDate.toISOString().split('T')[0], endDate);
-    },
-    enabled: !!user
-  });
+  // Calculate weekly trends from workout history
+  const weeklyTrends = React.useMemo(() => {
+    if (!workoutHistory?.workouts) return [];
+    
+    const workouts = workoutHistory.workouts.filter((w: any) => w.sessionType === 'completed');
+    const weeks = new Map();
+    
+    workouts.forEach((workout: any) => {
+      const date = new Date(workout.startTime);
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay());
+      const weekKey = weekStart.toISOString().split('T')[0];
+      
+      if (!weeks.has(weekKey)) {
+        weeks.set(weekKey, {
+          weekStart: weekKey,
+          totalVolume: 0,
+          workoutCount: 0,
+          totalDuration: 0
+        });
+      }
+      
+      const week = weeks.get(weekKey);
+      week.totalVolume += workout.totalVolume || 0;
+      week.workoutCount += 1;
+      week.totalDuration += workout.totalDuration || 0;
+    });
+    
+    return Array.from(weeks.values()).sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+  }, [workoutHistory]);
   
-  // Export progress data
+  // Export progress data - simplified to use weekly trends
   const handleExportData = async () => {
     try {
-      if (!dailyAnalytics || dailyAnalytics.length === 0) {
+      if (!weeklyTrends || weeklyTrends.length === 0) {
         toast({
           title: "No data to export",
           description: "Complete some workouts to generate analytics data.",
@@ -64,24 +97,16 @@ export function RealProgressAnalytics() {
         return;
       }
 
-      // Convert analytics data to CSV
-      const headers = [
-        'Date', 'Workouts', 'Total Volume (lbs)', 'Duration (minutes)', 
-        'Chest Volume', 'Back Volume', 'Legs Volume', 'Abs Volume', 'Personal Records'
-      ];
+      // Convert trends data to CSV
+      const headers = ['Week Start', 'Total Volume (lbs)', 'Workout Count', 'Total Duration (minutes)'];
       
       const csvData = [
         headers.join(','),
-        ...dailyAnalytics.map(day => [
-          day.date,
-          day.totalWorkouts,
-          day.totalVolume,
-          Math.round(day.totalDuration / 60),
-          day.chestVolume,
-          day.backVolume,
-          day.legsVolume,
-          day.absVolume,
-          day.newPersonalRecords
+        ...weeklyTrends.map((week: any) => [
+          week.weekStart,
+          week.totalVolume,
+          week.workoutCount,
+          week.totalDuration
         ].join(','))
       ].join('\n');
 
@@ -108,7 +133,7 @@ export function RealProgressAnalytics() {
     }
   };
   
-  if (metricsLoading || trendsLoading || dailyLoading) {
+  if (metricsLoading || trendsLoading) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-48 bg-muted rounded-lg" />
@@ -138,10 +163,10 @@ export function RealProgressAnalytics() {
   
   const actualMetrics = metrics || defaultMetrics;
   
-  // Calculate summary stats from daily analytics
-  const totalVolume = dailyAnalytics?.reduce((sum, day) => sum + day.totalVolume, 0) || 0;
-  const totalWorkouts = dailyAnalytics?.reduce((sum, day) => sum + day.totalWorkouts, 0) || 0;
-  const totalPRs = dailyAnalytics?.reduce((sum, day) => sum + day.newPersonalRecords, 0) || 0;
+  // Calculate summary stats from unified metrics
+  const totalVolume = metrics?.totalVolume || 0;
+  const totalWorkouts = metrics?.totalWorkouts || 0;
+  const totalPRs = metrics?.personalRecordCount || 0;
   const workoutsPerWeek = totalWorkouts > 0 ? (totalWorkouts / (getTimeframeDays(timePeriod) / 7)) : 0;
   
   const achievements = [
@@ -175,11 +200,11 @@ export function RealProgressAnalytics() {
     }
   ];
   
-  // Since we don't have individual exercise data yet, we'll show volume trends
+  // Show volume trends from unified data
   const topVolumeGains = [
-    { exercise: 'Chest Exercises', volume: dailyAnalytics?.reduce((sum, day) => sum + day.chestVolume, 0) || 0 },
-    { exercise: 'Back Exercises', volume: dailyAnalytics?.reduce((sum, day) => sum + day.backVolume, 0) || 0 },
-    { exercise: 'Leg Exercises', volume: dailyAnalytics?.reduce((sum, day) => sum + day.legsVolume, 0) || 0 }
+    { exercise: 'All Exercises', volume: metrics?.totalVolume || 0 },
+    { exercise: 'Recent Workouts', volume: weeklyTrends.slice(-4).reduce((sum: number, week: any) => sum + week.totalVolume, 0) },
+    { exercise: 'This Month', volume: weeklyTrends.slice(-4).reduce((sum: number, week: any) => sum + week.totalVolume, 0) }
   ].sort((a, b) => b.volume - a.volume);
   
   return (

@@ -42,25 +42,25 @@ interface ProgressMetrics {
 
 class ProgressDataService {
   /**
-   * Fetch workout sessions from API
+   * Fetch workout sessions from unified storage API
    */
   async getWorkoutSessions(timeRange: '1M' | '3M' | '6M' | '1Y'): Promise<WorkoutSession[]> {
     try {
-      const response = await fetch('/api/workout-sessions');
+      const response = await fetch('/api/workouts/history');
       if (!response.ok) {
         throw new Error('Failed to fetch workout sessions');
       }
       
-      const sessions = await response.json();
+      const { workouts } = await response.json();
       
-      // Filter by time range
+      // Filter by time range and completed sessions only
       const now = new Date();
       const monthsBack = this.getMonthsFromRange(timeRange);
       const cutoffDate = new Date();
       cutoffDate.setMonth(cutoffDate.getMonth() - monthsBack);
       
-      const filteredSessions = sessions.filter((session: any) => 
-        new Date(session.startTime) >= cutoffDate
+      const filteredSessions = workouts.filter((session: any) => 
+        session.sessionType === 'completed' && new Date(session.startTime) >= cutoffDate
       );
       
       // Transform to chart data format
@@ -68,9 +68,9 @@ class ProgressDataService {
         date: session.startTime,
         workoutType: session.workoutType || 'Mixed',
         duration: session.totalDuration || 0,
-        totalVolume: this.calculateSessionVolume(session),
+        totalVolume: session.totalVolume || this.calculateSessionVolume(session),
         caloriesBurned: session.caloriesBurned || 0,
-        formScore: session.formScore || 8,
+        formScore: session.averageFormScore || session.formScore || 8,
         exercises: this.transformExercises(session.exercises || [])
       }));
     } catch (error) {

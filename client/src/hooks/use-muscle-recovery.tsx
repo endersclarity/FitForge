@@ -47,28 +47,12 @@ export function useMuscleRecovery(): UseMuscleRecoveryReturn {
   const [error, setError] = useState<string | null>(null);
   const [recoveryCalculator, setRecoveryCalculator] = useState<MuscleRecoveryCalculator | null>(null);
 
-  // Initialize recovery calculator when user changes
-  useEffect(() => {
-    if (user) {
-      const calculator = createMuscleRecoveryCalculator(user.id.toString());
-      setRecoveryCalculator(calculator);
-      refreshRecoveryData();
-    } else {
-      setRecoveryCalculator(null);
-      // Provide default fresh muscle states for non-authenticated users
-      const defaultStates = generateDefaultFreshMuscleStates();
-      setRecoveryStates(defaultStates);
-      setHeatMapData(generateHeatMapData(defaultStates));
-      setIsLoading(false);
-    }
-  }, [user]);
-
   /**
    * Refresh all muscle recovery data
    */
   const refreshRecoveryData = useCallback(async () => {
-    if (!user || !recoveryCalculator) {
-      // Provide default fresh states for non-authenticated users or no calculator
+    if (!user) {
+      // Provide default fresh states for non-authenticated users
       const defaultStates = generateDefaultFreshMuscleStates();
       setRecoveryStates(defaultStates);
       setHeatMapData(generateHeatMapData(defaultStates));
@@ -80,11 +64,22 @@ export function useMuscleRecovery(): UseMuscleRecoveryReturn {
       setIsLoading(true);
       setError(null);
 
-      // Get recovery states for all muscle groups
-      const states = await recoveryCalculator.getMuscleRecoveryStates(user.id.toString());
+      // Fetch recovery states directly from unified storage API
+      const response = await fetch('/api/workouts/muscle-recovery', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch muscle recovery data: ${response.status}`);
+      }
+
+      const data = await response.json();
       
-      // If no workout data exists, provide fresh muscle states
-      const finalStates = states.length > 0 ? states : generateDefaultFreshMuscleStates();
+      // Use states from unified storage or provide defaults if no data
+      const finalStates = data.recoveryStates?.length > 0 ? data.recoveryStates : generateDefaultFreshMuscleStates();
       setRecoveryStates(finalStates);
 
       // Generate heat map visualization data
@@ -94,27 +89,47 @@ export function useMuscleRecovery(): UseMuscleRecoveryReturn {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load muscle recovery data';
       setError(errorMessage);
-      console.error('Error refreshing recovery data:', err);
+      console.error('Error refreshing recovery data from unified storage:', err);
+      
+      // Fallback to default states on error
+      const defaultStates = generateDefaultFreshMuscleStates();
+      setRecoveryStates(defaultStates);
+      setHeatMapData(generateHeatMapData(defaultStates));
     } finally {
       setIsLoading(false);
     }
-  }, [user, recoveryCalculator]);
+  }, [user]);
+
+  // Load recovery data when user changes
+  useEffect(() => {
+    if (user) {
+      refreshRecoveryData();
+    } else {
+      setRecoveryCalculator(null);
+      // Provide default fresh muscle states for non-authenticated users
+      const defaultStates = generateDefaultFreshMuscleStates();
+      setRecoveryStates(defaultStates);
+      setHeatMapData(generateHeatMapData(defaultStates));
+      setIsLoading(false);
+    }
+  }, [user, refreshRecoveryData]);
 
   /**
    * Update muscle recovery after workout completion
    */
   const updateMuscleRecovery = useCallback(async (workoutData: WorkoutSession) => {
-    if (!recoveryCalculator) return;
+    if (!user) return;
 
     try {
-      await recoveryCalculator.updateMuscleRecovery(workoutData);
-      await refreshRecoveryData(); // Refresh to get updated states
+      // Muscle recovery is automatically updated when workouts are logged through unified storage
+      // Just refresh the recovery data to get the latest calculations
+      await refreshRecoveryData();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update muscle recovery';
       setError(errorMessage);
       console.error('Error updating muscle recovery:', err);
     }
-  }, [recoveryCalculator, refreshRecoveryData]);
+  }, [user, refreshRecoveryData]);
 
   /**
    * Get color for a specific muscle group based on fatigue level

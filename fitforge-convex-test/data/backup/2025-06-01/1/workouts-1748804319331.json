@@ -1,0 +1,403 @@
+[
+  {
+    "id": "659be8af-14fa-427d-836f-70c9995fb321",
+    "userId": "1",
+    "startTime": "2025-05-30T23:50:48.859Z",
+    "endTime": "2025-05-30T23:55:48.859Z",
+    "workoutType": "Legs",
+    "exercises": [
+      {
+        "exerciseId": 1,
+        "exerciseName": "Calf Raises",
+        "sets": [
+          {
+            "setNumber": 1,
+            "weight": 0,
+            "reps": 15,
+            "timestamp": "2025-05-30T23:52:00.000Z",
+            "formScore": 8,
+            "equipment": "Bodyweight"
+          },
+          {
+            "setNumber": 2,
+            "weight": 0,
+            "reps": 15,
+            "timestamp": "2025-05-30T23:53:30.000Z",
+            "formScore": 8,
+            "equipment": "Bodyweight"
+          },
+          {
+            "setNumber": 3,
+            "weight": 0,
+            "reps": 12,
+            "timestamp": "2025-05-30T23:55:00.000Z",
+            "formScore": 7,
+            "equipment": "Bodyweight"
+          }
+        ],
+        "restTimes": [
+          90,
+          90
+        ],
+        "formScore": 7.7
+      }
+    ],
+    "totalVolume": 42,
+    "caloriesBurned": 35,
+    "status": "completed",
+    "rating": 4,
+    "notes": "Good calf workout, felt the burn on the last set"
+  },
+  {
+    "id": 1748804285405,
+    "userId": 1,
+    "workoutId": null,
+    "startTime": "2025-06-01T18:57:59.268Z",
+    "endTime": "2025-06-01T18:58:05.401Z",
+    "totalDuration": 0,
+    "caloriesBurned": null,
+    "formScore": null,
+    "notes": null,
+    "exercises": [
+      {
+        "id": "bench-press",
+        "exerciseName": "Bench Press",
+        "workoutType": "ChestTriceps",
+        "category": "Compound",
+        "sets": [
+          {
+            "reps": 330,
+            "weight": 50,
+            "completed": true
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          }
+        ],
+        "notes": "",
+        "totalVolume": 16500,
+        "completedSets": 1,
+        "isCompleted": false
+      },
+      {
+        "id": "trx-reverse-flys",
+        "exerciseName": "TRX Reverse Flys",
+        "workoutType": "ChestTriceps",
+        "category": "Isolation",
+        "sets": [
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          }
+        ],
+        "notes": "",
+        "totalVolume": 0,
+        "completedSets": 0,
+        "isCompleted": false
+      },
+      {
+        "id": "tricep-extension",
+        "exerciseName": "Tricep Extension",
+        "workoutType": "ChestTriceps",
+        "category": "Isolation",
+        "sets": [
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          }
+        ],
+        "notes": "",
+        "totalVolume": 0,
+        "completedSets": 0,
+        "isCompleted": false
+      },
+      {
+        "id": "trx-pushup",
+        "exerciseName": "TRX Pushup",
+        "workoutType": "ChestTriceps",
+        "category": "Compound",
+        "sets": [
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          }
+        ],
+        "notes": "",
+        "totalVolume": 0,
+        "completedSets": 0,
+        "isCompleted": false
+      },
+      {
+        "id": "incline-bench-press",
+        "exerciseName": "Incline Bench Press",
+        "workoutType": "ChestTriceps",
+        "category": "Compound",
+        "sets": [
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          }
+        ],
+        "notes": "",
+        "totalVolume": 0,
+        "completedSets": 0,
+        "isCompleted": false
+      },
+      {
+        "id": "shoulder-press",
+        "exerciseName": "Shoulder Press",
+        "workoutType": "ChestTriceps",
+        "category": "Compound",
+        "sets": [
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          }
+        ],
+        "notes": "",
+        "totalVolume": 0,
+        "completedSets": 0,
+        "isCompleted": false
+      }
+    ],
+    "completionStatus": "completed"
+  },
+  {
+    "id": 1748804319329,
+    "userId": 1,
+    "workoutId": null,
+    "startTime": "2025-06-01T18:58:24.941Z",
+    "endTime": "2025-06-01T18:58:39.325Z",
+    "totalDuration": 0,
+    "caloriesBurned": null,
+    "formScore": null,
+    "notes": null,
+    "exercises": [
+      {
+        "id": "bench-press",
+        "exerciseName": "Bench Press",
+        "workoutType": "ChestTriceps",
+        "category": "Compound",
+        "sets": [
+          {
+            "reps": 6,
+            "weight": 50,
+            "completed": true
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          }
+        ],
+        "notes": "",
+        "totalVolume": 300,
+        "completedSets": 1,
+        "isCompleted": false
+      },
+      {
+        "id": "trx-reverse-flys",
+        "exerciseName": "TRX Reverse Flys",
+        "workoutType": "ChestTriceps",
+        "category": "Isolation",
+        "sets": [
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          }
+        ],
+        "notes": "",
+        "totalVolume": 0,
+        "completedSets": 0,
+        "isCompleted": false
+      },
+      {
+        "id": "tricep-extension",
+        "exerciseName": "Tricep Extension",
+        "workoutType": "ChestTriceps",
+        "category": "Isolation",
+        "sets": [
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          }
+        ],
+        "notes": "",
+        "totalVolume": 0,
+        "completedSets": 0,
+        "isCompleted": false
+      },
+      {
+        "id": "trx-pushup",
+        "exerciseName": "TRX Pushup",
+        "workoutType": "ChestTriceps",
+        "category": "Compound",
+        "sets": [
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          }
+        ],
+        "notes": "",
+        "totalVolume": 0,
+        "completedSets": 0,
+        "isCompleted": false
+      },
+      {
+        "id": "incline-bench-press",
+        "exerciseName": "Incline Bench Press",
+        "workoutType": "ChestTriceps",
+        "category": "Compound",
+        "sets": [
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          }
+        ],
+        "notes": "",
+        "totalVolume": 0,
+        "completedSets": 0,
+        "isCompleted": false
+      },
+      {
+        "id": "shoulder-press",
+        "exerciseName": "Shoulder Press",
+        "workoutType": "ChestTriceps",
+        "category": "Compound",
+        "sets": [
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          },
+          {
+            "reps": 0,
+            "weight": 50,
+            "completed": false
+          }
+        ],
+        "notes": "",
+        "totalVolume": 0,
+        "completedSets": 0,
+        "isCompleted": false
+      }
+    ],
+    "completionStatus": "completed"
+  }
+]

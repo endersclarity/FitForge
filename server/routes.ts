@@ -22,10 +22,11 @@ interface AuthRequest extends Request {
   userId?: number;
 }
 
-// Middleware to auto-assign Ender's user ID (bypasses authentication for testing)
+// Middleware to auto-assign user ID (bypasses authentication for testing)
 const authenticateToken = (req: any, res: any, next: any) => {
-  // Auto-assign Ender's user ID (first user in storage)
-  req.userId = 1;
+  // Use user-id header if provided (for testing), otherwise default to 1
+  const userIdHeader = req.headers['user-id'];
+  req.userId = userIdHeader ? parseInt(userIdHeader) : 1;
   next();
 };
 
@@ -180,46 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Legacy exercise route handling moved to mounted router
-
-  // Workout routes
-  app.get("/api/workouts", async (req, res) => {
-    try {
-      const { category, difficulty } = req.query;
-      const workouts = await storage.getWorkouts({
-        category: category as string,
-        difficulty: difficulty as string
-      });
-      res.json(workouts);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.get("/api/workouts/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const workout = await storage.getWorkout(id);
-      if (!workout) {
-        return res.status(404).json({ message: "Workout not found" });
-      }
-      res.json(workout);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.post("/api/workouts", authenticateToken, async (req: any, res) => {
-    try {
-      const workoutData = insertWorkoutSchema.parse({
-        ...req.body,
-        userId: req.userId
-      });
-      const workout = await storage.createWorkout(workoutData);
-      res.json(workout);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  });
+  // DEPRECATED: Direct workout routes moved to workoutRoutes.ts to prevent conflicts
 
   // Get previous workout data for ghost text (target calculations)
   app.get("/api/exercises/:exerciseName/previous", authenticateToken, async (req, res) => {

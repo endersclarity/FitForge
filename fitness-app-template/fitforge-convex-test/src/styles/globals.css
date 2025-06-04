@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fitness-specific CSS utilities */
+@layer components {
+  .muscle-group {
+    @apply transition-all duration-200 cursor-pointer;
+  }
+  
+  .muscle-group:hover {
+    @apply scale-105 brightness-110;
+  }
+  
+  .muscle-activated {
+    @apply animate-muscle-pulse;
+  }
+  
+  .rep-counter {
+    @apply font-mono text-2xl font-bold transition-all duration-150;
+  }
+  
+  .rep-counter.counting {
+    @apply animate-rep-count text-intensity-high;
+  }
+  
+  .set-complete {
+    @apply animate-set-complete;
+  }
+  
+  .workout-card {
+    @apply bg-white rounded-lg shadow-md border border-gray-200 p-4 hover:shadow-lg transition-shadow;
+  }
+  
+  .exercise-button {
+    @apply bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all;
+  }
+  
+  .intensity-indicator {
+    @apply w-3 h-3 rounded-full inline-block mr-2;
+  }
+  
+  .intensity-low { @apply bg-intensity-low; }
+  .intensity-medium { @apply bg-intensity-medium; }
+  .intensity-high { @apply bg-intensity-high; }
+}

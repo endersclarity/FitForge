@@ -569,4 +569,109 @@ export namespace GoalProgressEngine {
     
     return results;
   }
+
+  // ============================================================================
+  // UNIFIED STORAGE INTEGRATION
+  // ============================================================================
+
+  /**
+   * Calculate strength goal progress using unified storage data
+   */
+  export async function calculateStrengthProgressFromUnifiedStorage(goal: Goal): Promise<ProgressCalculationResult> {
+    try {
+      if (!goal.target_exercise_id) {
+        throw new Error('Target exercise not specified for strength goal');
+      }
+
+      // Fetch exercise progress from unified storage
+      const response = await fetch(`/api/workouts/exercise-progress?exerciseName=${encodeURIComponent(goal.target_exercise_id)}&timeRange=1Y`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch exercise progress: ${response.status}`);
+      }
+
+      const progressData = await response.json();
+      
+      // Find the specific exercise
+      const exerciseProgress = progressData.exercises.find((ex: any) => 
+        ex.exerciseName.toLowerCase().includes(goal.target_exercise_id!.toLowerCase())
+      );
+
+      if (!exerciseProgress) {
+        return {
+          goal_id: goal.id,
+          current_progress_percentage: 0,
+          data_source_description: 'No workout data found for target exercise',
+          calculation_formula: `No data for exercise: ${goal.target_exercise_id}`,
+          is_achieved: false,
+          last_updated: new Date().toISOString(),
+          data_points_count: 0,
+          calculation_date_range: {
+            start: goal.created_date,
+            end: new Date().toISOString().split('T')[0]
+          }
+        };
+      }
+
+      // Calculate progress based on max weight progression
+      const startWeight = goal.start_exercise_max_weight_lbs || 0;
+      const targetWeight = goal.target_weight_for_exercise_lbs || 0;
+      const currentWeight = exerciseProgress.maxWeights[exerciseProgress.maxWeights.length - 1] || startWeight;
+
+      let progressPercentage = 0;
+      if (targetWeight > startWeight) {
+        progressPercentage = Math.min(100, ((currentWeight - startWeight) / (targetWeight - startWeight)) * 100);
+      }
+
+      const isAchieved = currentWeight >= targetWeight;
+
+      return {
+        goal_id: goal.id,
+        current_progress_percentage: Math.round(progressPercentage * 100) / 100,
+        data_source_description: `${exerciseProgress.dates.length} workout sessions analyzing ${goal.target_exercise_id}`,
+        calculation_formula: `Progress = ((${currentWeight} - ${startWeight}) / (${targetWeight} - ${startWeight})) × 100`,
+        is_achieved: isAchieved,
+        last_updated: new Date().toISOString(),
+        milestone_data: {
+          current_value: currentWeight,
+          target_value: targetWeight,
+          start_value: startWeight,
+          unit: 'lbs'
+        },
+        data_points_count: exerciseProgress.dates.length,
+        calculation_date_range: {
+          start: goal.created_date,
+          end: new Date().toISOString().split('T')[0]
+        }
+      };
+
+    } catch (error) {
+      console.error('Error calculating strength progress from unified storage:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate goal progress using unified storage (main function)
+   */
+  export async function calculateGoalProgressFromUnifiedStorage(goal: Goal): Promise<ProgressCalculationResult> {
+    switch (goal.goal_type) {
+      case 'strength_gain':
+        return await calculateStrengthProgressFromUnifiedStorage(goal);
+      
+      case 'weight_loss':
+      case 'body_composition':
+        // For now, fall back to original method for body stats
+        // TODO: Add unified storage support for body stats
+        return await calculateGoalProgress(goal);
+      
+      default:
+        throw new Error(`Unsupported goal type: ${goal.goal_type}`);
+    }
+  }
 }

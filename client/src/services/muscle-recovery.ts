@@ -254,29 +254,30 @@ export class MuscleRecoveryCalculator implements MuscleRecoveryService {
   }
 
   /**
-   * Get recent workout history from storage
+   * Get recent workout history from unified storage API
    */
   private async getRecentWorkouts(userId: string, days: number): Promise<WorkoutSession[]> {
     try {
-      // In real implementation, this would query the database
-      // For now, we'll check local storage and file system
+      // Fetch from unified storage endpoint
+      const response = await fetch('/api/workouts/muscle-recovery', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
-      const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-      const workouts: WorkoutSession[] = [];
-      
-      // Check for workout data in user directory
-      const userDataPath = `/home/ender/.claude/projects/ai-tools-workflow-integration/FitForge/data/users/${userId}`;
-      
-      try {
-        // This is a placeholder - in real implementation would read actual workout files
-        // For MVP, we'll return empty array until workout logging is integrated
-        return [];
-      } catch (error) {
-        console.warn('Could not load workout history:', error);
-        return [];
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      const data = await response.json();
+      
+      // The API returns muscle recovery states, but we need workout sessions for compatibility
+      // Convert the recovery states back to a simplified workout format
+      return this.convertRecoveryStatesToWorkouts(data.recoveryStates);
+      
     } catch (error) {
-      console.error('Error fetching recent workouts:', error);
+      console.error('Error fetching recent workouts from unified storage:', error);
       return [];
     }
   }
@@ -310,6 +311,15 @@ export class MuscleRecoveryCalculator implements MuscleRecoveryService {
     } catch (error) {
       console.error('Error updating muscle activation history:', error);
     }
+  }
+
+  /**
+   * Convert recovery states back to workout sessions for compatibility
+   */
+  private convertRecoveryStatesToWorkouts(recoveryStates: any[]): WorkoutSession[] {
+    // This is a compatibility layer - the new API returns calculated recovery states
+    // For now, return empty array since the recovery calculation is done server-side
+    return [];
   }
 }
 

@@ -1,0 +1,67 @@
+{
+  "conversionDate": "2025-06-02T15:06:10.630Z",
+  "sourceExerciseCount": 38,
+  "convertedExerciseCount": 38,
+  "errors": [],
+  "statistics": {
+    "exercisesByWorkoutType": {
+      "Abs": 4,
+      "BackBiceps": 13,
+      "ChestTriceps": 14,
+      "Legs": 7
+    },
+    "exercisesByCategory": {
+      "Isolation": 15,
+      "Compound": 21,
+      "Explosive": 1,
+      "Functional": 1
+    },
+    "exercisesByDifficulty": {
+      "Beginner": 10,
+      "Intermediate": 24,
+      "Advanced": 4
+    },
+    "equipmentTypes": [
+      "Barbell",
+      "Bench",
+      "Bodyweight",
+      "Cable",
+      "Dumbbell",
+      "Kettlebell",
+      "Plybox",
+      "Pull-up Bar",
+      "T-Bar",
+      "TRX"
+    ],
+    "uniqueMuscles": [
+      "Anconeus",
+      "Anterior Deltoids",
+      "Biceps Brachii",
+      "Brachialis",
+      "Brachioradialis",
+      "Core",
+      "Deltoids",
+      "Erector Spinae",
+      "Gastrocnemius",
+      "Gluteus Maximus",
+      "Grip/Forearms",
+      "Hamstrings",
+      "Hip Flexors",
+      "Latissimus Dorsi",
+      "Levator Scapulae",
+      "Obliques",
+      "Pectoralis Major",
+      "Quadriceps",
+      "Rear Deltoids",
+      "Rectus Abdominis",
+      "Rhomboids",
+      "Rotator Cuff",
+      "Serratus Anterior",
+      "Shoulders",
+      "Soleus",
+      "Transverse Abdominis",
+      "Trapezius",
+      "Triceps Brachii"
+    ]
+  }
+}

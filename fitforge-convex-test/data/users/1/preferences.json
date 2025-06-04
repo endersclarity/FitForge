@@ -1,0 +1,28 @@
+{
+  "goals": [
+    "muscle_gain",
+    "strength"
+  ],
+  "experienceLevel": "beginner",
+  "availableEquipment": [
+    "bodyweight"
+  ],
+  "workoutFrequency": 3,
+  "sessionDuration": 45,
+  "onboardingCompleted": false,
+  "coachingEnabled": true,
+  "achievementNotifications": true,
+  "bodyStats": {
+    "bodyWeight": 174,
+    "height": 74,
+    "age": 39,
+    "gender": "male",
+    "updatedAt": "2025-06-03T15:00:00.000Z"
+  },
+  "targetGoals": {
+    "targetWeight": 200,
+    "targetStrengthIncrease": 30,
+    "dailyCalorieGoal": 3000,
+    "dailyProteinGoal": 175
+  }
+}

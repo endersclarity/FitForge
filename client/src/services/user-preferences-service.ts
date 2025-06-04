@@ -1,20 +1,8 @@
-export interface UserPreferences {
-  goals: string[]
-  experienceLevel: string
-  availableEquipment: string[]
-  workoutFrequency: number
-  sessionDuration: number
-  onboardingCompleted: boolean
-  coachingEnabled: boolean
-  achievementNotifications: boolean
-  bodyStats: {
-    bodyWeight: number
-    height: number
-    age: number
-    gender: string
-    updatedAt: string
-  }
-  targetGoals: {
+import { UserPreferences } from '@shared/user-profile';
+
+// Extended preferences for backward compatibility  
+export interface ExtendedUserPreferences extends UserPreferences {
+  targetGoals?: {
     targetWeight: number
     targetStrengthIncrease: number
     dailyCalorieGoal: number
@@ -34,7 +22,7 @@ export class UserPreferencesService {
   /**
    * Get user preferences from local API
    */
-  async getUserPreferences(userId: string): Promise<UserPreferences | null> {
+  async getUserPreferences(userId: string): Promise<ExtendedUserPreferences | null> {
     try {
       const response = await fetch(`/api/users/preferences/${userId}`)
       if (!response.ok) {
@@ -56,7 +44,7 @@ export class UserPreferencesService {
   /**
    * Update user preferences
    */
-  async updateUserPreferences(userId: string, preferences: Partial<UserPreferences>): Promise<UserPreferences> {
+  async updateUserPreferences(userId: string, preferences: Partial<ExtendedUserPreferences>): Promise<ExtendedUserPreferences> {
     try {
       const response = await fetch(`/api/users/preferences/${userId}`, {
         method: 'PUT',
@@ -97,14 +85,16 @@ export class UserPreferencesService {
       }
 
       // Mock some calorie consumption for demo
-      const mockCaloriesConsumed = Math.floor(Math.random() * preferences.targetGoals.dailyCalorieGoal * 0.8)
-      const mockProteinConsumed = Math.floor(Math.random() * preferences.targetGoals.dailyProteinGoal * 0.7)
+      const dailyCalorieGoal = preferences.targetGoals?.dailyCalorieGoal || 2200;
+      const dailyProteinGoal = preferences.targetGoals?.dailyProteinGoal || 150;
+      const mockCaloriesConsumed = Math.floor(Math.random() * dailyCalorieGoal * 0.8)
+      const mockProteinConsumed = Math.floor(Math.random() * dailyProteinGoal * 0.7)
 
       return {
         caloriesConsumed: mockCaloriesConsumed,
-        caloriesRemaining: preferences.targetGoals.dailyCalorieGoal - mockCaloriesConsumed,
+        caloriesRemaining: dailyCalorieGoal - mockCaloriesConsumed,
         proteinConsumed: mockProteinConsumed,
-        proteinRemaining: preferences.targetGoals.dailyProteinGoal - mockProteinConsumed,
+        proteinRemaining: dailyProteinGoal - mockProteinConsumed,
         lastUpdated: new Date().toISOString()
       }
     } catch (error) {
@@ -175,14 +165,22 @@ export class UserPreferencesService {
   /**
    * Update target goals
    */
-  async updateTargetGoals(userId: string, targetGoals: Partial<UserPreferences['targetGoals']>): Promise<UserPreferences> {
+  async updateTargetGoals(userId: string, targetGoals: Partial<NonNullable<ExtendedUserPreferences['targetGoals']>>): Promise<ExtendedUserPreferences> {
     try {
       const currentPreferences = await this.getUserPreferences(userId)
       if (!currentPreferences) {
         throw new Error('User preferences not found')
       }
 
+      const defaultTargetGoals = {
+        targetWeight: 0,
+        targetStrengthIncrease: 30,
+        dailyCalorieGoal: 2200,
+        dailyProteinGoal: 150
+      };
+
       const updatedTargetGoals = {
+        ...defaultTargetGoals,
         ...currentPreferences.targetGoals,
         ...targetGoals
       }

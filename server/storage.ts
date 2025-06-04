@@ -6,7 +6,7 @@ import {
   type Achievement, type InsertAchievement, type Challenge, type InsertChallenge,
   type ChallengeParticipation, type InsertChallengeParticipation,
   type SocialPost, type InsertSocialPost
-} from "@shared/schema";
+} from "../shared/schema";
 import { enderExerciseDatabase, enderWorkoutRoutines } from "../scripts/ender-real-exercises";
 import { generateSixMonthWorkoutHistory } from "../scripts/generate-realistic-workout-history";
 
