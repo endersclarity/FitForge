@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
-import { useAuth } from "./use-supabase-auth";
-import { workoutService } from "@/services/supabase-workout-service";
+import { useAuth } from "./use-auth";
+import { localWorkoutService } from "@/services/local-workout-service";
 import type { WorkoutSession, WorkoutExercise, WorkoutSet, Exercise } from "@/lib/supabase";
 
 // Legacy WorkoutSet interface for backward compatibility
@@ -171,11 +171,11 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       }
 
       // Start workout using Supabase service
-      const result = await workoutService.startWorkout({
+      const result = await localWorkoutService.startWorkout(
         workoutType,
-        exerciseIds: exercises.map(ex => ex.id),
-        sessionName: `${workoutType} Workout`
-      });
+        exercises.map(ex => ex.id),
+        `${workoutType} Workout`
+      );
 
       setCurrentSupabaseSession(result.session);
 
@@ -184,13 +184,7 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
         sessionId: result.session.id,
         startTime: new Date(result.session.start_time),
         currentExerciseIndex: 0,
-        exercises: result.exercises.map(ex => ({
-          exerciseId: ex.exercise.id,
-          exerciseName: ex.exercise.exercise_name,
-          sets: [],
-          completed: false,
-          restTimeRemaining: ex.exercise.rest_time_seconds || 60
-        })),
+        exercises: [], // New workouts start with no exercises
         status: "in_progress",
         totalVolume: 0,
         estimatedCalories: 0,
@@ -298,11 +292,12 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       // Production mode: Complete workout using Supabase service
       console.log("🏁 Completing Supabase workout session...");
 
-      const completedSession = await workoutService.completeWorkout({
-        sessionId: currentSupabaseSession.id,
-        rating: rating || 5,
-        notes: notes || `Workout completed: ${session.exercises.length} exercises, ${session.totalVolume} lbs total volume, ${session.estimatedCalories} calories burned.`
-      });
+      const result = await localWorkoutService.completeWorkout(
+        currentSupabaseSession.id, 
+        rating || 5, 
+        notes || `Workout completed: ${session.exercises.length} exercises, ${session.totalVolume} lbs total volume, ${session.estimatedCalories} calories burned.`
+      );
+      const completedSession = result?.session || currentSupabaseSession;
 
       // Update local session state
       const updatedSession = { 
@@ -391,14 +386,16 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       console.log("📝 Logging set to Supabase...");
 
       // Log set using Supabase service
-      const loggedSet = await workoutService.logSet({
-        sessionId: currentSupabaseSession.id,
-        exerciseId: currentExercise.exerciseId,
-        setNumber: currentExercise.sets.length + 1,
-        reps,
-        weight,
-        equipment
-      });
+      const loggedSet = await localWorkoutService.logSet(
+        currentSupabaseSession.id,
+        currentExercise.exerciseId,
+        {
+          setNumber: currentExercise.sets.length + 1,
+          reps,
+          weight,
+          equipment
+        }
+      );
 
       // Create legacy set for frontend compatibility
       const newSet: LegacyWorkoutSet = {
@@ -509,7 +506,7 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       console.log('🗑️ Abandoning Supabase workout session...');
 
       // Cancel workout using Supabase service
-      await workoutService.cancelWorkout(currentSupabaseSession.id);
+      await localWorkoutService.cancelWorkout(currentSupabaseSession.id);
       
       // Clear local session state
       setSession(null);
@@ -541,16 +538,16 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
         console.log('🔧 Development mode: No user available for resume');
         return;
       }
-      const workoutHistory = await workoutService.getWorkoutHistory(user.id, 5);
-      const activeSession = workoutHistory.find(session => session.completion_status === 'in_progress');
+      const workoutHistory = await localWorkoutService.getWorkoutHistory(user.id.toString(), 5);
+      const activeSession = workoutHistory.find((session: any) => session.completion_status === 'in_progress');
       
       if (!activeSession) {
         throw new Error('No active session to resume');
       }
 
       // Get full session details with exercises and sets
-      const sessionData = await workoutService.getWorkoutSession(activeSession.id);
-      if (!sessionData) {
+      const sessionData = await localWorkoutService.getWorkoutSession(activeSession.id);
+      if (!sessionData || !sessionData.session) {
         throw new Error('Failed to load session details');
       }
 
@@ -598,8 +595,8 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
 
     try {
       // Get user's recent workout history to check for active sessions
-      const workoutHistory = await workoutService.getWorkoutHistory(user.id, 5);
-      const activeSession = workoutHistory.find(session => session.completion_status === 'in_progress');
+      const workoutHistory = await localWorkoutService.getWorkoutHistory(user.id.toString(), 5);
+      const activeSession = workoutHistory.find((session: any) => session.completion_status === 'in_progress');
       
       if (activeSession) {
         return {

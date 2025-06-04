@@ -227,6 +227,61 @@ export class LocalWorkoutService {
       unsubscribe: () => console.log('Unsubscribed from PRs:', userId)
     }
   }
+
+  /**
+   * Cancel a workout session
+   */
+  async cancelWorkout(sessionId: string) {
+    try {
+      console.log('Cancelling workout session:', sessionId)
+      // In a real implementation, this would update the session status
+      return true
+    } catch (error) {
+      console.error('Error cancelling workout:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get workout history for a user
+   */
+  async getWorkoutHistory(userId: string, limit: number = 10) {
+    try {
+      const response = await fetch('/api/workout-sessions')
+      if (!response.ok) {
+        throw new Error(`Failed to fetch workout history: ${response.status}`)
+      }
+      
+      const sessions = await response.json()
+      
+      // Filter by user and convert to expected format
+      const userSessions = sessions
+        .filter((s: any) => s.userId.toString() === userId.toString())
+        .slice(0, limit)
+        .map((session: any) => ({
+          id: session.id,
+          user_id: session.userId.toString(),
+          start_time: session.startTime,
+          end_time: session.endTime || null,
+          total_duration_seconds: session.duration ? session.duration * 60 : null,
+          workout_type: session.workoutType || 'Custom',
+          session_name: session.sessionName || null,
+          notes: session.notes || null,
+          total_volume_lbs: session.totalVolume || 0,
+          calories_burned: session.caloriesBurned || 0,
+          average_heart_rate: null,
+          completion_status: session.completionStatus === 'completed' ? 'completed' : 'in_progress',
+          user_rating: session.rating || null,
+          created_at: session.createdAt || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }))
+      
+      return userSessions
+    } catch (error) {
+      console.error('Error fetching workout history:', error)
+      throw error
+    }
+  }
 }
 
 // Export singleton instance

@@ -9,7 +9,7 @@ import { WorkoutSession } from "@/components/workout/WorkoutSession";
 import { useWorkoutSession, SessionConflictError, type SessionConflictData } from "@/hooks/use-workout-session";
 import { SessionConflictDialog } from "@/components/SessionConflictDialog";
 import { WorkoutProgressErrorBoundary } from "@/components/workout-progress-error-boundary";
-import { workoutService } from "@/services/supabase-workout-service";
+import { localWorkoutService } from "@/services/local-workout-service";
 import { useAuth } from "@/hooks/use-auth";
 import type { Exercise } from "@/lib/supabase";
 
