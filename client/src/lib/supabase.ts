@@ -239,6 +239,22 @@ export type GoalCheckIn = {
   created_at: string
 }
 
+export type WorkoutAnalyticsSummary = {
+  id: string
+  user_id: string
+  analytics_date: string
+  total_workouts: number
+  total_volume_lbs: number
+  total_duration_seconds: number
+  calories_burned: number
+  chest_volume: number
+  back_volume: number
+  legs_volume: number
+  abs_volume: number
+  new_prs_count: number
+  created_at: string
+}
+
 // Check if we're in demo mode
 const isDemoMode = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY
 

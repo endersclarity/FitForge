@@ -66,7 +66,14 @@ export function useMuscleRecovery(): UseMuscleRecoveryReturn {
    * Refresh all muscle recovery data
    */
   const refreshRecoveryData = useCallback(async () => {
-    if (!user || !recoveryCalculator) return;
+    if (!user || !recoveryCalculator) {
+      // Provide default fresh states for non-authenticated users or no calculator
+      const defaultStates = generateDefaultFreshMuscleStates();
+      setRecoveryStates(defaultStates);
+      setHeatMapData(generateHeatMapData(defaultStates));
+      setIsLoading(false);
+      return;
+    }
 
     try {
       setIsLoading(true);
