@@ -40,7 +40,6 @@ export class SupabaseBodyStatsService {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      console.log('💪 Logging body stats to Supabase...')
 
       // Ensure at least one measurement is provided
       const hasData = Object.values(request).some(value => value !== undefined && value !== null && value !== '')
@@ -61,7 +60,6 @@ export class SupabaseBodyStatsService {
 
       if (error) throw error
 
-      console.log('✅ Body stats logged successfully')
       return bodyStats
 
     } catch (error) {
@@ -75,7 +73,6 @@ export class SupabaseBodyStatsService {
    */
   async getBodyStatsHistory(userId: string, limit: number = 50): Promise<BodyStats[]> {
     try {
-      console.log('📊 Fetching body stats history from Supabase...')
 
       const { data: bodyStats, error } = await supabase
         .from('body_stats')
@@ -86,7 +83,6 @@ export class SupabaseBodyStatsService {
 
       if (error) throw error
 
-      console.log(`✅ Found ${bodyStats.length} body stats records`)
       return bodyStats
 
     } catch (error) {
@@ -100,7 +96,6 @@ export class SupabaseBodyStatsService {
    */
   async getLatestBodyStats(userId: string): Promise<BodyStats | null> {
     try {
-      console.log('📊 Fetching latest body stats from Supabase...')
 
       const { data: bodyStats, error } = await supabase
         .from('body_stats')
@@ -112,11 +107,6 @@ export class SupabaseBodyStatsService {
 
       if (error) throw error
 
-      if (bodyStats) {
-        console.log('✅ Found latest body stats')
-      } else {
-        console.log('📝 No body stats found')
-      }
 
       return bodyStats
 
@@ -131,7 +121,6 @@ export class SupabaseBodyStatsService {
    */
   async updateBodyStats(statsId: string, request: Partial<CreateBodyStatsRequest>): Promise<BodyStats> {
     try {
-      console.log('✏️ Updating body stats in Supabase...')
 
       const { data: bodyStats, error } = await supabase
         .from('body_stats')
@@ -145,7 +134,6 @@ export class SupabaseBodyStatsService {
 
       if (error) throw error
 
-      console.log('✅ Body stats updated successfully')
       return bodyStats
 
     } catch (error) {
@@ -159,7 +147,6 @@ export class SupabaseBodyStatsService {
    */
   async deleteBodyStats(statsId: string): Promise<void> {
     try {
-      console.log('🗑️ Deleting body stats from Supabase...')
 
       const { error } = await supabase
         .from('body_stats')
@@ -168,7 +155,6 @@ export class SupabaseBodyStatsService {
 
       if (error) throw error
 
-      console.log('✅ Body stats deleted successfully')
 
     } catch (error) {
       console.error('Error deleting body stats:', error)
@@ -181,7 +167,6 @@ export class SupabaseBodyStatsService {
    */
   async getBodyStatsInRange(userId: string, startDate: string, endDate: string): Promise<BodyStats[]> {
     try {
-      console.log('📅 Fetching body stats in date range from Supabase...')
 
       const { data: bodyStats, error } = await supabase
         .from('body_stats')
@@ -193,7 +178,6 @@ export class SupabaseBodyStatsService {
 
       if (error) throw error
 
-      console.log(`✅ Found ${bodyStats.length} body stats records in range`)
       return bodyStats
 
     } catch (error) {
@@ -207,7 +191,6 @@ export class SupabaseBodyStatsService {
    */
   async getWeightProgress(userId: string, days: number = 90): Promise<{ date: string; weight: number }[]> {
     try {
-      console.log('📈 Fetching weight progress data...')
 
       const startDate = new Date()
       startDate.setDate(startDate.getDate() - days)
@@ -227,7 +210,6 @@ export class SupabaseBodyStatsService {
         weight: stat.weight_lbs
       }))
 
-      console.log(`✅ Found ${weightProgress.length} weight data points`)
       return weightProgress
 
     } catch (error) {
@@ -251,7 +233,6 @@ export class SupabaseBodyStatsService {
     }
   }> {
     try {
-      console.log('📏 Calculating measurement comparison...')
 
       // Get latest stats
       const current = await this.getLatestBodyStats(userId)
@@ -287,7 +268,6 @@ export class SupabaseBodyStatsService {
         }
       }
 
-      console.log('✅ Measurement comparison calculated')
       return {
         current,
         starting: earliest,

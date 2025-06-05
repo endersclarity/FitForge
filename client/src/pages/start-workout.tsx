@@ -12,42 +12,14 @@ import { WorkoutProgressErrorBoundary } from "@/components/workout-progress-erro
 import { localWorkoutService } from "@/services/local-workout-service";
 import { useAuth } from "@/hooks/use-auth";
 import type { Exercise } from "@/lib/supabase";
-
-// Legacy Exercise interface for compatibility with existing UI
-interface LegacyExercise {
-  exerciseName: string;
-  equipmentType: string[];
-  category: string;
-  workoutType: string;
-  variation: string;
-  weight: number | string;
-  restTime: string;
-  reps: number;
-  primaryMuscles: Array<{ muscle: string; percentage: number }>;
-  secondaryMuscles: Array<{ muscle: string; percentage: number }>;
-}
-
-interface WorkoutExercise extends LegacyExercise {
-  id: string;
-  selectedWeight: number;
-  targetReps: number;
-  sets: Array<{
-    reps: number;
-    weight: number;
-    completed: boolean;
-    restTime?: number;
-  }>;
-}
+import { createWorkoutExerciseFromExercise, type WorkoutExercise } from "../../../shared/consolidated-schema";
 
 export default function StartWorkout() {
   const urlParams = new URLSearchParams(window.location.search);
   const workoutType = urlParams.get('type') || '';
   
   if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 StartWorkout component loaded with Supabase');
-    console.log('📍 Current URL:', window.location.href);
-    console.log('🎯 Workout type from URL:', workoutType);
-    console.log('🔗 URL params:', Object.fromEntries(urlParams));
+    // Debug info available in development
   }
   
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
@@ -62,12 +34,10 @@ export default function StartWorkout() {
     queryKey: ["exercises", workoutType],
     queryFn: async () => {
       if (!workoutType) return { exercises: [] };
-      console.log(`🔍 Fetching exercises for workout type: ${workoutType}`);
       try {
         const response = await fetch('/api/exercises');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-        console.log(`✅ Found ${data.data.exercises.length} total exercises`);
         
         // Filter by workout type (convert backbiceps -> BackBiceps for matching)
         const workoutTypeMapping: Record<string, string> = {
@@ -79,10 +49,9 @@ export default function StartWorkout() {
         };
         
         const mappedType = workoutTypeMapping[workoutType] || workoutType;
-        const filteredExercises = data.data.exercises.filter((ex: any) => 
+        const filteredExercises = data.data.exercises.filter((ex: Exercise) => 
           ex.workoutType === mappedType
         );
-        console.log(`✅ Found ${filteredExercises.length} exercises for ${workoutType} (${mappedType})`);
         
         return { exercises: filteredExercises };
       } catch (error) {
@@ -95,8 +64,8 @@ export default function StartWorkout() {
     retryDelay: 1000
   });
 
-  // Use exercises from API (already in the correct format)
-  const allExercises: LegacyExercise[] = exercisesResponse?.exercises || [];
+  // Use exercises from API (Supabase Exercise format)
+  const allExercises: Exercise[] = exercisesResponse?.exercises || [];
 
   // Available exercises (already filtered by workout type from Supabase)
   const availableExercises = allExercises;
@@ -105,7 +74,7 @@ export default function StartWorkout() {
   useEffect(() => {
     if (availableExercises.length > 0 && selectedExerciseIds.length === 0) {
       // Use exercise IDs from the API response
-      const defaultExerciseIds = exercisesResponse?.exercises.slice(0, 6).map((exercise: any) => exercise.id) || [];
+      const defaultExerciseIds = exercisesResponse?.exercises.slice(0, 6).map((exercise: Exercise) => exercise.id) || [];
       setSelectedExerciseIds(defaultExerciseIds);
     }
   }, [availableExercises, selectedExerciseIds.length, exercisesResponse]);
@@ -126,7 +95,6 @@ export default function StartWorkout() {
       <WorkoutProgressErrorBoundary 
         context="workout-session"
         onRetry={() => {
-          console.log('🔄 Retrying workout session...');
           setWorkoutStarted(false);
           // Session will be maintained by the hook
         }}
@@ -207,33 +175,36 @@ export default function StartWorkout() {
     }
 
     try {
-      console.log('🚀 Starting workout with Supabase...');
-      console.log('Selected exercise IDs:', selectedExerciseIds);
 
-      // Create legacy exercise objects for the workout session
-      const selectedExercises = selectedExerciseIds
-        .map(id => exercisesResponse?.exercises.find((ex: any) => ex.id === id))
-        .filter(Boolean)
-        .map((exercise: any) => ({
-          id: exercise.id,
-          name: exercise.exerciseName,
-          primaryMuscles: exercise.primaryMuscles || [],
-          secondaryMuscles: exercise.secondaryMuscles || [],
-          equipment: exercise.equipmentType || [],
-          restTime: exercise.restTimeSeconds || 60,
-          difficulty: exercise.difficultyLevel || 'beginner',
-          workoutType: exercise.workoutType || workoutType
-        }));
+      // Create workout exercise objects for the session using consolidated schema
+      const selectedExerciseData = selectedExerciseIds
+        .map(id => exercisesResponse?.exercises.find((ex: Exercise) => ex.id === id))
+        .filter((exercise): exercise is Exercise => Boolean(exercise));
 
-      await startWorkout(workoutType, selectedExercises);
+      const selectedExercises = selectedExerciseData
+        .map((exercise: Exercise, index: number): WorkoutExercise => 
+          createWorkoutExerciseFromExercise(exercise, index + 1)
+        );
+
+      // Convert canonical format to legacy format
+      const legacyExercises = selectedExerciseData.map(ex => ({
+        id: ex.id,
+        name: ex.exerciseName,
+        primaryMuscles: ex.primaryMuscles,
+        secondaryMuscles: ex.secondaryMuscles,
+        equipment: ex.equipmentType,
+        restTime: ex.restTimeSeconds,
+        difficulty: ex.difficultyLevel,
+        workoutType: ex.workoutType
+      }));
+
+      await startWorkout(workoutType, legacyExercises);
       setWorkoutStarted(true);
-      console.log('✅ Workout started successfully');
     } catch (error) {
       console.error('❌ Failed to start workout:', error);
       
       // Handle session conflict with proper dialog
       if (error instanceof SessionConflictError) {
-        console.log('🔄 Session conflict detected, showing dialog...');
         setSessionConflict(error.conflictData);
         setShowConflictDialog(true);
       } else {
@@ -246,7 +217,6 @@ export default function StartWorkout() {
   // Session conflict dialog handlers
   const handleAbandonAndStart = async () => {
     try {
-      console.log('🗑️ Abandoning previous session and starting new workout...');
       await abandonActiveSession();
       setShowConflictDialog(false);
       setSessionConflict(null);
@@ -261,7 +231,6 @@ export default function StartWorkout() {
 
   const handleResumeExisting = async () => {
     try {
-      console.log('🔄 Resuming previous workout session...');
       await resumeActiveSession();
       setShowConflictDialog(false);
       setSessionConflict(null);
@@ -273,7 +242,6 @@ export default function StartWorkout() {
   };
 
   const handleCancelConflict = () => {
-    console.log('❌ User cancelled session conflict resolution');
     setShowConflictDialog(false);
     setSessionConflict(null);
   };
@@ -314,7 +282,7 @@ export default function StartWorkout() {
               </p>
             </div>
 
-            {exercisesResponse?.exercises.map((exercise: any, index: number) => {
+            {exercisesResponse?.exercises.map((exercise: Exercise, index: number) => {
               const exerciseId = exercise.id;
               const isSelected = selectedExerciseIds.includes(exerciseId);
               
@@ -341,9 +309,9 @@ export default function StartWorkout() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        {exercise.defaultWeight && exercise.defaultWeight !== 'Bodyweight' && (
+                        {exercise.defaultWeightLbs && exercise.defaultWeightLbs > 0 && (
                           <div className="text-sm text-muted-foreground">
-                            {exercise.defaultWeight} lbs
+                            {exercise.defaultWeightLbs} lbs
                           </div>
                         )}
                         <Badge variant={isSelected ? "default" : "secondary"}>

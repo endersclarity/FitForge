@@ -10,7 +10,7 @@ interface PerformanceMetric {
   name: string;
   duration?: number;
   success: boolean;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | undefined>;
   userAgent?: string;
   url?: string;
   sessionId: string;
@@ -22,7 +22,7 @@ interface UserExperienceMetric {
   type: 'interaction' | 'satisfaction' | 'completion' | 'abandonment';
   event: string;
   value?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | undefined>;
   sessionId: string;
 }
 
@@ -86,7 +86,6 @@ class PerformanceMonitoringService {
     if (this.isMonitoring) return;
     
     this.isMonitoring = true;
-    console.log('📊 Starting performance monitoring...');
     
     // Save monitoring state
     localStorage.setItem(this.STORAGE_KEYS.MONITORING_ENABLED, 'true');
@@ -109,7 +108,6 @@ class PerformanceMonitoringService {
     // Start periodic health checks
     this.startPeriodicHealthChecks();
     
-    console.log('✅ Performance monitoring active');
   }
 
   /**
@@ -126,7 +124,6 @@ class PerformanceMonitoringService {
       this.performanceObserver.disconnect();
     }
     
-    console.log('⏹️ Performance monitoring stopped');
   }
 
   /**
@@ -143,7 +140,6 @@ class PerformanceMonitoringService {
       url: window.location.href
     });
     
-    console.log(`📄 Page load: ${pageName} (${Math.round(duration)}ms)`);
   }
 
   /**
@@ -173,7 +169,7 @@ class PerformanceMonitoringService {
   /**
    * Track user interactions
    */
-  trackUserAction(action: string, component: string, success: boolean = true, metadata?: Record<string, any>): void {
+  trackUserAction(action: string, component: string, success: boolean = true, metadata?: Record<string, string | number | boolean | undefined>): void {
     this.recordMetric({
       type: 'user-action',
       name: `${component}:${action}`,
@@ -221,7 +217,6 @@ class PerformanceMonitoringService {
       metadata: { feedback }
     });
     
-    console.log(`😊 User satisfaction: ${feature} (${rating}/10)`);
   }
 
   /**
@@ -234,7 +229,6 @@ class PerformanceMonitoringService {
       metadata: { steps }
     });
     
-    console.log(`${success ? '✅' : '❌'} Feature ${success ? 'completed' : 'abandoned'}: ${feature}`);
   }
 
   /**
@@ -407,7 +401,6 @@ class PerformanceMonitoringService {
       localStorage.removeItem(key);
     });
     
-    console.log('🗑️ Performance data cleared');
   }
 
   /**
@@ -634,7 +627,13 @@ class PerformanceMonitoringService {
       .slice(0, 5);
   }
 
-  private generateRecommendations(metrics: any): string[] {
+  private generateRecommendations(metrics: {
+    averagePageLoad: number;
+    averageApiResponse: number;
+    errorRate: number;
+    userSatisfaction: number;
+    completionRate: number;
+  }): string[] {
     const recommendations: string[] = [];
     
     if (metrics.averagePageLoad > 3000) {

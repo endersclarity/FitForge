@@ -81,8 +81,10 @@ export default function Dashboard() {
   // Calculate real progress based on actual Supabase data
   const today = new Date();
   const todaysSessions = recentSessions.filter(session => {
-    const sessionDate = new Date(session.start_time);
-    return sessionDate.toDateString() === today.toDateString() && session.completion_status === 'completed';
+    const rawDate = session.startTime || session.lastModified || new Date().toISOString();
+    const sessionDate = new Date(rawDate);
+    const isValidDate = !isNaN(sessionDate.getTime());
+    return isValidDate && sessionDate.toDateString() === today.toDateString() && session.status === 'completed';
   });
   
   // Progress is based on whether user completed a workout today (0 or 100)
@@ -95,10 +97,12 @@ export default function Dashboard() {
     proteinGoal: userPreferences?.targetGoals?.dailyProteinGoal || 150,
     proteinConsumed: nutritionData?.proteinConsumed || 0,
     workoutsThisWeek: recentSessions.filter(session => {
-      const sessionDate = new Date(session.start_time);
+      const rawDate = session.startTime || session.lastModified || new Date().toISOString();
+      const sessionDate = new Date(rawDate);
+      const isValidDate = !isNaN(sessionDate.getTime());
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      return sessionDate >= weekAgo && session.completion_status === 'completed';
+      return isValidDate && sessionDate >= weekAgo && session.status === 'completed';
     }).length,
   };
 
@@ -114,7 +118,7 @@ export default function Dashboard() {
         title: "First Steps",
         description: "Completed your first workout session",
         category: "milestone",
-        unlockedAt: recentSessions[recentSessions.length - 1].created_at,
+        unlockedAt: recentSessions[recentSessions.length - 1].lastModified,
         icon: "🎯"
       });
     }
@@ -126,7 +130,7 @@ export default function Dashboard() {
         title: "Getting Consistent",
         description: "Completed 5 workout sessions",
         category: "milestone",
-        unlockedAt: recentSessions[recentSessions.length - 5].created_at,
+        unlockedAt: recentSessions[recentSessions.length - 5].lastModified,
         icon: "💪"
       });
     }
@@ -138,13 +142,13 @@ export default function Dashboard() {
         title: "Dedicated Athlete",
         description: "Completed 10 workout sessions",
         category: "milestone",
-        unlockedAt: recentSessions[recentSessions.length - 10].created_at,
+        unlockedAt: recentSessions[recentSessions.length - 10].lastModified,
         icon: "🏆"
       });
     }
     
     // Volume Achievements
-    const totalVolumeLifted = recentSessions.reduce((sum, session) => sum + (session.total_volume_lbs || 0), 0);
+    const totalVolumeLifted = recentSessions.reduce((sum, session) => sum + (session.totalVolume || 0), 0);
     if (totalVolumeLifted >= 10000) {
       calculatedAchievements.push({
         id: 4,
@@ -320,8 +324,11 @@ export default function Dashboard() {
                 {recentSessions.length > 0 ? (
                   <div className="space-y-4">
                     {recentSessions.slice(0, 5).map((session) => {
-                      const sessionDate = new Date(session.created_at);
-                      const isToday = sessionDate.toDateString() === new Date().toDateString();
+                      const rawDate = session.lastModified || session.startTime || new Date().toISOString();
+                      const sessionDate = new Date(rawDate);
+                      const isValidDate = !isNaN(sessionDate.getTime());
+                      const displayDate = isValidDate ? sessionDate : new Date();
+                      const isToday = displayDate.toDateString() === new Date().toDateString();
                       // Note: exercises data would need to be fetched separately from workout_exercises table
                       const exerciseCount = 0; // Placeholder - would need separate query
                       const totalSets = 0; // Placeholder - would need separate query
@@ -331,8 +338,8 @@ export default function Dashboard() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <p className="font-medium">
-                                {session.workout_type ? 
-                                  session.workout_type.replace(/([A-Z])/g, ' $1').trim() : 
+                                {session.workoutType ? 
+                                  session.workoutType.replace(/([A-Z])/g, ' $1').trim() : 
                                   'Workout Session'}
                               </p>
                               {isToday && (
@@ -340,7 +347,7 @@ export default function Dashboard() {
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              {sessionDate.toLocaleDateString()} at {sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {displayDate.toLocaleDateString()} at {displayDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                             {exerciseCount > 0 && (
                               <p className="text-xs text-muted-foreground mt-1">
@@ -350,11 +357,11 @@ export default function Dashboard() {
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-primary">
-                              {session.total_duration_seconds ? Math.round(session.total_duration_seconds / 60) : 0} min
+                              {session.totalDuration ? Math.round(session.totalDuration / 60) : 0} min
                             </p>
-                            {session.total_volume_lbs && session.total_volume_lbs > 0 && (
+                            {session.totalVolume && session.totalVolume > 0 && (
                               <p className="text-sm text-muted-foreground">
-                                {session.total_volume_lbs.toLocaleString()} lbs
+                                {session.totalVolume.toLocaleString()} lbs
                               </p>
                             )}
                           </div>
@@ -407,7 +414,12 @@ export default function Dashboard() {
                             {achievement.description}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(achievement.unlockedAt).toLocaleDateString()}
+                            {(() => {
+                              const rawDate = achievement.unlockedAt || new Date().toISOString();
+                              const achievementDate = new Date(rawDate);
+                              const isValidDate = !isNaN(achievementDate.getTime());
+                              return isValidDate ? achievementDate.toLocaleDateString() : 'Recently';
+                            })()}
                           </p>
                         </div>
                       </div>
@@ -471,9 +483,12 @@ export default function Dashboard() {
           ) : (
             <div className="grid gap-4">
               {recentSessions.slice(0, 5).map((session) => {
-                const sessionDate = new Date(session.start_time);
-                const duration = session.total_duration_seconds 
-                  ? Math.round(session.total_duration_seconds / 60) 
+                const rawDate = session.startTime || session.lastModified || new Date().toISOString();
+                const sessionDate = new Date(rawDate);
+                const isValidDate = !isNaN(sessionDate.getTime());
+                const displayDate = isValidDate ? sessionDate : new Date();
+                const duration = session.totalDuration 
+                  ? Math.round(session.totalDuration / 60) 
                   : 0;
                 
                 return (
@@ -486,10 +501,10 @@ export default function Dashboard() {
                           </div>
                           <div>
                             <h3 className="font-semibold">
-                              {session.session_name || session.workout_type || 'Workout'}
+                              {session.sessionName || session.workoutType || 'Workout'}
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                              {sessionDate.toLocaleDateString()} at {sessionDate.toLocaleTimeString([], { 
+                              {displayDate.toLocaleDateString()} at {displayDate.toLocaleTimeString([], { 
                                 hour: '2-digit', 
                                 minute: '2-digit' 
                               })}
@@ -507,27 +522,27 @@ export default function Dashboard() {
                             </div>
                           )}
                           
-                          {session.total_volume_lbs > 0 && (
+                          {session.totalVolume > 0 && (
                             <div className="text-center">
-                              <div className="font-semibold">{session.total_volume_lbs}</div>
+                              <div className="font-semibold">{session.totalVolume}</div>
                               <div className="text-muted-foreground">lbs</div>
                             </div>
                           )}
                           
-                          {session.calories_burned && (
+                          {session.caloriesBurned && (
                             <div className="text-center">
                               <div className="flex items-center text-muted-foreground">
                                 <Flame className="w-4 h-4 mr-1" />
-                                {session.calories_burned}
+                                {session.caloriesBurned}
                               </div>
                             </div>
                           )}
                           
                           <Badge 
-                            variant={session.completion_status === 'completed' ? 'default' : 'secondary'}
+                            variant={session.status === 'completed' ? 'default' : 'secondary'}
                           >
-                            {session.completion_status === 'completed' ? 'Completed' : 
-                             session.completion_status === 'in_progress' ? 'In Progress' : 'Cancelled'}
+                            {session.status === 'completed' ? 'Completed' : 
+                             session.status === 'in_progress' ? 'In Progress' : 'Cancelled'}
                           </Badge>
                         </div>
                       </div>

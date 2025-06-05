@@ -5,7 +5,7 @@ import React from 'react';
 import { useLocation } from 'wouter';
 import { Target } from 'lucide-react';
 import { GoalDashboard } from '@/components/goals/GoalDashboard';
-import { useAuth } from '@/hooks/use-supabase-auth';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function GoalsPage() {
   const [, setLocation] = useLocation();

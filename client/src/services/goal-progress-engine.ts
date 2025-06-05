@@ -75,7 +75,7 @@ export namespace GoalProgressEngine {
       // Get all strength training exercises
       const exercises = await workoutService.getAllExercises();
       const strengthExercises = exercises.filter(ex => 
-        ex.workout_type === 'strength' || 
+        ex.workoutType === 'strength' || 
         ex.category === 'strength'
       );
 
@@ -89,8 +89,8 @@ export namespace GoalProgressEngine {
             last90Days.setDate(last90Days.getDate() - 90);
             
             const relevantSessions = recentSessions.filter(session => 
-              new Date(session.start_time) >= last90Days &&
-              session.completion_status === 'completed'
+              new Date(session.startTime) >= last90Days &&
+              session.status === 'completed'
             );
 
             let workoutCount = 0;
@@ -99,11 +99,11 @@ export namespace GoalProgressEngine {
             // Check each session for this exercise
             for (const session of relevantSessions) {
               const workoutExercises = await db.getWorkoutExercises(session.id);
-              const targetExercise = workoutExercises.find(ex => ex.exercise_id === exercise.id);
+              const targetExercise = workoutExercises.find(ex => ex.exerciseId === exercise.id);
               
               if (targetExercise) {
                 workoutCount++;
-                const sets = await db.getWorkoutSets(targetExercise.id);
+                const sets = await db.getWorkoutSets(targetExercise.exerciseId);
                 if (sets.length > 0) {
                   const sessionMax = Math.max(...sets.map(set => set.weight_lbs));
                   maxWeight = Math.max(maxWeight, sessionMax);
@@ -113,7 +113,7 @@ export namespace GoalProgressEngine {
 
             return {
               id: exercise.id,
-              name: exercise.exercise_name,
+              name: exercise.exerciseName,
               category: exercise.category,
               recent_max_weight: maxWeight > 0 ? maxWeight : undefined,
               recent_workout_count: workoutCount
@@ -122,7 +122,7 @@ export namespace GoalProgressEngine {
             // If we can't get data for this exercise, return basic info
             return {
               id: exercise.id,
-              name: exercise.exercise_name,
+              name: exercise.exerciseName,
               category: exercise.category,
               recent_max_weight: undefined,
               recent_workout_count: 0
@@ -334,8 +334,8 @@ export namespace GoalProgressEngine {
     // Get workout sessions since goal creation
     const workoutSessions = await db.getUserWorkoutSessions(user.id, 100);
     const relevantSessions = workoutSessions.filter(session => 
-      session.start_time >= goal.created_date &&
-      session.completion_status === 'completed'
+      session.startTime >= goal.created_date &&
+      session.status === 'completed'
     );
 
     if (relevantSessions.length === 0) {
@@ -369,17 +369,17 @@ export namespace GoalProgressEngine {
     // Count sets and find max weight from workout data
     for (const session of relevantSessions) {
       const exercises = await db.getWorkoutExercises(session.id);
-      const targetExercise = exercises.find(ex => ex.exercise_id === goal.target_exercise_id);
+      const targetExercise = exercises.find(ex => ex.exerciseId === goal.target_exercise_id);
       
       if (targetExercise) {
-        const sets = await db.getWorkoutSets(targetExercise.id);
+        const sets = await db.getWorkoutSets(targetExercise.exerciseId);
         totalSetsLogged += sets.length;
         
         // Find max weight in this session
         const sessionMaxWeight = Math.max(...sets.map(set => set.weight_lbs));
         if (sessionMaxWeight > currentMaxWeight) {
           currentMaxWeight = sessionMaxWeight;
-          latestWorkoutDate = session.start_time;
+          latestWorkoutDate = session.startTime;
         }
       }
     }
@@ -667,7 +667,7 @@ export namespace GoalProgressEngine {
       case 'weight_loss':
       case 'body_composition':
         // For now, fall back to original method for body stats
-        // TODO: Add unified storage support for body stats
+        // Note: Body stats integration with unified storage is planned for future release
         return await calculateGoalProgress(goal);
       
       default:

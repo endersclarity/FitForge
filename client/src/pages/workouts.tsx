@@ -346,7 +346,9 @@ export default function Workouts() {
               ) : (
                 <div className="space-y-4">
                   {completedWorkouts.slice(0, 5).map((workout: any) => {
-                    const workoutDate = new Date(workout.startTime);
+                    const rawDate = workout.startTime || workout.createdAt || new Date().toISOString();
+                    const workoutDate = new Date(rawDate);
+                    const validDate = !isNaN(workoutDate.getTime()) ? workoutDate : new Date();
                     const exercises = Array.isArray(workout.exercises) ? workout.exercises : [];
                     
                     return (
@@ -365,7 +367,7 @@ export default function Workouts() {
                               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <Calendar className="w-4 h-4" />
-                                  {workoutDate.toLocaleDateString()}
+                                  {validDate.toLocaleDateString()}
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Clock className="w-4 h-4" />

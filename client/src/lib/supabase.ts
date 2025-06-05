@@ -24,7 +24,26 @@ export const supabase = createClient(supabaseUrl || fallbackUrl, supabaseAnonKey
   }
 })
 
-// Database type definitions
+// Import consolidated schema types
+import { 
+  SupabaseExercise, 
+  SupabaseWorkoutSession,
+  SupabaseSetData,
+  transformSupabaseExercise,
+  transformSupabaseWorkoutSession,
+  transformSupabaseSetData,
+  transformToSupabaseSetData,
+  type Exercise,
+  type WorkoutSession,
+  type WorkoutExercise,
+  type SetData
+} from '../../../shared/consolidated-schema';
+
+// Re-export for backward compatibility
+export type { Exercise, WorkoutSession, WorkoutExercise, SetData };
+export type { SupabaseSetData };
+
+// Database type definitions (Supabase format)
 export type Profile = {
   id: string
   username: string | null
@@ -43,79 +62,16 @@ export type Profile = {
   profile_visibility: 'public' | 'friends' | 'private'
 }
 
-export type Exercise = {
-  id: string
-  exercise_name: string
-  category: string
-  movement_pattern: string | null
-  workout_type: string
-  equipment_type: string[]
-  difficulty_level: 'beginner' | 'intermediate' | 'advanced'
-  variation: string | null
-  default_reps: number
-  default_weight_lbs: number
-  rest_time_seconds: number
-  description: string | null
-  form_cues: string[] | null
-  contraindications: string[] | null
-  safety_notes: string[] | null
-  created_at: string
-  updated_at: string
-}
+// Use the consolidated schema types
+export type { SupabaseExercise };
+export { transformSupabaseExercise, transformSupabaseWorkoutSession };
 
-export type WorkoutSession = {
-  id: string
-  user_id: string
-  start_time: string
-  end_time: string | null
-  total_duration_seconds: number | null
-  workout_type: string | null
-  session_name: string | null
-  notes: string | null
-  total_volume_lbs: number
-  calories_burned: number | null
-  average_heart_rate: number | null
-  completion_status: 'in_progress' | 'completed' | 'cancelled'
-  user_rating: number | null
-  created_at: string
-  updated_at: string
-}
+// WorkoutSession type imported from consolidated schema
 
-export type WorkoutExercise = {
-  id: string
-  workout_session_id: string
-  exercise_id: string
-  user_id: string
-  exercise_order: number
-  exercise_notes: string | null
-  total_volume_lbs: number
-  total_sets_completed: number
-  average_form_score: number | null
-  rest_time_seconds: number[] | null
-  started_at: string | null
-  completed_at: string | null
-  created_at: string
-  updated_at: string
-}
+// WorkoutExercise type imported from consolidated schema
 
-export type WorkoutSet = {
-  id: string
-  workout_exercise_id: string
-  user_id: string
-  set_number: number
-  reps: number
-  weight_lbs: number
-  form_score: number | null
-  perceived_exertion: number | null
-  is_completed: boolean
-  is_personal_record: boolean
-  equipment_used: string | null
-  started_at: string | null
-  completed_at: string | null
-  rest_time_after_seconds: number | null
-  created_at: string
-  updated_at: string
-}
+// Legacy type - use SetData from consolidated schema instead
+export type WorkoutSet = SupabaseSetData;
 
 export type PersonalRecord = {
   id: string
@@ -307,7 +263,8 @@ export const db = {
       .order('exercise_name')
     
     if (error) throw error
-    return data || []
+    // Transform from Supabase format to canonical format
+    return (data || []).map(transformSupabaseExercise)
   },
 
   async getExercisesByWorkoutType(workoutType: string): Promise<Exercise[]> {
@@ -318,7 +275,8 @@ export const db = {
       .order('exercise_name')
     
     if (error) throw error
-    return data || []
+    // Transform from Supabase format to canonical format
+    return (data || []).map(transformSupabaseExercise)
   },
 
   // Workout Sessions

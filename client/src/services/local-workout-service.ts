@@ -1,8 +1,8 @@
-import type { WorkoutSession, WorkoutExercise, WorkoutSet, Exercise } from '@/lib/supabase'
+import type { WorkoutSession, WorkoutExercise, SetData, Exercise } from '@/lib/supabase'
 
 export interface WorkoutSessionData {
   session: WorkoutSession | null
-  exercises: (WorkoutExercise & { exercise: Exercise; sets: WorkoutSet[] })[]
+  exercises: (WorkoutExercise & { exercise: Exercise; sets: SetData[] })[]
 }
 
 export class LocalWorkoutService {
@@ -26,79 +26,66 @@ export class LocalWorkoutService {
         return null
       }
       
-      // Convert to expected format
+      // Convert to expected format (canonical schema)
       const workoutSession: WorkoutSession = {
         id: session.id,
-        user_id: session.userId.toString(),
-        start_time: session.startTime,
-        end_time: session.endTime || null,
-        total_duration_seconds: session.duration ? session.duration * 60 : null,
-        workout_type: session.workoutType || 'Custom',
-        session_name: session.sessionName || null,
-        notes: session.notes || null,
-        total_volume_lbs: session.totalVolume || 0,
-        calories_burned: session.caloriesBurned || 0,
-        average_heart_rate: null,
-        completion_status: session.completionStatus === 'completed' ? 'completed' : 'in_progress',
-        user_rating: session.rating || null,
-        created_at: session.createdAt || new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        userId: session.userId.toString(),
+        status: session.completionStatus === 'completed' ? 'completed' : 'in_progress',
+        startTime: session.startTime,
+        endTime: session.endTime,
+        lastModified: new Date().toISOString(),
+        workoutType: session.workoutType || 'Custom',
+        sessionName: session.sessionName,
+        exercises: [], // Will be set separately
+        totalVolume: session.totalVolume || 0,
+        totalDuration: session.duration || 0,
+        caloriesBurned: session.caloriesBurned || 0,
+        rating: session.rating,
+        notes: session.notes,
+        personalRecords: []
       }
       
-      // Convert exercises
-      const exercises: (WorkoutExercise & { exercise: Exercise; sets: WorkoutSet[] })[] = 
+      // Convert exercises (canonical schema)
+      const exercises: (WorkoutExercise & { exercise: Exercise; sets: SetData[] })[] = 
         session.exercises?.map((ex: any, index: number) => ({
-          id: `${sessionId}-${index}`,
-          workout_session_id: sessionId,
-          exercise_id: `${index}`,
-          user_id: '1',
-          exercise_order: index + 1,
-          exercise_notes: null,
-          total_volume_lbs: ex.sets?.reduce((total: number, set: any) => total + (set.weight * set.reps), 0) || 0,
-          total_sets_completed: ex.sets?.length || 0,
-          average_form_score: ex.formScore || null,
-          rest_time_seconds: ex.sets?.map((set: any) => set.restTime || 60) || [],
-          started_at: new Date().toISOString(),
-          completed_at: session.completionStatus === 'completed' ? new Date().toISOString() : null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          exerciseId: `${index}`,
+          exerciseName: ex.exerciseName,
+          exerciseOrder: index + 1,
+          sets: ex.sets?.map((set: any, setIndex: number) => ({
+            setNumber: setIndex + 1,
+            weight: set.weight,
+            reps: set.reps,
+            volume: set.weight * set.reps,
+            completed: true,
+            timestamp: new Date().toISOString(),
+            formScore: set.formScore,
+            isWarmup: false,
+            isDropSet: false,
+            isFailure: false
+          })) || [],
+          targetSets: ex.sets?.length || 3,
+          targetReps: ex.sets?.[0]?.reps || 10,
+          targetWeight: ex.sets?.[0]?.weight || 0,
+          restTimeSeconds: 60,
+          category: 'strength',
+          primaryMuscles: [],
+          secondaryMuscles: [],
+          personalRecord: false,
           exercise: {
             id: `${index}`,
-            exercise_name: ex.exerciseName,
+            exerciseName: ex.exerciseName,
             category: 'strength',
-            movement_pattern: null,
-            workout_type: 'strength',
-            equipment_type: ['bodyweight'],
-            difficulty_level: 'intermediate' as const,
-            variation: null,
-            default_reps: ex.sets?.[0]?.reps || 10,
-            default_weight_lbs: ex.sets?.[0]?.weight || 0,
-            rest_time_seconds: ex.sets?.[0]?.restTime || 60,
-            description: null,
-            form_cues: null,
-            contraindications: null,
-            safety_notes: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          sets: ex.sets?.map((set: any, setIndex: number) => ({
-            id: `${sessionId}-${index}-${setIndex}`,
-            workout_exercise_id: `${sessionId}-${index}`,
-            user_id: '1',
-            set_number: setIndex + 1,
-            reps: set.reps,
-            weight_lbs: set.weight,
-            form_score: set.formScore || null,
-            perceived_exertion: null,
-            is_completed: true,
-            is_personal_record: false,
-            equipment_used: 'bodyweight',
-            started_at: new Date().toISOString(),
-            completed_at: new Date().toISOString(),
-            rest_time_after_seconds: set.restTime || 60,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })) || []
+            workoutType: 'strength',
+            equipmentType: ['bodyweight'],
+            difficultyLevel: 'intermediate' as const,
+            defaultReps: ex.sets?.[0]?.reps || 10,
+            defaultWeightLbs: ex.sets?.[0]?.weight || 0,
+            restTimeSeconds: 60,
+            primaryMuscles: [],
+            secondaryMuscles: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
         })) || []
       
       return {
@@ -122,20 +109,17 @@ export class LocalWorkoutService {
       
       const session: WorkoutSession = {
         id: sessionId,
-        user_id: '1',
-        start_time: new Date().toISOString(),
-        end_time: null,
-        total_duration_seconds: null,
-        workout_type: workoutType,
-        session_name: sessionName || null,
-        notes: null,
-        total_volume_lbs: 0,
-        calories_burned: 0,
-        average_heart_rate: null,
-        completion_status: 'in_progress',
-        user_rating: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        userId: '1',
+        status: 'in_progress',
+        startTime: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+        workoutType: workoutType,
+        sessionName: sessionName,
+        exercises: [],
+        totalVolume: 0,
+        totalDuration: 0,
+        caloriesBurned: 0,
+        personalRecords: []
       }
       
       return {
@@ -158,32 +142,27 @@ export class LocalWorkoutService {
     formScore?: number
     perceivedExertion?: number
     equipment?: string
-  }) {
+  }): Promise<SetData> {
     try {
       // In a real implementation, this would update the backend
-      console.log('Logging set:', { sessionId, exerciseId, setData })
       
-      // Return a mock WorkoutSet object
-      const workoutSet: WorkoutSet = {
-        id: `${sessionId}-${exerciseId}-${setData.setNumber}`,
-        workout_exercise_id: exerciseId,
-        user_id: '1',
-        set_number: setData.setNumber,
+      // Return canonical SetData format
+      const set: SetData = {
+        setNumber: setData.setNumber,
+        weight: setData.weight,
         reps: setData.reps,
-        weight_lbs: setData.weight,
-        form_score: setData.formScore || null,
-        perceived_exertion: setData.perceivedExertion || null,
-        is_completed: true,
-        is_personal_record: false,
-        equipment_used: setData.equipment || null,
-        started_at: new Date().toISOString(),
-        completed_at: new Date().toISOString(),
-        rest_time_after_seconds: 60,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        volume: setData.weight * setData.reps,
+        completed: true,
+        timestamp: new Date().toISOString(),
+        formScore: setData.formScore,
+        rpe: setData.perceivedExertion,
+        equipment: setData.equipment,
+        isWarmup: false,
+        isDropSet: false,
+        isFailure: false
       }
       
-      return workoutSet
+      return set
     } catch (error) {
       console.error('Error logging set:', error)
       throw error
@@ -196,7 +175,6 @@ export class LocalWorkoutService {
   async completeWorkout(sessionId: string, rating?: number, notes?: string) {
     try {
       // In a real implementation, this would update the session status
-      console.log('Completing workout:', { sessionId, rating, notes })
       
       // Return the updated session
       return this.getWorkoutSession(sessionId)
@@ -211,9 +189,8 @@ export class LocalWorkoutService {
    */
   subscribeToWorkoutSession(sessionId: string, callback: (payload: any) => void) {
     // Mock subscription - in real implementation would use WebSocket or polling
-    console.log('Mock subscription for session:', sessionId)
     return {
-      unsubscribe: () => console.log('Unsubscribed from session:', sessionId)
+      unsubscribe: () => {}
     }
   }
 
@@ -222,9 +199,8 @@ export class LocalWorkoutService {
    */
   subscribeToPersonalRecords(userId: string, callback: (payload: any) => void) {
     // Mock subscription
-    console.log('Mock subscription for PRs:', userId)
     return {
-      unsubscribe: () => console.log('Unsubscribed from PRs:', userId)
+      unsubscribe: () => {}
     }
   }
 
@@ -233,7 +209,6 @@ export class LocalWorkoutService {
    */
   async cancelWorkout(sessionId: string) {
     try {
-      console.log('Cancelling workout session:', sessionId)
       // In a real implementation, this would update the session status
       return true
     } catch (error) {

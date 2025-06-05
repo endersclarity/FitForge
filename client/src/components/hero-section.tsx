@@ -1,11 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { useAuth } from "@/hooks/use-supabase-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
+import { FeatureComingSoonDialog } from "@/components/ui/feature-coming-soon-dialog";
+import { useState } from "react";
+import { Play } from "lucide-react";
 
 export function HeroSection() {
   const { user } = useAuth();
+  const [showDemoModal, setShowDemoModal] = useState(false);
 
   return (
     <section className="relative overflow-hidden min-h-[80vh] flex items-center">
@@ -55,6 +59,14 @@ export function HeroSection() {
                       Explore Workouts
                     </Button>
                   </Link>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setShowDemoModal(true)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Watch Demo
+                  </Button>
                 </>
               )}
             </div>
@@ -78,6 +90,14 @@ export function HeroSection() {
           )}
         </div>
       </div>
+      
+      {/* Watch Demo Coming Soon Modal */}
+      <FeatureComingSoonDialog
+        open={showDemoModal}
+        onOpenChange={setShowDemoModal}
+        featureName="Interactive Demo"
+        description="A video walkthrough of FitForge's key features including AI-powered workouts, progress tracking, and personalized goal setting is coming soon!"
+      />
     </section>
   );
 }

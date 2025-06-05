@@ -30,7 +30,6 @@ class DataMigrationService {
       version: 1,
       description: 'Initial versioning and data structure standardization',
       migrate: (data: any) => {
-        console.log('🔄 Migrating to version 1: Adding versioning support');
         
         // Add version field to all data structures
         if (data.activeSession && !data.activeSession.version) {
@@ -57,7 +56,6 @@ class DataMigrationService {
         return data;
       },
       rollback: (data: any) => {
-        console.log('⏪ Rolling back version 1: Removing versioning fields');
         
         if (data.activeSession) {
           data.activeSession = {
@@ -136,7 +134,6 @@ class DataMigrationService {
       };
     }
 
-    console.log(`🚀 Starting migration from v${fromVersion} to v${this.CURRENT_VERSION}`);
     
     // Create backup before migration
     const backupData = this.createDataBackup();
@@ -146,7 +143,6 @@ class DataMigrationService {
       
       if (result.success) {
         this.setDataVersion(this.CURRENT_VERSION);
-        console.log(`✅ Migration completed successfully`);
         
         // Clean up old backup after successful migration
         this.cleanupOldBackups();
@@ -195,7 +191,6 @@ class DataMigrationService {
 
     for (const migration of migrationsToApply) {
       try {
-        console.log(`🔄 Applying migration v${migration.version}: ${migration.description}`);
         
         currentData = migration.migrate(currentData);
         appliedMigrations.push(migration.version);
@@ -203,7 +198,6 @@ class DataMigrationService {
         // Save intermediate state
         this.saveAllData(currentData);
         
-        console.log(`✅ Migration v${migration.version} completed`);
       } catch (error) {
         const errorMessage = `Migration v${migration.version} failed: ${error}`;
         console.error('❌', errorMessage);
@@ -243,7 +237,6 @@ class DataMigrationService {
       };
     }
 
-    console.log(`⏪ Rolling back from v${currentVersion} to v${targetVersion}`);
     
     // Create backup before rollback
     const backupData = this.createDataBackup();
@@ -258,7 +251,6 @@ class DataMigrationService {
 
       for (const migration of migrationsToRollback) {
         if (migration.rollback) {
-          console.log(`⏪ Rolling back migration v${migration.version}`);
           data = migration.rollback(data);
           rolledBackMigrations.push(migration.version);
         }
@@ -267,7 +259,6 @@ class DataMigrationService {
       this.saveAllData(data);
       this.setDataVersion(targetVersion);
 
-      console.log(`✅ Rollback to v${targetVersion} completed`);
       
       return {
         success: true,
@@ -306,7 +297,6 @@ class DataMigrationService {
     const backupKey = `fitforge_backup_${Date.now()}`;
     try {
       localStorage.setItem(backupKey, JSON.stringify(backup));
-      console.log(`💾 Backup created: ${backupKey}`);
     } catch (error) {
       console.error('Error creating backup:', error);
     }
@@ -322,7 +312,6 @@ class DataMigrationService {
       if (backup?.data) {
         this.saveAllData(backup.data);
         this.setDataVersion(backup.version || 0);
-        console.log(`🔄 Data restored from backup (v${backup.version})`);
         return true;
       }
     } catch (error) {
@@ -392,7 +381,6 @@ class DataMigrationService {
       
       keysToRemove.forEach(key => {
         localStorage.removeItem(key);
-        console.log(`🗑️ Cleaned up old backup: ${key}`);
       });
     } catch (error) {
       console.error('Error cleaning up backups:', error);
@@ -469,7 +457,6 @@ class DataMigrationService {
     if (currentVersion === 0) {
       // First time setup - set current version
       this.setDataVersion(this.CURRENT_VERSION);
-      console.log(`🆕 Initialized data versioning at v${this.CURRENT_VERSION}`);
     }
   }
 

@@ -23,7 +23,10 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "walkthrough": "tsx scripts/intelligent-walkthrough.ts",
+    "guided-test": "tsx scripts/browser-guided-testing.ts",
+    "changes": "npm run walkthrough"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

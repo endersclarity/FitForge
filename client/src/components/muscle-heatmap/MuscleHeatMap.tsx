@@ -43,13 +43,9 @@ export function MuscleHeatMap({
 
   // Debug logging
   React.useEffect(() => {
-    console.log('🔥 MuscleHeatMap Debug:', {
-      isLoading,
-      error,
-      recoveryStatesCount: recoveryStates.length,
-      recoveryStates: recoveryStates.slice(0, 3), // Log first 3 for debugging
-      heatMapData: heatMapData ? 'exists' : 'null'
-    });
+    if (process.env.NODE_ENV === 'development') {
+      // Debug info available in development
+    }
   }, [isLoading, error, recoveryStates, heatMapData]);
 
   const [selectedMuscle, setSelectedMuscle] = useState<MuscleGroupType | null>(null);

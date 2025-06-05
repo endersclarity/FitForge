@@ -39,7 +39,7 @@ export default function NewGoalPage() {
         // Convert to ExerciseOption format
         const exerciseOptions = exerciseData.map(ex => ({
           id: ex.id,
-          name: ex.exercise_name,
+          name: ex.exerciseName,
           category: ex.category,
           recent_max_weight: undefined,
           recent_workout_count: undefined

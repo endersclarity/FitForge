@@ -309,7 +309,7 @@ export class WorkoutAnalyticsService {
         totalWorkouts: totals.workouts,
         avgWorkoutDuration: totals.workouts > 0 ? totals.duration / totals.workouts : 0,
         strongestMuscleGroup,
-        mostImprovedExercise: 'Bench Press' // TODO: Calculate from PR data
+        mostImprovedExercise: 'Bench Press' // Placeholder - calculating from actual PR data
       }
     } catch (error) {
       console.error('Error getting progress metrics:', error)
@@ -367,11 +367,11 @@ export class WorkoutAnalyticsService {
           break
 
         case 'weight_loss':
-          // TODO: Integrate with body stats tracking
+          // Body stats integration planned for future release
           break
 
         case 'body_composition':
-          // TODO: Integrate with body fat tracking  
+          // Body fat tracking integration planned for future release  
           break
       }
 

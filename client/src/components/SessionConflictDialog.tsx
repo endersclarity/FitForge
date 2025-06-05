@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { AlertTriangle, Clock, Dumbbell } from "lucide-react";
+import { AlertTriangle, Clock, Dumbbell, Info, Zap } from "lucide-react";
 import { SessionConflictData } from "../hooks/use-workout-session";
 
 interface SessionConflictDialogProps {
@@ -45,16 +45,38 @@ export function SessionConflictDialog({
     return `${days} days ago`;
   };
 
+  // Smart session management styling based on warning level
+  const getWarningIcon = () => {
+    switch (conflictData.warningLevel) {
+      case 'critical':
+        return <Zap className="h-5 w-5 text-red-500" />;
+      case 'warning':
+        return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+      default:
+        return <Info className="h-5 w-5 text-blue-500" />;
+    }
+  };
+
+  const getWarningText = () => {
+    if (conflictData.idleTime && conflictData.idleTime > 240) { // 4+ hours
+      return "This session has been inactive for a very long time and can be safely abandoned.";
+    } else if (conflictData.idleTime && conflictData.idleTime > 60) { // 1+ hours
+      return "This session appears to be stale. Consider abandoning it to start fresh.";
+    } else {
+      return "You may want to resume this recent workout or start a new one.";
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
-            Unfinished Workout Detected
+            {getWarningIcon()}
+            Smart Session Detection
           </DialogTitle>
           <DialogDescription className="space-y-3 pt-2">
-            <p>You have an unfinished workout that was started {formatTimeAgo(timeAgo)}.</p>
+            <p>{conflictData.message}</p>
             
             <div className="bg-muted/50 rounded-lg p-3 space-y-2">
               <div className="flex items-center gap-2 text-sm">
@@ -65,10 +87,26 @@ export function SessionConflictDialog({
                 <Dumbbell className="h-4 w-4 text-muted-foreground" />
                 Exercises: {conflictData.sessionExerciseCount} planned
               </div>
+              {conflictData.idleTime && (
+                <div className="flex items-center gap-2 text-sm">
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                  Idle for: {Math.floor(conflictData.idleTime / 60)}h {conflictData.idleTime % 60}m
+                </div>
+              )}
+            </div>
+            
+            <div className={`p-3 rounded-lg text-sm ${
+              conflictData.warningLevel === 'critical' 
+                ? 'bg-red-50 text-red-700 border border-red-200' 
+                : conflictData.warningLevel === 'warning'
+                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                : 'bg-blue-50 text-blue-700 border border-blue-200'
+            }`}>
+              <p>{getWarningText()}</p>
             </div>
             
             <p className="text-sm text-muted-foreground">
-              What would you like to do with your previous workout?
+              Choose how to handle your previous workout:
             </p>
           </DialogDescription>
         </DialogHeader>

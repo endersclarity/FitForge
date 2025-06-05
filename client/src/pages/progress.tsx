@@ -16,7 +16,13 @@ export default function Progress() {
     queryKey: ["workout-history", timeRange],
     queryFn: async () => {
       try {
-        const response = await fetch("/api/workouts/history");
+        const token = localStorage.getItem('authToken');
+        const response = await fetch("/api/workouts/history", {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (!response.ok) throw new Error("Failed to fetch workout history");
         return response.json();
       } catch (error) {
@@ -36,7 +42,13 @@ export default function Progress() {
   const { data: analytics } = useQuery({
     queryKey: ["workout-analytics-unified"],
     queryFn: async () => {
-      const response = await fetch("/api/workouts/analytics");
+      const token = localStorage.getItem('authToken');
+      const response = await fetch("/api/workouts/analytics", {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (!response.ok) throw new Error("Failed to fetch analytics");
       return response.json();
     }
@@ -59,25 +71,31 @@ export default function Progress() {
   
   const currentStreak = calculateStreak(allWorkoutData);
   
-  // Transform data for charts component
+  // Transform data for charts component  
   const chartsData = {
-    sessions: allWorkoutData.map((session: any) => ({
-      date: (session.createdAt || session.startTime).toString(),
-      workoutType: session.workoutType || 'Mixed',
-      duration: session.totalDuration || 0,
-      totalVolume: Array.isArray(session.exercises) ? session.exercises.reduce((sum: number, ex: any) => 
-        sum + (Array.isArray(ex.sets) ? ex.sets.reduce((setSum: number, set: any) => setSum + ((set.weight || 0) * (set.reps || 0)), 0) : 0), 0) : 0,
-      caloriesBurned: Math.round((session.totalDuration || 0) * 5.5), // 5.5 cal/min estimate
-      formScore: session.formScore || 8,
-      exercises: Array.isArray(session.exercises) ? session.exercises.map((ex: any) => ({
-        name: ex.exerciseName || 'Unknown Exercise',
-        sets: Array.isArray(ex.sets) ? ex.sets.map((set: any) => ({
-          weight: set.weight || 0,
-          reps: set.reps || 0,
-          volume: (set.weight || 0) * (set.reps || 0)
+    sessions: allWorkoutData.map((session: any) => {
+      const rawDate = session.createdAt || session.startTime || session.timestamp || new Date().toISOString();
+      const sessionDate = new Date(rawDate);
+      const validDate = !isNaN(sessionDate.getTime()) ? sessionDate : new Date();
+      
+      return {
+        date: validDate.toISOString(),
+        workoutType: session.workoutType || 'Mixed',
+        duration: session.totalDuration || 0,
+        totalVolume: Array.isArray(session.exercises) ? session.exercises.reduce((sum: number, ex: any) => 
+          sum + (Array.isArray(ex.sets) ? ex.sets.reduce((setSum: number, set: any) => setSum + ((set.weight || 0) * (set.reps || 0)), 0) : 0), 0) : 0,
+        caloriesBurned: Math.round((session.totalDuration || 0) * 5.5), // 5.5 cal/min estimate
+        formScore: session.formScore || 8,
+        exercises: Array.isArray(session.exercises) ? session.exercises.map((ex: any) => ({
+          name: ex.exerciseName || 'Unknown Exercise',
+          sets: Array.isArray(ex.sets) ? ex.sets.map((set: any) => ({
+            weight: set.weight || 0,
+            reps: set.reps || 0,
+            volume: (set.weight || 0) * (set.reps || 0)
+          })) : []
         })) : []
-      })) : []
-    })),
+      };
+    }),
     bodyStats: userPreferences?.bodyStats ? [
       {
         date: userPreferences.bodyStats.updatedAt,
@@ -86,7 +104,7 @@ export default function Progress() {
         muscleMass: userPreferences.bodyStats.bodyWeight * 0.4 // Estimate 40% muscle mass
       }
     ] : [],
-    exerciseProgress: [] // TODO: Add exercise progression data
+    exerciseProgress: [] // No exercise progression data available yet
   };
 
   const handleExport = async () => {
@@ -214,7 +232,11 @@ export default function Progress() {
             ) : (
               <div className="space-y-4">
                 {allWorkoutData.map((session: any) => {
-                    const sessionDate = new Date(session.createdAt);
+                    // Safely handle date parsing with fallback
+                    const rawDate = session.createdAt || session.startTime || session.timestamp || new Date().toISOString();
+                    const sessionDate = new Date(rawDate);
+                    const isValidDate = !isNaN(sessionDate.getTime());
+                    const displayDate = isValidDate ? sessionDate : new Date();
                     const isExpanded = expandedSession === session.id;
                     const exercises = Array.isArray(session.exercises) ? session.exercises : [];
                     const exerciseCount = exercises.length;
@@ -241,7 +263,7 @@ export default function Progress() {
                               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <Calendar className="w-4 h-4" />
-                                  {sessionDate.toLocaleDateString()}
+                                  {displayDate.toLocaleDateString()}
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Clock className="w-4 h-4" />

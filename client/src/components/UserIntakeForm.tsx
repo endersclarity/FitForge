@@ -63,9 +63,9 @@ export function UserIntakeForm({ currentData, onComplete }: UserIntakeFormProps)
       // First, get existing preferences to merge with new data
       const currentPreferences = await userPreferencesService.getUserPreferences('1');
       
-      // Create complete preferences object with required fields
+      // Create complete preferences object with proper type safety
       const updatedPreferences: Partial<ExtendedUserPreferences> = {
-        // Keep existing required fields or use defaults
+        // Preserve existing preferences or use sensible defaults
         goals: currentPreferences?.goals || ["general_fitness"],
         experienceLevel: currentPreferences?.experienceLevel || "beginner",
         availableEquipment: currentPreferences?.availableEquipment || ["bodyweight"],
@@ -83,7 +83,7 @@ export function UserIntakeForm({ currentData, onComplete }: UserIntakeFormProps)
         } : undefined,
         targetGoals: {
           targetWeight: Number(formData.targetWeight) || 0,
-          targetStrengthIncrease: 30, // Default
+          targetStrengthIncrease: 30, // Default 30% strength increase goal
           dailyCalorieGoal: Number(formData.dailyCalorieGoal) || 2200,
           dailyProteinGoal: Number(formData.dailyProteinGoal) || 150
         },
@@ -100,7 +100,7 @@ export function UserIntakeForm({ currentData, onComplete }: UserIntakeFormProps)
       onComplete?.();
     } catch (error) {
       console.error('Failed to save user preferences:', error);
-      // TODO: Add user feedback for errors
+      // User-friendly error handling
       alert('Failed to save your profile. Please try again.');
     } finally {
       setIsSubmitting(false);

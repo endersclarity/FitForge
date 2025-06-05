@@ -39,7 +39,7 @@ import {
   GoalType, 
   GoalServiceError 
 } from '@/services/supabase-goal-service';
-import { useAuth } from '@/hooks/use-supabase-auth';
+import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 
 interface GoalsListProps {

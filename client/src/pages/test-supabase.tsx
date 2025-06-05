@@ -114,7 +114,7 @@ export default function TestSupabase() {
                 <p>Found {exercises.length} exercises:</p>
                 <ul className="list-disc list-inside text-sm">
                   {exercises.slice(0, 5).map(ex => (
-                    <li key={ex.id}>{ex.exercise_name} - {ex.category}</li>
+                    <li key={ex.id}>{ex.exerciseName} - {ex.category}</li>
                   ))}
                 </ul>
               </div>

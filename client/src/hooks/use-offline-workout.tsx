@@ -67,7 +67,6 @@ export function useOfflineWorkout(): UseOfflineWorkoutReturn {
       );
       
       if (corruptedItems.length > 0) {
-        console.log(`🚨 Found ${corruptedItems.length} corrupted sync items, cleaning up...`);
         offlineStorage.clearCorruptedSyncItems();
       }
     } catch (error) {
@@ -123,7 +122,6 @@ export function useOfflineWorkout(): UseOfflineWorkoutReturn {
       const session = offlineStorage.startWorkoutSession(workoutType, plannedExercises);
       setActiveSession(session);
       
-      console.log('🚀 Workout started offline:', session.id);
       return session;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to start workout';
@@ -147,7 +145,6 @@ export function useOfflineWorkout(): UseOfflineWorkoutReturn {
       
       if (success) {
         setActiveSession(null);
-        console.log('🎉 Workout completed offline');
         return true;
       } else {
         setError('No active workout session to complete');
@@ -181,7 +178,6 @@ export function useOfflineWorkout(): UseOfflineWorkoutReturn {
       offlineStorage.clearActiveSession();
       setActiveSession(null);
       
-      console.log('🗑️ Workout abandoned offline');
       return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to abandon workout';
@@ -209,7 +205,6 @@ export function useOfflineWorkout(): UseOfflineWorkoutReturn {
         const updatedSession = offlineStorage.getActiveSession();
         setActiveSession(updatedSession);
         
-        console.log('💪 Set logged offline:', setData);
         return true;
       } else {
         setError('Failed to log set - no active session');
@@ -235,7 +230,6 @@ export function useOfflineWorkout(): UseOfflineWorkoutReturn {
       setError(null);
       
       const result = await syncQueue.forceSyncAll();
-      console.log('🔄 Force sync result:', result);
       
       return result;
     } catch (err) {
@@ -251,7 +245,6 @@ export function useOfflineWorkout(): UseOfflineWorkoutReturn {
   const clearFailedSyncs = useCallback((): number => {
     try {
       const cleared = syncQueue.clearFailedItems();
-      console.log('🗑️ Cleared failed syncs:', cleared);
       return cleared;
     } catch (err) {
       console.error('Error clearing failed syncs:', err);
@@ -262,7 +255,6 @@ export function useOfflineWorkout(): UseOfflineWorkoutReturn {
   const clearCorruptedSyncItems = useCallback((): void => {
     try {
       offlineStorage.clearCorruptedSyncItems();
-      console.log('🧹 Corrupted sync items cleared');
     } catch (err) {
       console.error('Error clearing corrupted sync items:', err);
     }

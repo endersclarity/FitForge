@@ -39,10 +39,42 @@ export interface OfflineSetData {
   timestamp: string;
 }
 
+export interface StartWorkoutData {
+  workoutType: string;
+  plannedExercises?: string[];
+}
+
+export interface LogSetData {
+  sessionId: string;
+  exerciseId: number;
+  exerciseName: string;
+  setNumber: number;
+  weight: number;
+  reps: number;
+  equipment?: string;
+  formScore?: number;
+  notes?: string;
+  rpe?: number;
+  restTime?: number;
+}
+
+export interface CompleteWorkoutData {
+  sessionId: string;
+  rating?: number;
+  notes?: string;
+}
+
+export interface AbandonWorkoutData {
+  sessionId: string;
+  reason?: string;
+}
+
+type SyncQueueData = StartWorkoutData | LogSetData | CompleteWorkoutData | AbandonWorkoutData;
+
 export interface SyncQueueItem {
   id: string;
   type: 'START_WORKOUT' | 'LOG_SET' | 'COMPLETE_WORKOUT' | 'ABANDON_WORKOUT';
-  data: any;
+  data: SyncQueueData;
   timestamp: number;
   retryCount: number;
   maxRetries: number;
@@ -97,7 +129,6 @@ class OfflineStorageService {
       // Update session history as well
       this.addToSessionHistory(session);
       
-      console.log('💾 Session saved locally:', session.id);
       return true;
     } catch (error) {
       console.error('Error saving active session:', error);
@@ -196,7 +227,6 @@ class OfflineStorageService {
       maxRetries: 3
     });
 
-    console.log('💪 Set logged locally:', newSet);
     return true;
   }
 
@@ -237,7 +267,6 @@ class OfflineStorageService {
     // Clear active session after completion
     this.clearActiveSession();
 
-    console.log('🎉 Workout completed locally:', session.id);
     return true;
   }
 
@@ -296,7 +325,6 @@ class OfflineStorageService {
       
       localStorage.setItem(this.STORAGE_KEYS.SYNC_QUEUE, JSON.stringify(filteredQueue));
       
-      console.log('📤 Added to sync queue:', item.type, item.id);
     } catch (error) {
       console.error('Error adding to sync queue:', error);
     }
@@ -340,7 +368,6 @@ class OfflineStorageService {
       );
       
       localStorage.setItem(this.STORAGE_KEYS.SYNC_QUEUE, JSON.stringify(cleanQueue));
-      console.log(`🧹 Cleared ${originalLength - cleanQueue.length} corrupted sync items`);
     } catch (error) {
       console.error('Error clearing corrupted sync items:', error);
     }
@@ -403,7 +430,6 @@ class OfflineStorageService {
     Object.values(this.STORAGE_KEYS).forEach(key => {
       localStorage.removeItem(key);
     });
-    console.log('🗑️ All local data cleared');
   }
 
   /**
@@ -438,7 +464,6 @@ class OfflineStorageService {
         localStorage.setItem(this.STORAGE_KEYS.SYNC_QUEUE, JSON.stringify(data.syncQueue));
       }
       
-      console.log('📥 Data imported successfully');
       return true;
     } catch (error) {
       console.error('Error importing data:', error);

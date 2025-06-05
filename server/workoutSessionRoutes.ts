@@ -1,11 +1,17 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { z } from "zod";
+import { smartSessionManager } from "./smartSessionManager";
 
 const router = Router();
 
+// Enhanced request types for better type safety
+interface AuthenticatedRequest extends Request {
+  userId?: number; // Optional to satisfy Express typing
+}
+
 // Middleware to auto-assign Ender's user ID (bypasses authentication for testing)
-const authenticateToken = (req: any, res: any, next: any) => {
+const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   req.userId = 1;
   next();
 };
@@ -30,11 +36,140 @@ const completeWorkoutSchema = z.object({
   notes: z.string().optional()
 });
 
+// GET /api/workout-sessions/check-conflicts - Check for session conflicts before starting
+router.get("/check-conflicts", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.userId!; // Non-null assertion since middleware sets this
+    const workoutType = req.query.workoutType as string;
+    
+    // Use smart session manager to check for conflicts
+    const conflictResolution = await smartSessionManager.checkSessionConflicts(
+      userId.toString(), 
+      workoutType || 'General'
+    );
+    
+    if (!conflictResolution) {
+      return res.json({
+        hasConflict: false,
+        message: "No conflicts detected, ready to start workout"
+      });
+    }
+    
+    // Handle auto-abandonment if recommended
+    if (conflictResolution.action === 'auto_abandon') {
+      const success = await smartSessionManager.autoAbandonStaleSession(
+        conflictResolution.staleSession.sessionId,
+        userId.toString(),
+        conflictResolution.reason
+      );
+      
+      if (success) {
+        return res.json({
+          hasConflict: false,
+          autoResolved: true,
+          message: "Previous stale session auto-abandoned, ready to start workout",
+          resolution: conflictResolution
+        });
+      }
+    }
+    
+    // Return conflict data for user decision
+    res.json({
+      hasConflict: true,
+      conflictData: {
+        sessionId: conflictResolution.staleSession.sessionId,
+        sessionStartTime: conflictResolution.staleSession.startTime,
+        sessionExerciseCount: conflictResolution.staleSession.exerciseCount,
+        canAbandon: conflictResolution.staleSession.shouldAutoAbandon || conflictResolution.staleSession.isStale,
+        message: conflictResolution.reason,
+        idleTime: conflictResolution.staleSession.idleTime,
+        warningLevel: conflictResolution.staleSession.warningLevel
+      },
+      resolution: conflictResolution
+    });
+    
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error("Error checking session conflicts:", error);
+    res.status(500).json({ 
+      hasConflict: false,
+      message: "Error checking conflicts, proceeding with caution",
+      error: errorMessage 
+    });
+  }
+});
+
+// POST /api/workout-sessions/abandon - Abandon existing session
+router.post("/abandon", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.userId!; // Non-null assertion since middleware sets this
+    const { sessionId, savePartialData = true } = req.body;
+    
+    const success = await smartSessionManager.abandonSessionWithUserChoice(
+      sessionId,
+      userId.toString(),
+      savePartialData
+    );
+    
+    if (success) {
+      res.json({
+        success: true,
+        message: savePartialData 
+          ? "Session abandoned successfully, partial data saved"
+          : "Session cancelled successfully, no data saved"
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: "Failed to abandon session"
+      });
+    }
+    
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error("Error abandoning session:", error);
+    res.status(500).json({ 
+      success: false,
+      message: errorMessage || "Failed to abandon session" 
+    });
+  }
+});
+
 // POST /api/workout-sessions/start - Begin new workout session
-router.post("/start", authenticateToken, async (req: any, res) => {
+router.post("/start", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { workoutType, exerciseIds } = startWorkoutSessionSchema.parse(req.body);
-    const userId = req.userId;
+    const userId = req.userId!; // Non-null assertion since middleware sets this
+    
+    // Smart session management: Check for conflicts before starting
+    const conflictResolution = await smartSessionManager.checkSessionConflicts(
+      userId.toString(), 
+      workoutType
+    );
+    
+    // Handle conflicts according to smart session management
+    if (conflictResolution) {
+      if (conflictResolution.action === 'auto_abandon') {
+        await smartSessionManager.autoAbandonStaleSession(
+          conflictResolution.staleSession.sessionId,
+          userId.toString(),
+          conflictResolution.reason
+        );
+      } else if (conflictResolution.action === 'user_decision_required') {
+        return res.status(409).json({
+          error: "Session conflict detected",
+          conflictData: {
+            sessionId: conflictResolution.staleSession.sessionId,
+            sessionStartTime: conflictResolution.staleSession.startTime,
+            sessionExerciseCount: conflictResolution.staleSession.exerciseCount,
+            canAbandon: true,
+            message: conflictResolution.reason
+          },
+          resolution: conflictResolution,
+          suggestion: "Use /api/workout-sessions/check-conflicts to handle this conflict"
+        });
+      }
+    }
     
     // Create new workout session with enhanced structure
     const sessionData = {
@@ -62,21 +197,22 @@ router.post("/start", authenticateToken, async (req: any, res) => {
       exercises: session.exercises || [],
       message: "Workout session started successfully"
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Invalid request data", errors: error.errors });
     }
     console.error("Error starting workout session:", error);
-    res.status(500).json({ message: error.message || "Failed to start workout session" });
+    res.status(500).json({ message: errorMessage || "Failed to start workout session" });
   }
 });
 
 // PATCH /api/workout-sessions/:sessionId/exercises/:exerciseId/sets/:setNumber - Log individual sets
-router.patch("/:sessionId/exercises/:exerciseId/sets/:setNumber", authenticateToken, async (req: any, res) => {
+router.patch("/:sessionId/exercises/:exerciseId/sets/:setNumber", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { sessionId, exerciseId, setNumber } = req.params;
     const setData = logSetSchema.parse(req.body);
-    const userId = req.userId;
+    const userId = req.userId!; // Non-null assertion since middleware sets this
     
     // Verify session ownership
     const session = await storage.getWorkoutSession(parseInt(sessionId));
@@ -108,20 +244,21 @@ router.patch("/:sessionId/exercises/:exerciseId/sets/:setNumber", authenticateTo
       },
       message: `Set ${setNumber} logged successfully`
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Invalid set data", errors: error.errors });
     }
     console.error("Error logging set:", error);
-    res.status(500).json({ message: error.message || "Failed to log set" });
+    res.status(500).json({ message: errorMessage || "Failed to log set" });
   }
 });
 
 // GET /api/workout-sessions/:sessionId/progress - Real-time session progress
-router.get("/:sessionId/progress", authenticateToken, async (req: any, res) => {
+router.get("/:sessionId/progress", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { sessionId } = req.params;
-    const userId = req.userId;
+    const userId = req.userId!; // Non-null assertion since middleware sets this
     
     const session = await storage.getWorkoutSession(parseInt(sessionId));
     if (!session || session.userId !== userId) {
@@ -129,10 +266,15 @@ router.get("/:sessionId/progress", authenticateToken, async (req: any, res) => {
     }
     
     // Calculate progress statistics
-    const exercises = Array.isArray(session.exercises) ? session.exercises as any[] : [];
+    const exercises = Array.isArray(session.exercises) ? session.exercises as Array<{
+      exerciseId: string;
+      exerciseName: string;
+      sets?: Array<{ completed: boolean }>;
+      targetSets?: number;
+    }> : [];
     const completedSets = exercises.reduce((total, ex) => {
       if (ex.sets) {
-        return total + ex.sets.filter((set: any) => set.completed).length;
+        return total + ex.sets.filter(set => set.completed).length;
       }
       return total;
     }, 0);
@@ -150,25 +292,26 @@ router.get("/:sessionId/progress", authenticateToken, async (req: any, res) => {
       duration: session.endTime 
         ? Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 1000 / 60)
         : Math.round((Date.now() - new Date(session.startTime).getTime()) / 1000 / 60),
-      exercises: exercises.map((ex: any) => ({
+      exercises: exercises.map(ex => ({
         exerciseId: ex.exerciseId,
         exerciseName: ex.exerciseName,
-        completedSets: ex.sets ? ex.sets.filter((set: any) => set.completed).length : 0,
+        completedSets: ex.sets ? ex.sets.filter(set => set.completed).length : 0,
         targetSets: ex.targetSets || 0
       }))
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error("Error fetching session progress:", error);
-    res.status(500).json({ message: error.message || "Failed to fetch session progress" });
+    res.status(500).json({ message: errorMessage || "Failed to fetch session progress" });
   }
 });
 
 // POST /api/workout-sessions/:sessionId/complete - Finish workout session
-router.post("/:sessionId/complete", authenticateToken, async (req: any, res) => {
+router.post("/:sessionId/complete", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { sessionId } = req.params;
     const { rating, notes } = completeWorkoutSchema.parse(req.body);
-    const userId = req.userId;
+    const userId = req.userId!; // Non-null assertion since middleware sets this
     
     const session = await storage.getWorkoutSession(parseInt(sessionId));
     if (!session || session.userId !== userId) {
@@ -176,11 +319,16 @@ router.post("/:sessionId/complete", authenticateToken, async (req: any, res) => 
     }
     
     // Calculate workout statistics
-    const exercises = Array.isArray(session.exercises) ? session.exercises as any[] : [];
+    const exercises = Array.isArray(session.exercises) ? session.exercises as Array<{
+      exerciseId: string;
+      exerciseName: string;
+      sets?: Array<{ completed: boolean }>;
+      targetSets?: number;
+    }> : [];
     const duration = Math.round((Date.now() - new Date(session.startTime).getTime()) / 1000 / 60);
     const completedSets = exercises.reduce((total, ex) => {
       if (ex.sets) {
-        return total + ex.sets.filter((set: any) => set.completed).length;
+        return total + ex.sets.filter(set => set.completed).length;
       }
       return total;
     }, 0);
@@ -199,7 +347,7 @@ router.post("/:sessionId/complete", authenticateToken, async (req: any, res) => 
       exerciseCount: exercises.length,
       setCount: completedSets,
       caloriesBurned: Math.round(duration * 5.5), // Estimate: 5.5 cal/min for strength training
-      personalRecords: [] // TODO: Calculate personal records
+      personalRecords: [] // Personal records calculation pending workout data analysis
     };
     
     res.json({
@@ -207,20 +355,21 @@ router.post("/:sessionId/complete", authenticateToken, async (req: any, res) => 
       summary,
       message: "Workout completed successfully"
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Invalid completion data", errors: error.errors });
     }
     console.error("Error completing workout:", error);
-    res.status(500).json({ message: error.message || "Failed to complete workout" });
+    res.status(500).json({ message: errorMessage || "Failed to complete workout" });
   }
 });
 
 // GET /api/users/:userId/workout-history - Historical workout data
-router.get("/users/:userId/workout-history", authenticateToken, async (req: any, res) => {
+router.get("/users/:userId/workout-history", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { userId } = req.params;
-    const requestUserId = req.userId;
+    const requestUserId = req.userId!; // Non-null assertion since middleware sets this
     
     // Verify user can access this data
     if (parseInt(userId) !== requestUserId) {
@@ -234,17 +383,18 @@ router.get("/users/:userId/workout-history", authenticateToken, async (req: any,
       total: history.length,
       message: "Workout history retrieved successfully"
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error("Error fetching workout history:", error);
-    res.status(500).json({ message: error.message || "Failed to fetch workout history" });
+    res.status(500).json({ message: errorMessage || "Failed to fetch workout history" });
   }
 });
 
 // GET /api/exercises/:exerciseId/personal-records - User PRs for exercise
-router.get("/exercises/:exerciseId/personal-records", authenticateToken, async (req: any, res) => {
+router.get("/exercises/:exerciseId/personal-records", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { exerciseId } = req.params;
-    const userId = req.userId;
+    const userId = req.userId!; // Non-null assertion since middleware sets this
     
     const records = await storage.getExercisePersonalRecords(userId, exerciseId);
     
@@ -271,9 +421,79 @@ router.get("/exercises/:exerciseId/personal-records", authenticateToken, async (
       },
       recentSets: records.slice(0, 10) // Last 10 sets
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error("Error fetching personal records:", error);
-    res.status(500).json({ message: error.message || "Failed to fetch personal records" });
+    res.status(500).json({ message: errorMessage || "Failed to fetch personal records" });
+  }
+});
+
+// POST /api/workout-sessions/maintenance/cleanup - Smart session maintenance
+router.post("/maintenance/cleanup", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    // Only allow admin/development access for now
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(403).json({ 
+        message: "Maintenance operations are only available in development mode" 
+      });
+    }
+    
+    const results = await smartSessionManager.performMaintenanceCleanup();
+    
+    res.json({
+      success: true,
+      message: "Smart session maintenance completed",
+      results: {
+        sessionsProcessed: results.processed,
+        sessionsAbandoned: results.abandoned,
+        errors: results.errors
+      },
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error("Error during smart session maintenance:", error);
+    res.status(500).json({ 
+      success: false,
+      message: errorMessage || "Failed to perform maintenance cleanup" 
+    });
+  }
+});
+
+// GET /api/workout-sessions/session-analysis/:userId - Get session staleness analysis
+router.get("/session-analysis/:userId", authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const requestUserId = req.userId!; // Non-null assertion since middleware sets this
+    
+    // Verify user can access this data
+    if (parseInt(userId) !== requestUserId && process.env.NODE_ENV !== 'development') {
+      return res.status(403).json({ message: "Access denied" });
+    }
+    
+    const analysis = await smartSessionManager.getSessionAnalysis(userId);
+    const policy = smartSessionManager.getSessionPolicy();
+    
+    res.json({
+      userId,
+      sessionPolicy: policy,
+      activeSessions: analysis,
+      analysis: {
+        totalActiveSessions: analysis.length,
+        staleSessions: analysis.filter(s => s.isStale).length,
+        criticalSessions: analysis.filter(s => s.warningLevel === 'critical').length,
+        autoAbandonCandidates: analysis.filter(s => s.shouldAutoAbandon).length
+      },
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error("Error getting session analysis:", error);
+    res.status(500).json({ 
+      message: errorMessage || "Failed to get session analysis" 
+    });
   }
 });
 

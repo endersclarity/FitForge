@@ -1,0 +1,30 @@
+#!/bin/bash
+# Quick branch status checker - run ./check-branch anytime
+
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONITOR_FILE="$PROJECT_ROOT/BRANCH_MONITOR.md"
+
+# Update the monitor first
+bash "$PROJECT_ROOT/scripts/update-branch-monitor.sh"
+
+echo ""
+echo "🚀 QUICK BRANCH STATUS:"
+echo "======================="
+
+# Extract key info from monitor file
+grep -A 1 "Active Branch:" "$MONITOR_FILE" | sed 's/^- /  /'
+echo ""
+
+# Show merge readiness
+grep -A 1 "Merge Decision:" "$MONITOR_FILE" | head -1
+echo ""
+
+# Show technical health
+echo "📊 TECHNICAL HEALTH:"
+echo "  TypeScript: $(grep "Status:" "$MONITOR_FILE" | head -1 | awk '{print $2}')"
+echo "  React App: $(grep -A 5 "React Application Status" "$MONITOR_FILE" | grep "Status:" | awk '{print $2}')"
+echo "  Server: $(grep -A 5 "Server Health" "$MONITOR_FILE" | grep "Backend Status:" | awk '{print $3}')"
+
+echo ""
+echo "📖 Full report: ./BRANCH_MONITOR.md"
+echo "🔄 This status auto-updates on git commits"

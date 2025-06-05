@@ -1,8 +1,7 @@
 // FitForge Goal Management Service
 // Real Data-Driven Goal CRUD Operations with TypeScript and Zod Validation
-// Created: June 1, 2025
+// Updated: June 4, 2025 - Connected to Backend API
 
-import { supabase } from '@/lib/supabase';
 import { z } from 'zod';
 
 // ============================================================================
@@ -183,7 +182,7 @@ export const GoalFiltersSchema = z.object({
 });
 
 // ============================================================================
-// SUPABASE GOAL SERVICE FUNCTIONS
+// BACKEND API GOAL SERVICE FUNCTIONS
 // ============================================================================
 
 export class GoalServiceError extends Error {
@@ -194,6 +193,14 @@ export class GoalServiceError extends Error {
 }
 
 /**
+ * Get the base API URL for goals
+ */
+function getApiBaseUrl(): string {
+  // Use current origin for the API calls
+  return `${window.location.origin}/api/goals`;
+}
+
+/**
  * Create a new goal with comprehensive validation
  */
 export async function createGoal(goalData: GoalFormData): Promise<Goal> {
@@ -201,20 +208,12 @@ export async function createGoal(goalData: GoalFormData): Promise<Goal> {
     // Validate input data
     const validatedData = CreateGoalSchema.parse(goalData);
     
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new GoalServiceError('User not authenticated', 'AUTH_ERROR');
-    }
-    
-    // Prepare goal data for database
+    // Prepare goal data for API
     const goalRecord = {
-      user_id: user.id,
       goal_type: validatedData.goal_type,
       goal_title: validatedData.goal_title,
       goal_description: validatedData.goal_description,
       target_date: validatedData.target_date,
-      created_date: new Date().toISOString().split('T')[0], // Current date
       
       // Target values
       target_weight_lbs: validatedData.target_weight_lbs,
@@ -229,35 +228,34 @@ export async function createGoal(goalData: GoalFormData): Promise<Goal> {
       start_exercise_max_weight_lbs: validatedData.start_exercise_max_weight_lbs,
       start_exercise_max_reps: validatedData.start_exercise_max_reps,
       
-      // Progress tracking (defaults)
-      current_progress_percentage: 0.0,
-      is_achieved: false,
-      
       // Motivation
       motivation_notes: validatedData.motivation_notes,
       reward_description: validatedData.reward_description,
       
       // Status
-      is_active: true,
       priority_level: validatedData.priority_level,
     };
     
-    // Insert into Supabase
-    const { data, error } = await supabase
-      .from('user_goals')
-      .insert(goalRecord)
-      .select()
-      .single();
+    // Call backend API
+    const response = await fetch(getApiBaseUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'user-id': '1' // Use default user ID for now
+      },
+      body: JSON.stringify(goalRecord)
+    });
     
-    if (error) {
-      console.error('Supabase error creating goal:', error);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to create goal' }));
       throw new GoalServiceError(
-        `Failed to create goal: ${error.message}`,
-        error.code
+        `Failed to create goal: ${errorData.message || 'Unknown error'}`,
+        'API_ERROR'
       );
     }
     
-    return data as Goal;
+    const responseData = await response.json();
+    return responseData.goal as Goal;
     
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -285,50 +283,49 @@ export async function getUserGoals(
     // Validate filters
     const validatedFilters = GoalFiltersSchema.parse(filters);
     
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new GoalServiceError('User not authenticated', 'AUTH_ERROR');
-    }
-    
-    // Build query
-    let query = supabase
-      .from('user_goals')
-      .select('*')
-      .eq('user_id', user.id);
+    // Build query parameters
+    const params = new URLSearchParams();
     
     // Apply filters
     if (validatedFilters.goal_type) {
-      query = query.eq('goal_type', validatedFilters.goal_type);
+      params.append('goal_type', validatedFilters.goal_type);
     }
     
     if (validatedFilters.is_active !== undefined) {
-      query = query.eq('is_active', validatedFilters.is_active);
+      params.append('is_active', validatedFilters.is_active.toString());
     }
     
     if (validatedFilters.is_achieved !== undefined) {
-      query = query.eq('is_achieved', validatedFilters.is_achieved);
+      params.append('is_achieved', validatedFilters.is_achieved.toString());
     }
     
     if (validatedFilters.priority_level) {
-      query = query.eq('priority_level', validatedFilters.priority_level);
+      params.append('priority_level', validatedFilters.priority_level);
     }
     
     // Apply sorting
-    query = query.order(sort.field, { ascending: sort.direction === 'asc' });
+    params.append('sort_field', sort.field);
+    params.append('sort_direction', sort.direction);
     
-    // Execute query
-    const { data, error } = await query;
+    // Call backend API
+    const url = `${getApiBaseUrl()}?${params.toString()}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'user-id': '1' // Use default user ID for now
+      }
+    });
     
-    if (error) {
-      console.error('Supabase error fetching goals:', error);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to fetch goals' }));
       throw new GoalServiceError(
-        `Failed to fetch goals: ${error.message}`,
-        error.code
+        `Failed to fetch goals: ${errorData.message || 'Unknown error'}`,
+        'API_ERROR'
       );
     }
     
-    return data as Goal[];
+    const responseData = await response.json();
+    return responseData.goals as Goal[];
     
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -353,37 +350,29 @@ export async function updateGoal(goalId: string, updates: Partial<GoalFormData> 
     // Validate input data
     const validatedData = UpdateGoalSchema.parse({ id: goalId, ...updates });
     
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new GoalServiceError('User not authenticated', 'AUTH_ERROR');
-    }
-    
     // Remove ID from update data
     const { id, ...updateData } = validatedData;
     
-    // Update in Supabase
-    const { data, error } = await supabase
-      .from('user_goals')
-      .update(updateData)
-      .eq('id', goalId)
-      .eq('user_id', user.id) // Security: only update user's own goals
-      .select()
-      .single();
+    // Call backend API
+    const response = await fetch(`${getApiBaseUrl()}/${goalId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'user-id': '1' // Use default user ID for now
+      },
+      body: JSON.stringify(updateData)
+    });
     
-    if (error) {
-      console.error('Supabase error updating goal:', error);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to update goal' }));
       throw new GoalServiceError(
-        `Failed to update goal: ${error.message}`,
-        error.code
+        `Failed to update goal: ${errorData.message || 'Unknown error'}`,
+        'API_ERROR'
       );
     }
     
-    if (!data) {
-      throw new GoalServiceError('Goal not found or access denied', 'NOT_FOUND');
-    }
-    
-    return data as Goal;
+    const responseData = await response.json();
+    return responseData.goal as Goal;
     
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -408,24 +397,19 @@ export async function deleteGoal(goalId: string): Promise<void> {
     // Validate goal ID
     const goalIdValidation = z.string().uuid('Invalid goal ID').parse(goalId);
     
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new GoalServiceError('User not authenticated', 'AUTH_ERROR');
-    }
+    // Call backend API
+    const response = await fetch(`${getApiBaseUrl()}/${goalIdValidation}`, {
+      method: 'DELETE',
+      headers: {
+        'user-id': '1' // Use default user ID for now
+      }
+    });
     
-    // Delete from Supabase (cascade will handle related records)
-    const { error } = await supabase
-      .from('user_goals')
-      .delete()
-      .eq('id', goalIdValidation)
-      .eq('user_id', user.id); // Security: only delete user's own goals
-    
-    if (error) {
-      console.error('Supabase error deleting goal:', error);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to delete goal' }));
       throw new GoalServiceError(
-        `Failed to delete goal: ${error.message}`,
-        error.code
+        `Failed to delete goal: ${errorData.message || 'Unknown error'}`,
+        'API_ERROR'
       );
     }
     
@@ -451,32 +435,27 @@ export async function getGoalById(goalId: string): Promise<Goal | null> {
     // Validate goal ID
     const goalIdValidation = z.string().uuid('Invalid goal ID').parse(goalId);
     
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new GoalServiceError('User not authenticated', 'AUTH_ERROR');
-    }
-    
-    // Fetch from Supabase
-    const { data, error } = await supabase
-      .from('user_goals')
-      .select('*')
-      .eq('id', goalIdValidation)
-      .eq('user_id', user.id) // Security: only access user's own goals
-      .single();
-    
-    if (error) {
-      if (error.code === 'PGRST116') { // No rows returned
-        return null;
+    // Call backend API
+    const response = await fetch(`${getApiBaseUrl()}/${goalIdValidation}`, {
+      method: 'GET',
+      headers: {
+        'user-id': '1' // Use default user ID for now
       }
-      console.error('Supabase error fetching goal:', error);
+    });
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null; // Goal not found
+      }
+      const errorData = await response.json().catch(() => ({ message: 'Failed to fetch goal' }));
       throw new GoalServiceError(
-        `Failed to fetch goal: ${error.message}`,
-        error.code
+        `Failed to fetch goal: ${errorData.message || 'Unknown error'}`,
+        'API_ERROR'
       );
     }
     
-    return data as Goal;
+    const responseData = await response.json();
+    return responseData.goal as Goal;
     
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -516,28 +495,13 @@ export async function markGoalAsAchieved(goalId: string): Promise<Goal> {
  */
 export async function getActiveGoalsCount(): Promise<number> {
   try {
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new GoalServiceError('User not authenticated', 'AUTH_ERROR');
-    }
+    // Use getUserGoals with filters to get active, non-achieved goals
+    const activeGoals = await getUserGoals({
+      is_active: true,
+      is_achieved: false
+    });
     
-    const { count, error } = await supabase
-      .from('user_goals')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .eq('is_achieved', false);
-    
-    if (error) {
-      console.error('Supabase error counting goals:', error);
-      throw new GoalServiceError(
-        `Failed to count goals: ${error.message}`,
-        error.code
-      );
-    }
-    
-    return count || 0;
+    return activeGoals.length;
     
   } catch (error) {
     if (error instanceof GoalServiceError) {

@@ -3,7 +3,14 @@
  * Handles background synchronization of offline workout data with the server
  */
 
-import { offlineStorage, type SyncQueueItem } from './offline-storage';
+import { 
+  offlineStorage, 
+  type SyncQueueItem,
+  type StartWorkoutData,
+  type LogSetData,
+  type CompleteWorkoutData,
+  type AbandonWorkoutData 
+} from './offline-storage';
 
 interface SyncResult {
   success: boolean;
@@ -30,8 +37,6 @@ class SyncQueueService {
     
     // Process immediately
     this.processQueue();
-    
-    console.log('🔄 Background sync started');
   }
   
   /**
@@ -42,8 +47,6 @@ class SyncQueueService {
       clearInterval(this.syncInterval);
       this.syncInterval = null;
     }
-    
-    console.log('⏹️ Background sync stopped');
   }
   
   /**
@@ -51,13 +54,11 @@ class SyncQueueService {
    */
   async processQueue(): Promise<void> {
     if (this.isProcessing) {
-      console.log('🔄 Sync already in progress, skipping...');
       return;
     }
     
     // Check if we're online
     if (!navigator.onLine) {
-      console.log('📵 Offline - skipping sync');
       return;
     }
     
@@ -67,11 +68,8 @@ class SyncQueueService {
       const queue = offlineStorage.getSyncQueue();
       
       if (queue.length === 0) {
-        console.log('✅ Sync queue empty');
         return;
       }
-      
-      console.log(`🔄 Processing ${queue.length} items in sync queue`);
       
       for (const item of queue) {
         try {
@@ -80,18 +78,17 @@ class SyncQueueService {
           if (result.success) {
             // Remove successful item from queue
             offlineStorage.removeFromSyncQueue(item.id);
-            console.log(`✅ Synced: ${item.type} ${item.id}`);
           } else if (!result.shouldRetry || item.retryCount >= item.maxRetries) {
             // Remove failed item that shouldn't retry or has exceeded max retries
             offlineStorage.removeFromSyncQueue(item.id);
-            console.error(`❌ Failed permanently: ${item.type} ${item.id} - ${result.error}`);
+            console.error(`Failed permanently: ${item.type} ${item.id} - ${result.error}`);
           } else {
             // Increment retry count for items that should be retried
             item.retryCount++;
-            console.warn(`🔄 Retry ${item.retryCount}/${item.maxRetries}: ${item.type} ${item.id} - ${result.error}`);
+            console.warn(`Retry ${item.retryCount}/${item.maxRetries}: ${item.type} ${item.id} - ${result.error}`);
           }
         } catch (error) {
-          console.error(`💥 Error processing queue item ${item.id}:`, error);
+          console.error(`Error processing queue item ${item.id}:`, error);
           
           // Increment retry count for unexpected errors
           item.retryCount++;
@@ -142,11 +139,9 @@ class SyncQueueService {
       
       if (response.ok) {
         const result = await response.json();
-        console.log('🚀 Workout started on server:', result.sessionId);
         return { success: true };
       } else if (response.status === 409) {
         // Active session conflict - this is expected, remove from queue
-        console.log('⚠️ Server already has active session, skipping start sync');
         return { success: true };
       } else {
         const error = await response.text();
@@ -170,7 +165,8 @@ class SyncQueueService {
    */
   private async syncLogSet(item: SyncQueueItem): Promise<SyncResult> {
     try {
-      const { sessionId, ...setData } = item.data;
+      const data = item.data as LogSetData;
+      const { sessionId, ...setData } = data;
       
       const response = await fetch(`${this.API_BASE}/${sessionId}/sets`, {
         method: 'POST',
@@ -182,7 +178,6 @@ class SyncQueueService {
       
       if (response.ok) {
         const result = await response.json();
-        console.log(`💪 Set synced to server: ${result.setId}`);
         return { success: true };
       } else {
         const error = await response.text();
@@ -206,7 +201,8 @@ class SyncQueueService {
    */
   private async syncCompleteWorkout(item: SyncQueueItem): Promise<SyncResult> {
     try {
-      const { sessionId, ...completionData } = item.data;
+      const data = item.data as CompleteWorkoutData;
+      const { sessionId, ...completionData } = data;
       
       const response = await fetch(`${this.API_BASE}/${sessionId}/complete`, {
         method: 'PUT',
@@ -218,7 +214,6 @@ class SyncQueueService {
       
       if (response.ok) {
         const result = await response.json();
-        console.log(`🎉 Workout completion synced to server:`, result.summary);
         return { success: true };
       } else {
         const error = await response.text();
@@ -242,7 +237,8 @@ class SyncQueueService {
    */
   private async syncAbandonWorkout(item: SyncQueueItem): Promise<SyncResult> {
     try {
-      const { sessionId } = item.data;
+      const data = item.data as AbandonWorkoutData;
+      const { sessionId } = data;
       
       const response = await fetch(`${this.API_BASE}/${sessionId}/abandon`, {
         method: 'PUT',
@@ -252,7 +248,6 @@ class SyncQueueService {
       });
       
       if (response.ok) {
-        console.log(`🗑️ Workout abandonment synced to server`);
         return { success: true };
       } else {
         const error = await response.text();
@@ -275,8 +270,6 @@ class SyncQueueService {
    * Force sync all pending items immediately
    */
   async forceSyncAll(): Promise<{ synced: number; failed: number }> {
-    console.log('🔄 Force syncing all pending items...');
-    
     const queue = offlineStorage.getSyncQueue();
     let synced = 0;
     let failed = 0;
@@ -297,7 +290,6 @@ class SyncQueueService {
       }
     }
     
-    console.log(`✅ Force sync complete: ${synced} synced, ${failed} failed`);
     return { synced, failed };
   }
   
@@ -337,7 +329,6 @@ class SyncQueueService {
       offlineStorage.removeFromSyncQueue(item.id);
     });
     
-    console.log(`🗑️ Cleared ${failedItems.length} failed sync items`);
     return failedItems.length;
   }
   
@@ -346,12 +337,11 @@ class SyncQueueService {
    */
   addConnectionListeners(): void {
     window.addEventListener('online', () => {
-      console.log('🌐 Back online - resuming sync');
       this.processQueue();
     });
     
     window.addEventListener('offline', () => {
-      console.log('📵 Gone offline - sync paused');
+      // Connection lost - sync will pause automatically
     });
   }
   

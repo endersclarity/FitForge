@@ -27,7 +27,7 @@ import { ProgressChart } from './ProgressChart';
 import { GoalOnboarding } from './GoalOnboarding';
 import { getUserGoals, Goal, GoalType } from '@/services/supabase-goal-service';
 import { useGoalProgress } from '@/hooks/use-goal-progress';
-import { useAuth } from '@/hooks/use-supabase-auth';
+import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 
 interface GoalDashboardProps {

@@ -51,6 +51,8 @@ export interface SessionConflictData {
   sessionExerciseCount: number;
   canAbandon: boolean;
   message: string;
+  idleTime?: number; // Smart session management data
+  warningLevel?: 'none' | 'warning' | 'critical';
 }
 
 export class SessionConflictError extends Error {
@@ -102,9 +104,7 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
   const startWorkout = useCallback(async (workoutType: string, exercises: LegacyWorkoutExercise[]) => {
     if (!user) {
       // In development mode, create a mock user session instead of failing
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 Development mode: bypassing auth check for workout session');
-      } else {
+      if (process.env.NODE_ENV !== 'development') {
         throw new Error('User must be authenticated to start a workout');
       }
     }
@@ -113,14 +113,8 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     try {
-      console.log("🏋️ Starting workout session...");
-      console.log("🏋️ Workout type:", workoutType);
-      console.log("🏋️ Exercises:", exercises.length);
-
       // In development mode or when Supabase is unavailable, create a unified storage session
       if (process.env.NODE_ENV === 'development' || !user) {
-        console.log("🔧 Creating unified storage workout session (development mode)");
-        
         // Register session with unified storage system first
         try {
           const sessionId = `local-${Date.now()}`;
@@ -132,9 +126,8 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
               plannedExercises: exercises.map(ex => ex.name)
             })
           });
-          console.log("✅ Session registered with unified storage");
         } catch (error) {
-          console.warn("⚠️ Could not register with unified storage, continuing with local session:", error);
+          console.warn("Could not register with unified storage, continuing with local session:", error);
         }
         
         // Create a local session that matches unified storage format
@@ -157,12 +150,10 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
         };
 
         setSession(newSession);
-        console.log("✅ Local workout session created successfully with unified storage compatibility");
         return;
       }
 
       // Production mode with Supabase
-      console.log("🏋️ Starting Supabase workout session...");
 
       // Check for existing active session
       const activeSession = await checkForActiveSession();
@@ -182,7 +173,7 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       // Create frontend session state for compatibility
       const newSession: WorkoutSessionState = {
         sessionId: result.session.id,
-        startTime: new Date(result.session.start_time),
+        startTime: new Date(result.session.startTime),
         currentExerciseIndex: 0,
         exercises: [], // New workouts start with no exercises
         status: "in_progress",
@@ -192,7 +183,6 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       };
 
       setSession(newSession);
-      console.log("✅ Supabase workout session started successfully");
 
     } catch (error) {
       console.error("Error starting Supabase workout:", error);
@@ -207,7 +197,7 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
     if (session) {
       const updatedSession = { ...session, status: "paused" as const };
       setSession(updatedSession);
-      // TODO: Could implement pause functionality in Supabase if needed
+      // Pause functionality can be implemented in Supabase if needed
     }
   }, [session]);
 
@@ -215,7 +205,7 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
     if (session) {
       const updatedSession = { ...session, status: "in_progress" as const };
       setSession(updatedSession);
-      // TODO: Could implement resume functionality in Supabase if needed
+      // Resume functionality can be implemented in Supabase if needed
     }
   }, [session]);
 
@@ -230,8 +220,6 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
     try {
       // Development mode: Complete local session without Supabase
       if (process.env.NODE_ENV === 'development' || !currentSupabaseSession) {
-        console.log("🏁 Completing local workout session (development mode)...");
-        
         // Update local session to completed
         const updatedSession = { 
           ...session, 
@@ -279,18 +267,14 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
               notes: notes || `Workout completed: ${session.exercises.length} exercises, ${session.totalVolume} lbs total volume`
             })
           });
-          
-          console.log("✅ Workout session saved to unified storage format");
         } catch (error) {
-          console.warn("⚠️ Could not save to unified storage, session still marked complete:", error);
+          console.warn("Could not save to unified storage, session still marked complete:", error);
         }
         
-        console.log("✅ Local workout session completed successfully");
         return;
       }
 
       // Production mode: Complete workout using Supabase service
-      console.log("🏁 Completing Supabase workout session...");
 
       const result = await localWorkoutService.completeWorkout(
         currentSupabaseSession.id, 
@@ -303,12 +287,10 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       const updatedSession = { 
         ...session, 
         status: "completed" as const,
-        endTime: new Date(completedSession.end_time!)
+        endTime: new Date(completedSession.endTime!)
       };
       setSession(updatedSession);
       setCurrentSupabaseSession(completedSession);
-      
-      console.log("✅ Workout completed successfully in Supabase");
 
     } catch (error) {
       console.error("Error completing workout:", error);
@@ -330,8 +312,6 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
     try {
       // Development mode: log to local file and state
       if (process.env.NODE_ENV === 'development' || !currentSupabaseSession) {
-        console.log("📝 Logging set locally (development mode)...");
-
         // Create local set
         const newSet: LegacyWorkoutSet = {
           weight,
@@ -357,10 +337,8 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
               equipment: newSet.equipment
             })
           });
-          
-          console.log("✅ Set logged to unified storage");
         } catch (error) {
-          console.warn("⚠️ Could not log to unified storage, continuing with local state only:", error);
+          console.warn("Could not log to unified storage, continuing with local state only:", error);
         }
 
         // Update local session state
@@ -383,8 +361,6 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       }
 
       // Production mode: use Supabase
-      console.log("📝 Logging set to Supabase...");
-
       // Log set using Supabase service
       const loggedSet = await localWorkoutService.logSet(
         currentSupabaseSession.id,
@@ -402,8 +378,8 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
         weight,
         reps,
         equipment,
-        timestamp: new Date(loggedSet.completed_at!),
-        setNumber: loggedSet.set_number,
+        timestamp: new Date(loggedSet.timestamp),
+        setNumber: loggedSet.setNumber,
         volume
       };
 
@@ -416,7 +392,6 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       updatedSession.estimatedCalories += Math.round(volume * 0.1);
 
       setSession(updatedSession);
-      console.log("✅ Set logged to Supabase successfully");
 
     } catch (error) {
       console.error("Error logging set to Supabase:", error);
@@ -495,24 +470,42 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
 
 
   const abandonActiveSession = useCallback(async () => {
-    if (!currentSupabaseSession) {
-      throw new Error('No active session to abandon');
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      console.log('🗑️ Abandoning Supabase workout session...');
+      // First check for active sessions to get session ID
+      const conflictData = await checkForActiveSession();
+      if (!conflictData) {
+        setSession(null);
+        setCurrentSupabaseSession(null);
+        return;
+      }
 
-      // Cancel workout using Supabase service
-      await localWorkoutService.cancelWorkout(currentSupabaseSession.id);
+      // Use new smart session management abandon API
+      const response = await fetch('/api/workout-sessions/abandon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'user-id': '1' // Development user ID
+        },
+        body: JSON.stringify({
+          sessionId: conflictData.sessionId,
+          savePartialData: true // Save partial data by default
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to abandon session');
+      }
+
+      const result = await response.json();
       
       // Clear local session state
       setSession(null);
       setCurrentSupabaseSession(null);
       
-      console.log('✅ Active session abandoned successfully');
     } catch (error) {
       console.error('Error abandoning active session:', error);
       setError(error instanceof Error ? error.message : 'Failed to abandon session');
@@ -520,7 +513,7 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [currentSupabaseSession]);
+  }, []);
 
   const resumeActiveSession = useCallback(async () => {
     if (!user && process.env.NODE_ENV !== 'development') {
@@ -531,11 +524,8 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     try {
-      console.log('🔄 Resuming Supabase workout session...');
-      
       // Get user's workout history to find most recent in-progress session
       if (!user) {
-        console.log('🔧 Development mode: No user available for resume');
         return;
       }
       const workoutHistory = await localWorkoutService.getWorkoutHistory(user.id.toString(), 5);
@@ -556,31 +546,30 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       // Convert to frontend session state
       const resumedSession: WorkoutSessionState = {
         sessionId: sessionData.session.id,
-        startTime: new Date(sessionData.session.start_time),
-        endTime: sessionData.session.end_time ? new Date(sessionData.session.end_time) : undefined,
+        startTime: new Date(sessionData.session.startTime),
+        endTime: sessionData.session.endTime ? new Date(sessionData.session.endTime) : undefined,
         currentExerciseIndex: 0, // Start from beginning
         exercises: sessionData.exercises.map(ex => ({
           exerciseId: ex.exercise.id,
-          exerciseName: ex.exercise.exercise_name,
+          exerciseName: ex.exercise.exerciseName,
           sets: ex.sets.map(set => ({
-            weight: set.weight_lbs,
+            weight: set.weight,
             reps: set.reps,
-            equipment: set.equipment_used || '',
-            timestamp: new Date(set.completed_at!),
-            setNumber: set.set_number,
-            volume: set.weight_lbs * set.reps
+            equipment: set.equipment || '',
+            timestamp: new Date(set.timestamp),
+            setNumber: set.setNumber,
+            volume: set.volume
           })),
           completed: ex.sets.length > 0,
-          restTimeRemaining: ex.exercise.rest_time_seconds || 60
+          restTimeRemaining: ex.exercise.restTimeSeconds || 60
         })),
         status: "in_progress",
-        totalVolume: sessionData.session.total_volume_lbs,
-        estimatedCalories: sessionData.session.calories_burned || 0,
-        workoutType: sessionData.session.workout_type || 'General'
+        totalVolume: sessionData.session.totalVolume,
+        estimatedCalories: sessionData.session.caloriesBurned || 0,
+        workoutType: sessionData.session.workoutType || 'General'
       };
       
       setSession(resumedSession);
-      console.log('✅ Active session resumed successfully');
     } catch (error) {
       console.error('Error resuming active session:', error);
       setError(error instanceof Error ? error.message : 'Failed to resume session');
@@ -591,20 +580,30 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const checkForActiveSession = useCallback(async (): Promise<SessionConflictData | null> => {
-    if (!user) return null;
-
     try {
-      // Get user's recent workout history to check for active sessions
-      const workoutHistory = await localWorkoutService.getWorkoutHistory(user.id.toString(), 5);
-      const activeSession = workoutHistory.find((session: any) => session.completion_status === 'in_progress');
+      // Use new smart session management API
+      const response = await fetch('/api/workout-sessions/check-conflicts?workoutType=General', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'user-id': '1' // Development user ID
+        }
+      });
       
-      if (activeSession) {
+      if (!response.ok) {
+        console.error('Failed to check session conflicts:', response.statusText);
+        return null;
+      }
+      
+      const result = await response.json();
+      
+      if (result.hasConflict && result.conflictData) {
         return {
-          sessionId: activeSession.id,
-          sessionStartTime: activeSession.start_time,
-          sessionExerciseCount: 0, // We'd need to fetch details for accurate count
-          canAbandon: true,
-          message: `You have an unfinished workout from ${new Date(activeSession.start_time).toLocaleString()}`
+          sessionId: result.conflictData.sessionId,
+          sessionStartTime: result.conflictData.sessionStartTime,
+          sessionExerciseCount: result.conflictData.sessionExerciseCount,
+          canAbandon: result.conflictData.canAbandon,
+          message: result.conflictData.message
         };
       }
       
@@ -613,18 +612,13 @@ export function WorkoutSessionProvider({ children }: { children: ReactNode }) {
       console.error('Error checking for active session:', error);
       return null;
     }
-  }, [user]);
+  }, []);
 
   // Initialize session recovery on mount - check for active Supabase sessions
   React.useEffect(() => {
     if (user) {
       // Check for any active sessions and optionally resume
-      checkForActiveSession().then(activeSession => {
-        if (activeSession) {
-          console.log('Found active Supabase session on mount:', activeSession.sessionId);
-          // Could auto-resume here or let user decide
-        }
-      }).catch(error => {
+      checkForActiveSession().catch(error => {
         console.error('Error checking for active session on mount:', error);
       });
     }

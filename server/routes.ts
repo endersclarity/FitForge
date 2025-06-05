@@ -13,8 +13,10 @@ import workoutRoutes from "./workoutRoutes";
 import workoutSessionRoutes from "./workoutSessionRoutes";
 import bodyStatsRoutes from "./bodyStatsRoutes";
 import progressRoutes from "./progressRoutes";
+import progressAnalyticsRoutes from "./progressAnalyticsRoutes";
 import userPreferencesRoutes from "./userPreferencesRoutes";
 import exerciseRoutes from "./routes/exercises";
+import goalRoutes from "./goalRoutes";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fitforge-secret-key";
 
@@ -284,8 +286,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Workout session routes
   app.get("/api/workout-sessions", authenticateToken, async (req: any, res) => {
     try {
-      console.log("🔥 USING REAL DATA API ENDPOINT - NOT MOCK DATA!");
-      console.log("🔍 User ID:", req.userId, "Type:", typeof req.userId);
       
       // Import fileStorage for real user data
       const { fileStorage } = await import("./fileStorage");
@@ -293,13 +293,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get real workout sessions from user's JSON file
       const realSessions = await fileStorage.getWorkoutSessions(req.userId.toString());
-      console.log("📊 Raw sessions from fileStorage:", realSessions.length, "sessions");
-      console.log("📋 First session:", realSessions[0] ? {
-        id: realSessions[0].id,
-        workoutType: realSessions[0].workoutType,
-        status: realSessions[0].status,
-        exercises: realSessions[0].exercises.map(ex => ex.exerciseName)
-      } : "No sessions found");
       
       // Convert fileStorage format to expected frontend format
       const convertedSessions = realSessions.map(session => ({
@@ -343,7 +336,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/workout-logs - Raw workout log data
   app.get("/api/workout-logs", authenticateToken, async (req: any, res) => {
     try {
-      console.log("📝 FETCHING RAW WORKOUT LOGS");
       
       // Import fileStorage for real workout logs
       const { fileStorage } = await import("./fileStorage");
@@ -351,7 +343,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get raw workout logs
       const workoutLogs = await fileStorage.getWorkoutLogs();
-      console.log(`📋 Found ${workoutLogs.length} workout log entries`);
       
       res.json(workoutLogs);
     } catch (error: any) {
@@ -363,7 +354,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/workout-analytics - Comprehensive workout data including logs
   app.get("/api/workout-analytics", authenticateToken, async (req: any, res) => {
     try {
-      console.log("📊 COMPREHENSIVE WORKOUT ANALYTICS - AGGREGATING ALL DATA!");
       
       // Import fileStorage for real user data
       const { fileStorage } = await import("./fileStorage");
@@ -373,8 +363,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const workoutSessions = await fileStorage.getWorkoutSessions(req.userId.toString());
       const workoutLogs = await fileStorage.getWorkoutLogs();
       
-      console.log(`📋 Found ${workoutSessions.length} workout sessions`);
-      console.log(`📝 Found ${workoutLogs.length} workout log entries`);
       
       // Aggregate completed workouts from logs
       const completedSessionIds = new Set();
@@ -407,7 +395,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const totalCalories = Math.round(totalVolume * 0.1); // Estimate: 0.1 cal per lb
       
-      console.log(`✅ COMPREHENSIVE STATS: ${totalCompletedWorkouts} workouts, ${totalVolume} lbs total volume`);
       
       res.json({
         totalCompletedWorkouts,
@@ -796,8 +783,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/workout-sessions", workoutSessionRoutes);
   app.use("/api/body-stats", bodyStatsRoutes);
   app.use("/api/progress", progressRoutes);
+  app.use("/api/progress", progressAnalyticsRoutes);
   app.use("/api/users", userPreferencesRoutes);
   app.use("/api/exercises", exerciseRoutes);
+  app.use("/api/goals", goalRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

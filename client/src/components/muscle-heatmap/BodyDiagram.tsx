@@ -45,7 +45,11 @@ export function BodyDiagram({
     }
 
     const daysSince = Math.min(...muscleStates.map(state => {
-      const daysDiff = Math.floor((Date.now() - state.lastWorkoutDate.getTime()) / (1000 * 60 * 60 * 24));
+      // Ensure lastWorkoutDate is a Date object
+      const workoutDate = state.lastWorkoutDate instanceof Date 
+        ? state.lastWorkoutDate 
+        : new Date(state.lastWorkoutDate);
+      const daysDiff = Math.floor((Date.now() - workoutDate.getTime()) / (1000 * 60 * 60 * 24));
       return daysDiff;
     }));
 

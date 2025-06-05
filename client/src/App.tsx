@@ -13,6 +13,7 @@ import { useDataMigration, MigrationStatus } from "@/hooks/use-data-migration";
 import { Navigation } from "@/components/navigation";
 import NavigationErrorBoundary from "@/components/navigation-error-boundary";
 import { LiveWorkoutSession } from "@/components/live-workout-session";
+import { WorkoutQueueButton } from "@/components/workout-queue-button";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Auth from "@/pages/auth";
@@ -154,6 +155,9 @@ function Router() {
         <Route component={NotFound} />
         </Switch>
       </NavigationErrorBoundary>
+      
+      {/* Workout Queue Button - Fixed position */}
+      <WorkoutQueueButton />
       
       {/* Migration status indicator (only shows when migration is needed/in progress) */}
       <MigrationStatus />

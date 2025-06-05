@@ -2,11 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { localWorkoutService } from '@/services/local-workout-service'
 import { useMuscleRecovery } from '@/hooks/use-muscle-recovery'
-import type { WorkoutSession, WorkoutExercise, WorkoutSet, Exercise } from '@/lib/supabase'
+import type { WorkoutSession, WorkoutExercise, SetData, Exercise } from '@/lib/supabase'
 
 interface WorkoutExerciseWithDetails extends WorkoutExercise {
   exercise: Exercise
-  sets: WorkoutSet[]
+  sets: SetData[]
 }
 
 interface WorkoutSessionData {
@@ -142,12 +142,10 @@ export function useRealWorkoutSession(sessionId: string | null) {
       setWorkoutData(prev => ({
         ...prev,
         exercises: prev.exercises.map(ex => {
-          if (ex.exercise_id === exerciseId) {
+          if (ex.exerciseId === exerciseId) {
             return {
               ...ex,
-              sets: [...ex.sets, set].sort((a, b) => a.set_number - b.set_number),
-              total_sets_completed: ex.total_sets_completed + 1,
-              total_volume_lbs: ex.total_volume_lbs + (weight * reps)
+              sets: [...ex.sets, set].sort((a, b) => a.setNumber - b.setNumber)
             }
           }
           return ex
@@ -184,17 +182,17 @@ export function useRealWorkoutSession(sessionId: string | null) {
         const workoutSessionData = {
           id: completedSession.id,
           userId: user?.id?.toString() || '',
-          date: new Date(completedSession.end_time || completedSession.created_at),
+          date: new Date(completedSession.endTime || completedSession.lastModified),
           exercises: workoutData.exercises.map(ex => ({
-            exerciseId: ex.exercise_id,
-            exerciseName: ex.exercise.exercise_name,
+            exerciseId: ex.exerciseId,
+            exerciseName: ex.exercise.exerciseName,
             sets: ex.sets.length,
             reps: ex.sets.length > 0 ? ex.sets.reduce((total, set) => total + set.reps, 0) / ex.sets.length : 0,
-            weight: ex.sets.length > 0 ? ex.sets.reduce((total, set) => total + (set.weight_lbs || 0), 0) / ex.sets.length : 0,
-            rpe: ex.sets.length > 0 ? ex.sets.reduce((total, set) => total + (set.perceived_exertion || 7), 0) / ex.sets.length : 7,
+            weight: ex.sets.length > 0 ? ex.sets.reduce((total, set) => total + set.weight, 0) / ex.sets.length : 0,
+            rpe: ex.sets.length > 0 ? ex.sets.reduce((total, set) => total + (set.rpe || 7), 0) / ex.sets.length : 7,
             muscleActivation: [] // Will be populated by muscle mapping service
           })),
-          totalDuration: completedSession.total_duration_seconds || 0,
+          totalDuration: completedSession.totalDuration || 0,
           rpe: rating || 7
         }
 
@@ -224,7 +222,7 @@ export function useRealWorkoutSession(sessionId: string | null) {
 
     try {
       // For now, just set session to cancelled status locally
-      const cancelledSession = { ...workoutData.session, completion_status: 'cancelled' as const }
+      const cancelledSession = { ...workoutData.session, status: 'cancelled' as const }
       
       setWorkoutData(prev => ({
         ...prev,
@@ -244,18 +242,18 @@ export function useRealWorkoutSession(sessionId: string | null) {
   // Calculate workout statistics
   const workoutStats = {
     totalSets: workoutData.exercises.reduce((total, ex) => total + ex.sets.length, 0),
-    completedSets: workoutData.exercises.reduce((total, ex) => total + ex.sets.filter(set => set.is_completed).length, 0),
-    totalVolume: workoutData.exercises.reduce((total, ex) => total + ex.total_volume_lbs, 0),
-    duration: workoutData.session?.total_duration_seconds || 0,
+    completedSets: workoutData.exercises.reduce((total, ex) => total + ex.sets.filter(set => set.completed).length, 0),
+    totalVolume: workoutData.exercises.reduce((total, ex) => total + ex.sets.reduce((vol, set) => vol + set.volume, 0), 0),
+    duration: workoutData.session?.totalDuration || 0,
     personalRecords: personalRecords.length,
-    isComplete: workoutData.session?.completion_status === 'completed',
-    isInProgress: workoutData.session?.completion_status === 'in_progress',
-    isCancelled: workoutData.session?.completion_status === 'cancelled'
+    isComplete: workoutData.session?.status === 'completed',
+    isInProgress: workoutData.session?.status === 'in_progress',
+    isCancelled: workoutData.session?.status === 'cancelled'
   }
 
   // Get exercise by ID
   const getExercise = useCallback((exerciseId: string) => {
-    return workoutData.exercises.find(ex => ex.exercise_id === exerciseId)
+    return workoutData.exercises.find(ex => ex.exerciseId === exerciseId)
   }, [workoutData.exercises])
 
   // Get sets for an exercise
