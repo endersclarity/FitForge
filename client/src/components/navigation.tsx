@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { FeatureComingSoonDialog } from "@/components/ui/feature-coming-soon-dialog";
 
 export function Navigation() {
   const { theme, toggleTheme } = useTheme();
@@ -20,6 +21,7 @@ export function Navigation() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const { handleNavigationError } = useNavigationErrorHandler();
 
   // Safe navigation handler with error recovery
@@ -61,6 +63,7 @@ export function Navigation() {
   );
 
   return (
+    <>
     <nav className="bg-background/80 backdrop-blur-lg border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -101,7 +104,7 @@ export function Navigation() {
                   variant="ghost" 
                   size="icon" 
                   className="hidden md:flex relative"
-                  onClick={() => setShowNotifications(!showNotifications)}
+                  onClick={() => setShowNotificationsModal(true)}
                 >
                   <Bell className="h-5 w-5" />
                   <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
@@ -185,5 +188,14 @@ export function Navigation() {
         </div>
       </div>
     </nav>
+    
+    {/* Notifications Coming Soon Modal */}
+    <FeatureComingSoonDialog
+      open={showNotificationsModal}
+      onOpenChange={setShowNotificationsModal}
+      featureName="Notifications"
+      description="Real-time workout notifications, goal reminders, and achievement alerts are coming soon!"
+    />
+    </>
   );
 }

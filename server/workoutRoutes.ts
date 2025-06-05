@@ -81,24 +81,39 @@ router.post("/", authenticateToken, async (req: any, res) => {
 router.post("/start", authenticateToken, async (req: any, res) => {
   try {
     const { workoutType, plannedExercises } = startWorkoutSchema.parse(req.body);
-    const userId = req.userId.toString();
+    const userId = req.userId;
     
-    // Check if there's already an active session
-    const activeSession = await unifiedStorage.getActiveUnifiedSession(userId);
+    // Check if there's already an active session using working storage
+    const existingSessions = await storage.getWorkoutSessions(userId);
+    const activeSession = existingSessions.find(s => s.status === 'active' || s.status === 'in_progress');
+    
     if (activeSession) {
       return res.status(409).json({ 
         message: "You already have an active workout session. Please complete or abandon it first.",
-        sessionId: activeSession.id,
+        sessionId: `local-${activeSession.id}`,
         sessionStartTime: activeSession.startTime,
-        sessionExerciseCount: activeSession.exercises.length,
+        sessionExerciseCount: 1,
         canAbandon: true
       });
     }
     
-    const session = await unifiedStorage.createUnifiedWorkoutSession(userId, workoutType, plannedExercises);
+    // Create session using working storage
+    const sessionData = {
+      userId: userId,
+      workoutType: workoutType,
+      startTime: new Date(),
+      status: 'active' as const,
+      exercises: plannedExercises || [],
+      exerciseCount: plannedExercises?.length || 1,
+      setCount: 0,
+      totalVolume: 0,
+      notes: ''
+    };
+    
+    const session = await storage.createWorkoutSession(sessionData);
     
     res.json({
-      sessionId: session.id,
+      sessionId: `local-${session.id}`,
       startTime: session.startTime,
       message: "Workout session started successfully"
     });
@@ -128,35 +143,41 @@ router.post("/:sessionId/sets", authenticateToken, async (req: any, res) => {
     }
 
     // Get current session to determine set number
-    const sessionData = await unifiedStorage.getUnifiedWorkoutSessions(userId, { 
-      sessionType: 'active' 
-    });
-    const currentSession = sessionData.find(s => s.id === sessionId);
-    const exerciseInSession = currentSession?.exercises?.find(e => e.exerciseId === setData.exerciseId);
-    const currentSetNumber = setData.setNumber || (exerciseInSession?.sets?.length || 0) + 1;
+    const numericSessionId = parseInt(sessionId.replace('local-', ''));
+    const currentSession = await storage.getWorkoutSession(numericSessionId);
+    
+    if (!currentSession) {
+      return res.status(404).json({ message: "Workout session not found" });
+    }
+    
+    const currentSetNumber = setData.setNumber || 1;
 
-    const result = await unifiedStorage.logSetToUnifiedStorage(
-      userId,
-      sessionId,
-      parseInt(setData.exerciseId),
-      exerciseName,
+    // Log the set using the working storage system
+    const result = await storage.updateSetLog(
+      numericSessionId,
+      setData.exerciseId,
+      currentSetNumber,
       {
-        setNumber: currentSetNumber,
         weight: setData.weight,
         reps: setData.reps,
-        isWarmup: false,
-        isDropSet: false,
-        isFailure: false,
         equipment: setData.equipment,
         formScore: setData.formScore,
         notes: setData.notes
       }
     );
     
+    // Calculate volume for this set
+    const setVolume = setData.weight * setData.reps;
+    
+    // Update session with new volume
+    await storage.updateWorkoutSession(numericSessionId, {
+      totalVolume: (currentSession.totalVolume || 0) + setVolume
+    });
+    
     res.json({
-      success: result.success,
-      totalVolume: result.totalVolume,
-      setId: result.setId,
+      success: result,
+      totalVolume: setVolume,
+      setId: `${numericSessionId}-${setData.exerciseId}-${currentSetNumber}`,
       message: `Set ${currentSetNumber} logged successfully`
     });
   } catch (error: any) {
@@ -173,9 +194,30 @@ router.put("/:sessionId/complete", authenticateToken, async (req: any, res) => {
   try {
     const { sessionId } = req.params;
     const { rating, notes } = completeWorkoutSchema.parse(req.body);
-    const userId = req.userId.toString();
+    const userId = req.userId;
     
-    const summary = await unifiedStorage.completeUnifiedWorkoutSession(userId, sessionId, rating, notes);
+    // Find the session in the working storage system
+    const session = await storage.getWorkoutSession(parseInt(sessionId.replace('local-', '')));
+    if (!session) {
+      return res.status(404).json({ message: "Workout session not found" });
+    }
+    
+    // Update session to mark as completed
+    const completedSession = await storage.updateWorkoutSession(session.id, {
+      endTime: new Date(),
+      status: 'completed',
+      notes: notes
+    });
+    
+    // Calculate summary
+    const summary = {
+      duration: session.endTime ? (new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 1000 / 60 : 0,
+      totalVolume: session.totalVolume || 0,
+      exerciseCount: (session as any).exerciseCount || 1,
+      setCount: (session as any).setCount || 1,
+      caloriesBurned: Math.round((session.totalVolume || 0) * 0.05), // Rough estimate
+      personalRecords: []
+    };
     
     res.json({
       message: "Workout completed successfully",

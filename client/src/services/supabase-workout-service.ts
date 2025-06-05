@@ -6,6 +6,11 @@ import type {
   Exercise,
   PersonalRecord 
 } from '@/lib/supabase'
+import { 
+  transformSupabaseExercise,
+  transformSupabaseWorkoutSession,
+  transformSupabaseSetData
+} from '../../../shared/consolidated-schema'
 
 export interface StartWorkoutRequest {
   workoutType: string
@@ -46,19 +51,21 @@ export class SupabaseWorkoutService {
 
       // Create workout session
       const session = await db.createWorkoutSession({
-        user_id: user.id,
-        start_time: new Date().toISOString(),
-        end_time: null,
-        total_duration_seconds: null,
-        workout_type: request.workoutType,
-        session_name: request.sessionName || `${request.workoutType} Workout`,
-        notes: null,
-        total_volume_lbs: 0,
-        calories_burned: null,
-        average_heart_rate: null,
-        completion_status: 'in_progress',
-        user_rating: null
-      })
+        userId: user.id,
+        startTime: new Date().toISOString(),
+        endTime: undefined,
+        totalDuration: 0,
+        workoutType: request.workoutType,
+        sessionName: request.sessionName || `${request.workoutType} Workout`,
+        notes: undefined,
+        totalVolume: 0,
+        caloriesBurned: 0,
+        status: 'in_progress',
+        rating: undefined,
+        lastModified: new Date().toISOString(),
+        exercises: [],
+        personalRecords: []
+      } as any)
 
       // Get exercise details
       const exercises = await Promise.all(
@@ -72,18 +79,13 @@ export class SupabaseWorkoutService {
           if (exercise.error) throw exercise.error
 
           const workoutExercise = await db.createWorkoutExercise({
-            workout_session_id: session.id,
-            exercise_id: exerciseId,
-            user_id: user.id,
-            exercise_order: index + 1,
-            exercise_notes: null,
-            total_volume_lbs: 0,
-            total_sets_completed: 0,
-            average_form_score: null,
-            rest_time_seconds: null,
-            started_at: new Date().toISOString(),
-            completed_at: null
-          })
+            exerciseId: exerciseId,
+            exerciseOrder: index + 1,
+            notes: undefined,
+            restTimeSeconds: 60,
+            startedAt: new Date().toISOString(),
+            completedAt: undefined
+          } as any)
 
           return {
             ...workoutExercise,
@@ -92,7 +94,7 @@ export class SupabaseWorkoutService {
         })
       )
 
-      return { session, exercises }
+      return { session, exercises: exercises as any }
     } catch (error) {
       console.error('Error starting workout:', error)
       throw error
@@ -141,8 +143,8 @@ export class SupabaseWorkoutService {
       const newVolume = workoutExercise.total_volume_lbs + (request.weight * request.reps)
       const newSetsCompleted = workoutExercise.total_sets_completed + 1
 
-      await db.updateWorkoutSession(workoutExercise.workout_session_id, {
-        total_volume_lbs: (await this.getSessionVolume(request.sessionId)) + (request.weight * request.reps)
+      await db.updateWorkoutSession(workoutExercise.workoutSessionId, {
+        totalVolume: (await this.getSessionVolume(request.sessionId)) + (request.weight * request.reps)
       })
 
       await supabase
@@ -174,16 +176,16 @@ export class SupabaseWorkoutService {
       if (!session) throw new Error('Workout session not found')
 
       const endTime = new Date().toISOString()
-      const startTime = new Date(session.start_time)
+      const startTime = new Date(session.startTime)
       const duration = Math.floor((new Date(endTime).getTime() - startTime.getTime()) / 1000)
 
       // Update session
       const completedSession = await db.updateWorkoutSession(request.sessionId, {
-        end_time: endTime,
-        total_duration_seconds: duration,
-        completion_status: 'completed',
-        user_rating: request.rating || null,
-        notes: request.notes || null
+        endTime: endTime,
+        totalDuration: Math.round(duration / 60),
+        status: 'completed',
+        rating: request.rating || undefined,
+        notes: request.notes || undefined
       })
 
       // Mark all exercises as completed
@@ -261,23 +263,34 @@ export class SupabaseWorkoutService {
           const { data: exercise, error: exerciseError } = await supabase
             .from('exercises')
             .select('*')
-            .eq('id', workoutExercise.exercise_id)
+            .eq('id', workoutExercise.exerciseId)
             .single()
 
           if (exerciseError) throw exerciseError
 
           // Get sets for this exercise
-          const sets = await db.getWorkoutSets(workoutExercise.id)
+          const sets = await db.getWorkoutSets(workoutExercise.exerciseId)
 
           return {
-            ...workoutExercise,
-            exercise,
-            sets
+            exerciseId: workoutExercise.exerciseId,
+            exerciseName: exercise.exercise_name,
+            exerciseOrder: workoutExercise.exerciseOrder,
+            restTimeSeconds: workoutExercise.restTimeSeconds || 60,
+            sets: sets.map(transformSupabaseSetData),
+            primaryMuscles: [],
+            secondaryMuscles: [],
+            targetSets: 3,
+            targetReps: 8,
+            progressiveOverload: undefined,
+            notes: undefined,
+            targetWeight: 0,
+            personalRecord: false,
+            exercise: transformSupabaseExercise(exercise)
           }
         })
       )
 
-      return { session, exercises }
+      return { session, exercises: exercises as any }
     } catch (error) {
       console.error('Error getting workout session:', error)
       throw error
@@ -417,8 +430,8 @@ export class SupabaseWorkoutService {
   async cancelWorkout(sessionId: string): Promise<WorkoutSession> {
     try {
       return await db.updateWorkoutSession(sessionId, {
-        completion_status: 'cancelled',
-        end_time: new Date().toISOString()
+        status: 'cancelled',
+        endTime: new Date().toISOString()
       })
     } catch (error) {
       console.error('Error cancelling workout:', error)
