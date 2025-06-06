@@ -245,7 +245,7 @@ export class LocalWorkoutService {
           total_volume_lbs: session.totalVolume || 0,
           calories_burned: session.caloriesBurned || 0,
           average_heart_rate: null,
-          completion_status: session.completionStatus === 'completed' ? 'completed' : 'in_progress',
+          completion_status: session.status === 'completed' ? 'completed' : 'in_progress',
           user_rating: session.rating || null,
           created_at: session.createdAt || new Date().toISOString(),
           updated_at: new Date().toISOString()

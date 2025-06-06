@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage } from "./storageAdapter";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { 
@@ -286,49 +286,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Workout session routes
   app.get("/api/workout-sessions", authenticateToken, async (req: any, res) => {
     try {
-      
-      // Import fileStorage for real user data
-      const { fileStorage } = await import("./fileStorage");
-      await fileStorage.initialize();
-      
-      // Get real workout sessions from user's JSON file
-      const realSessions = await fileStorage.getWorkoutSessions(req.userId.toString());
-      
-      // Convert fileStorage format to expected frontend format
-      const convertedSessions = realSessions.map(session => ({
-        id: parseInt(session.id.substring(0, 8), 16), // Convert UUID to number for compatibility
-        userId: parseInt(session.userId),
-        workoutTemplateId: null,
-        startTime: session.startTime,
-        endTime: session.endTime,
-        duration: session.endTime ? 
-          Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000) : 0,
-        exercises: session.exercises.map(ex => ({
-          exerciseName: ex.exerciseName,
-          sets: ex.sets.map(set => ({
-            reps: set.reps,
-            weight: set.weight,
-            restTime: 60, // Default rest time
-            formScore: set.formScore || 8,
-            notes: set.notes
-          }))
-        })),
-        caloriesBurned: session.caloriesBurned,
-        notes: session.notes,
-        rating: session.rating || 5,
-        completionStatus: session.status,
-        createdAt: session.startTime,
-        workoutId: 1,
-        totalDuration: session.endTime ? 
-          Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000) : 0,
-        formScore: session.exercises.length > 0 ? 
-          session.exercises.reduce((sum, ex) => sum + (ex.formScore || 8), 0) / session.exercises.length : 8,
-        workoutType: session.workoutType
-      }));
-      
-      res.json(convertedSessions);
+      // Use our new StorageAdapter for consistent real data access
+      const sessions = await storage.getWorkoutSessions(req.userId);
+      res.json(sessions);
     } catch (error: any) {
-      console.error("Error fetching real workout sessions:", error);
+      console.error("Error fetching workout sessions:", error);
       res.status(500).json({ message: error.message });
     }
   });
