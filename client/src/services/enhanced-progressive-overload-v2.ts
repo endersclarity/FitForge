@@ -944,12 +944,8 @@ export class EnhancedProgressiveOverloadServiceV2 {
     const enhancedResult = this.calculateAIEnhancedProgression(exerciseHistory);
     
     // Return base ProgressionRecommendation interface for hook compatibility
-    return {
-      strategy: enhancedResult.strategy,
-      suggestion: enhancedResult.suggestion,
-      metrics: enhancedResult.metrics,
-      nextSessionPlan: enhancedResult.nextSessionPlan
-    };
+    // EnhancedProgressionRecommendationV2 extends ProgressionRecommendation, so we can return it directly
+    return enhancedResult;
   }
 }
 
