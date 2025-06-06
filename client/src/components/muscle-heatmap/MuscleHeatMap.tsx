@@ -6,26 +6,33 @@ import React, { useState, useMemo } from 'react';
 import { MuscleRecoveryState, MuscleGroupType } from '@/types/muscle-recovery';
 import { useMuscleRecovery } from '@/hooks/use-muscle-recovery';
 import BodyDiagram from './BodyDiagram';
+import BodyDiagram3D from './BodyDiagram3D';
 import MuscleTooltip from './MuscleTooltip';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Zap, Moon, TrendingUp } from 'lucide-react';
+import { AlertCircle, Zap, Moon, TrendingUp, Box, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useMobileOptimization } from './MobileOptimizations';
 
 interface MuscleHeatMapProps {
   className?: string;
   showRecommendations?: boolean;
   showDetailedMetrics?: boolean;
   onWorkoutSuggestion?: (workoutType: 'upper' | 'lower' | 'full' | 'recovery') => void;
+  defaultView?: '2d' | '3d';
+  allow3D?: boolean;
 }
 
 export function MuscleHeatMap({
   className,
   showRecommendations = true,
   showDetailedMetrics = true,
-  onWorkoutSuggestion
+  onWorkoutSuggestion,
+  defaultView = '2d',
+  allow3D = true
 }: MuscleHeatMapProps) {
   const {
     recoveryStates,
@@ -53,6 +60,10 @@ export function MuscleHeatMap({
     muscle: MuscleGroupType;
     data: MuscleRecoveryState | null;
   } | null>(null);
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>(defaultView);
+  
+  // Mobile optimization
+  const { isMobile } = useMobileOptimization();
 
   // Memoize expensive calculations for performance - MUST be before early returns
   const memoizedMetrics = useMemo(() => {
@@ -179,19 +190,55 @@ export function MuscleHeatMap({
               <TrendingUp className="h-5 w-5" />
               <span>Muscle Recovery Map</span>
             </div>
-            <Badge variant="outline">
-              Overall: {overallFatigue}% Fatigue
-            </Badge>
+            <div className="flex items-center space-x-2">
+              {/* 3D/2D Toggle */}
+              {allow3D && (
+                <div className="flex bg-muted rounded-lg p-1">
+                  <Button
+                    variant={viewMode === '2d' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('2d')}
+                    className="h-8 px-3"
+                  >
+                    <Square className="h-4 w-4 mr-1" />
+                    2D
+                  </Button>
+                  <Button
+                    variant={viewMode === '3d' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('3d')}
+                    className="h-8 px-3"
+                  >
+                    <Box className="h-4 w-4 mr-1" />
+                    3D
+                  </Button>
+                </div>
+              )}
+              <Badge variant="outline">
+                Overall: {overallFatigue}% Fatigue
+              </Badge>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="pb-2">
-          <BodyDiagram
-            muscleStates={recoveryStates}
-            onMuscleHover={handleMuscleHover}
-            onMuscleClick={handleMuscleClick}
-            interactive={true}
-            showMetrics={true}
-          />
+          {viewMode === '3d' ? (
+            <BodyDiagram3D
+              muscleStates={recoveryStates}
+              onMuscleHover={handleMuscleHover}
+              onMuscleClick={handleMuscleClick}
+              interactive={true}
+              showMetrics={true}
+              fallbackTo2D={() => setViewMode('2d')}
+            />
+          ) : (
+            <BodyDiagram
+              muscleStates={recoveryStates}
+              onMuscleHover={handleMuscleHover}
+              onMuscleClick={handleMuscleClick}
+              interactive={true}
+              showMetrics={true}
+            />
+          )}
         </CardContent>
       </Card>
 
