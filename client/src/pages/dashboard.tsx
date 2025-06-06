@@ -219,7 +219,7 @@ export default function Dashboard() {
             </p>
             
             {/* Today's Progress */}
-            <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-3xl mx-auto">
               <Card>
                 <CardContent className="p-6 text-center">
                   <div className="w-16 h-16 mx-auto mb-4 relative">
@@ -283,7 +283,7 @@ export default function Dashboard() {
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold mb-8">Quick Actions</h2>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {quickActions.map((action, index) => (
               <Link key={index} href={action.href}>
                 <Card className="card-hover cursor-pointer">
@@ -304,7 +304,7 @@ export default function Dashboard() {
       {/* Recent Activity */}
       <section className="py-12 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             {/* Recent Workouts */}
             <Card>
               <CardHeader>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Search, CheckCircle, Plus } from "lucide-react";
 import { useWorkoutSessionV2, type Exercise } from "@/hooks/use-workout-session-v2";
+import { usePullToRefresh } from "@/hooks/use-gesture-support";
 
 interface ExerciseSelectorProps {
   onBack: () => void;
@@ -17,8 +18,13 @@ export function ExerciseSelector({ onBack }: ExerciseSelectorProps) {
   const { addExercise, session } = useWorkoutSessionV2();
 
   // Fetch all exercises from the database
-  const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
+  const { data: exercises = [], isLoading, refetch } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises"],
+  });
+
+  // Pull-to-refresh gesture support
+  const { ref: pullToRefreshRef, isPulling } = usePullToRefresh(() => {
+    refetch();
   });
 
   // Filter exercises based on search and category
@@ -45,7 +51,7 @@ export function ExerciseSelector({ onBack }: ExerciseSelectorProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div ref={pullToRefreshRef} className="min-h-screen bg-background">
       {/* Header */}
       <section className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 py-6 border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -83,14 +89,14 @@ export function ExerciseSelector({ onBack }: ExerciseSelectorProps) {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Search and Filter */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search exercises or muscles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-12 text-base"
             />
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -98,8 +104,9 @@ export function ExerciseSelector({ onBack }: ExerciseSelectorProps) {
               <Button
                 key={type}
                 variant={selectedCategory === type ? "default" : "outline"}
-                size="sm"
+                size="default"
                 onClick={() => setSelectedCategory(type)}
+                className="min-h-[44px] touch-action-manipulation"
               >
                 {type === "all" ? "All" : type}
               </Button>
@@ -146,7 +153,7 @@ export function ExerciseSelector({ onBack }: ExerciseSelectorProps) {
                   return (
                     <div 
                       key={index} 
-                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      className={`p-4 sm:p-4 border rounded-lg cursor-pointer transition-colors touch-action-manipulation min-h-[56px] ${
                         isSelected ? 'bg-green-50 dark:bg-green-900/20 border-green-200' : 'hover:bg-accent/50'
                       }`}
                       onClick={() => handleSelectExercise(exercise)}
