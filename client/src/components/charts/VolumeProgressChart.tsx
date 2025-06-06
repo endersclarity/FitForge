@@ -39,7 +39,7 @@ ChartJS.register(
   Filler
 );
 
-interface WorkoutSession {
+export interface WorkoutSession {
   id: string;
   date: string;
   workoutType: string;
@@ -62,7 +62,7 @@ interface VolumeMetrics {
   volumeByType: Record<string, number>;
 }
 
-interface VolumeProgressChartProps {
+export interface VolumeProgressChartProps {
   sessions: WorkoutSession[];
   timeRange?: '1M' | '3M' | '6M' | '1Y' | 'ALL';
   showDetailedMetrics?: boolean;
@@ -176,7 +176,7 @@ export function VolumeProgressChart({
   }, [filteredSessions]);
 
   // Prepare chart data
-  const chartData: ChartData<'line' | 'bar'> = useMemo(() => {
+  const chartData: ChartData<'line'> | ChartData<'bar'> = useMemo(() => {
     const sessionVolumes = filteredSessions.map(session => {
       const totalVolume = session.exercises.reduce((sessionTotal, exercise) => {
         const exerciseVolume = exercise.sets.reduce((exerciseTotal, set) => 
@@ -398,9 +398,9 @@ export function VolumeProgressChart({
         {/* Chart */}
         <div style={{ height: `${height}px` }}>
           {chartType === 'line' || chartType === 'both' ? (
-            <Line data={chartData} options={chartOptions as ChartOptions<'line'>} />
+            <Line data={chartData as ChartData<'line'>} options={chartOptions as ChartOptions<'line'>} />
           ) : (
-            <Bar data={chartData} options={chartOptions as ChartOptions<'bar'>} />
+            <Bar data={chartData as ChartData<'bar'>} options={chartOptions as ChartOptions<'bar'>} />
           )}
         </div>
 
@@ -425,7 +425,7 @@ export function VolumeProgressChart({
               <div>
                 <p className="text-muted-foreground">Total Volume</p>
                 <p className="font-medium">
-                  {Math.round(volumeMetrics.bestVolumeSession.totalVolume).toLocaleString()} lbs
+                  {Math.round((volumeMetrics.bestVolumeSession as any).totalVolume).toLocaleString()} lbs
                 </p>
               </div>
             </div>

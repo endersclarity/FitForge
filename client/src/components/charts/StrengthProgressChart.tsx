@@ -54,7 +54,7 @@ interface WorkoutSession {
   }>;
 }
 
-interface ExerciseProgress {
+export interface ExerciseProgress {
   exerciseName: string;
   maxWeight: number;
   estimatedOneRM: number;
@@ -64,7 +64,7 @@ interface ExerciseProgress {
   strengthGain: number; // percentage improvement
 }
 
-interface StrengthMetrics {
+export interface StrengthMetrics {
   totalExercises: number;
   overallStrengthGain: number;
   topExercises: ExerciseProgress[];
@@ -78,7 +78,7 @@ interface StrengthMetrics {
   }>;
 }
 
-interface StrengthProgressChartProps {
+export interface StrengthProgressChartProps {
   sessions: WorkoutSession[];
   timeRange?: '1M' | '3M' | '6M' | '1Y' | 'ALL';
   focusExercises?: string[];
@@ -263,7 +263,7 @@ export function StrengthProgressChart({
   }, [filteredSessions]);
 
   // Prepare chart data for top exercises
-  const chartData: ChartData<'line' | 'bar'> = useMemo(() => {
+  const chartData: ChartData<'line'> | ChartData<'bar'> = useMemo(() => {
     if (strengthMetrics.topExercises.length === 0) {
       return { labels: [], datasets: [] };
     }
@@ -522,9 +522,9 @@ export function StrengthProgressChart({
         {/* Chart */}
         <div style={{ height: `${height}px` }}>
           {chartType === 'line' ? (
-            <Line data={chartData} options={chartOptions as ChartOptions<'line'>} />
+            <Line data={chartData as ChartData<'line'>} options={chartOptions as ChartOptions<'line'>} />
           ) : (
-            <Bar data={chartData} options={chartOptions as ChartOptions<'bar'>} />
+            <Bar data={chartData as ChartData<'bar'>} options={chartOptions as ChartOptions<'bar'>} />
           )}
         </div>
 
