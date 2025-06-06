@@ -176,7 +176,7 @@ export function VolumeProgressChart({
   }, [filteredSessions]);
 
   // Prepare chart data
-  const chartData: ChartData<'line'> | ChartData<'bar'> = useMemo(() => {
+  const chartData: any = useMemo(() => {
     const sessionVolumes = filteredSessions.map(session => {
       const totalVolume = session.exercises.reduce((sessionTotal, exercise) => {
         const exerciseVolume = exercise.sets.reduce((exerciseTotal, set) => 
@@ -382,7 +382,7 @@ export function VolumeProgressChart({
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-success">
-                {volumeMetrics.bestVolumeSession ? Math.round(volumeMetrics.bestVolumeSession.totalVolume).toLocaleString() : 0}
+                {volumeMetrics.bestVolumeSession ? Math.round(volumeMetrics.totalVolume).toLocaleString() : 0}
               </p>
               <p className="text-xs text-muted-foreground">Best Session</p>
             </div>

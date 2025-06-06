@@ -20,7 +20,8 @@ import {
 } from './service-interfaces'
 
 import { GoalProgressEngine } from './goal-progress-engine'
-import { Goal, GoalType, goalService } from './supabase-goal-service'
+import { Goal, GoalType } from './supabase-goal-service'
+import * as goalService from './supabase-goal-service'
 import { workoutService } from './supabase-workout-service'
 import { supabase } from '@/lib/supabase'
 

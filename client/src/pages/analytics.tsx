@@ -108,18 +108,18 @@ export default function Analytics() {
   // Filter sessions by date range
   const filteredSessions = useMemo(() => {
     return workoutSessions.filter(session => {
-      const sessionDate = new Date(session.start_time);
+      const sessionDate = new Date(session.startTime);
       return sessionDate >= dateRange;
     });
   }, [workoutSessions, dateRange]);
 
   // Calculate analytics metrics
   const analyticsMetrics = useMemo((): AnalyticsMetric[] => {
-    const completedSessions = filteredSessions.filter(s => s.completion_status === 'completed');
+    const completedSessions = filteredSessions.filter(s => s.status === 'completed');
     
-    const totalVolume = completedSessions.reduce((sum, session) => sum + (session.total_volume_lbs || 0), 0);
-    const totalDuration = completedSessions.reduce((sum, session) => sum + (session.total_duration_seconds || 0), 0);
-    const totalCalories = completedSessions.reduce((sum, session) => sum + (session.calories_burned || 0), 0);
+    const totalVolume = completedSessions.reduce((sum, session) => sum + (session.totalVolume || 0), 0);
+    const totalDuration = completedSessions.reduce((sum, session) => sum + (session.totalDuration || 0), 0);
+    const totalCalories = completedSessions.reduce((sum, session) => sum + (session.caloriesBurned || 0), 0);
     const workoutCount = completedSessions.length;
     
     const avgDuration = workoutCount > 0 ? Math.round(totalDuration / workoutCount / 60) : 0;
@@ -129,11 +129,11 @@ export default function Analytics() {
     const periodDays = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : timeRange === "90d" ? 90 : 365;
     const prevStart = subDays(dateRange, periodDays);
     const prevSessions = workoutSessions.filter(s => {
-      const date = new Date(s.start_time);
-      return date >= prevStart && date < dateRange && s.completion_status === 'completed';
+      const date = new Date(s.startTime);
+      return date >= prevStart && date < dateRange && s.status === 'completed';
     });
     
-    const prevVolume = prevSessions.reduce((sum, s) => sum + (s.total_volume_lbs || 0), 0);
+    const prevVolume = prevSessions.reduce((sum, s) => sum + (s.totalVolume || 0), 0);
     const prevWorkouts = prevSessions.length;
     
     const volumeChange = prevVolume > 0 ? ((totalVolume - prevVolume) / prevVolume) * 100 : 0;
@@ -195,13 +195,13 @@ export default function Analytics() {
       const endDate = interval > 1 ? subDays(new Date(), i - interval + 1) : date;
       
       const periodsessions = filteredSessions.filter(session => {
-        const sessionDate = new Date(session.start_time);
-        return sessionDate >= endDate && sessionDate <= date && session.completion_status === 'completed';
+        const sessionDate = new Date(session.startTime);
+        return sessionDate >= endDate && sessionDate <= date && session.status === 'completed';
       });
       
-      const volume = periodsessions.reduce((sum, s) => sum + (s.total_volume_lbs || 0), 0);
-      const duration = periodsessions.reduce((sum, s) => sum + (s.total_duration_seconds || 0), 0) / 60; // Convert to minutes
-      const calories = periodsessions.reduce((sum, s) => sum + (s.calories_burned || 0), 0);
+      const volume = periodsessions.reduce((sum, s) => sum + (s.totalVolume || 0), 0);
+      const duration = periodsessions.reduce((sum, s) => sum + (s.totalDuration || 0), 0); // Already in minutes
+      const calories = periodsessions.reduce((sum, s) => sum + (s.caloriesBurned || 0), 0);
       
       data.push({
         date: interval > 1 ? `Week of ${format(endDate, 'MMM d')}` : format(date, 'MMM d'),
@@ -220,11 +220,11 @@ export default function Analytics() {
     const muscleGroups = new Map<string, { volume: number; workouts: number }>();
     
     filteredSessions.forEach(session => {
-      if (session.completion_status !== 'completed') return;
+      if (session.status !== 'completed') return;
       
       // Extract muscle groups from workout type
-      const workoutType = session.workout_type || 'Other';
-      const volume = session.total_volume_lbs || 0;
+      const workoutType = session.workoutType || 'Other';
+      const volume = session.totalVolume || 0;
       
       // Simple muscle group mapping based on workout type
       let muscleGroup = 'Other';
@@ -436,7 +436,7 @@ export default function Analytics() {
                     <span className="text-muted-foreground">Consistency Rate</span>
                     <Badge variant="secondary">
                       {filteredSessions.length > 0 
-                        ? `${((filteredSessions.filter(s => s.completion_status === 'completed').length / filteredSessions.length) * 100).toFixed(1)}%`
+                        ? `${((filteredSessions.filter(s => s.status === 'completed').length / filteredSessions.length) * 100).toFixed(1)}%`
                         : '0%'
                       }
                     </Badge>
@@ -453,10 +453,10 @@ export default function Analytics() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {Array.from(new Set(filteredSessions.map(s => s.workout_type || 'Custom')))
+                    {Array.from(new Set(filteredSessions.map(s => s.workoutType || 'Custom')))
                       .slice(0, 5)
                       .map((workoutType, index) => {
-                        const count = filteredSessions.filter(s => (s.workout_type || 'Custom') === workoutType).length;
+                        const count = filteredSessions.filter(s => (s.workoutType || 'Custom') === workoutType).length;
                         const percentage = (count / filteredSessions.length) * 100;
                         
                         return (

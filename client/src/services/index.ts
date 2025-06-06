@@ -39,9 +39,19 @@ export {
 
 export { GoalProgressEngine } from './goal-progress-engine'
 export { localWorkoutService } from './local-workout-service'
-export { workoutAnalyticsService } from './workout-analytics-service'
-export { goalService } from './supabase-goal-service'
+export { analyticsService as workoutAnalyticsService } from './workout-analytics-service'
+export * as goalService from './supabase-goal-service'
 export { workoutService } from './supabase-workout-service'
+
+// ============================================================================
+// IMPORT ALL SERVICES FOR REGISTRY (Internal use)
+// ============================================================================
+
+import { enhancedGoalProgressService } from './enhanced-goal-progress-service'
+import { enhancedUserPreferencesService } from './enhanced-user-preferences-service'
+import { performanceMonitoringService } from './performance-monitoring-service'
+import { localWorkoutService } from './local-workout-service'
+import { analyticsService as workoutAnalyticsService } from './workout-analytics-service'
 
 // ============================================================================
 // QUICK ACCESS PATTERNS FOR AGENT CONSUMPTION
