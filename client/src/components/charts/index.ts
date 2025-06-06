@@ -1,11 +1,19 @@
-// Charts Component Exports
-// Progress chart components for FitForge analytics
-// Created: June 6, 2025
+/**
+ * Chart Components Export Index
+ * Advanced progress visualization components for FitForge
+ */
 
-export { default as VolumeProgressChart } from './VolumeProgressChart';
-export { default as StrengthProgressChart } from './StrengthProgressChart';
-export { default as MuscleActivationChart } from './MuscleActivationChart';
+export { VolumeProgressChart } from './VolumeProgressChart';
+export { StrengthProgressChart } from './StrengthProgressChart';
 
-export type { VolumeProgressChart as VolumeProgressChartComponent } from './VolumeProgressChart';
-export type { StrengthProgressChart as StrengthProgressChartComponent } from './StrengthProgressChart';
-export type { MuscleActivationChart as MuscleActivationChartComponent } from './MuscleActivationChart';
+// Type exports for component props
+export type { 
+  VolumeProgressChartProps,
+  WorkoutSession 
+} from './VolumeProgressChart';
+
+export type {
+  StrengthProgressChartProps,
+  ExerciseProgress,
+  StrengthMetrics
+} from './StrengthProgressChart';

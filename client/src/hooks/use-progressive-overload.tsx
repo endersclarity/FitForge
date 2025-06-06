@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { progressiveOverloadService } from '@/services/progressive-overload';
+import { progressiveOverloadService } from '@/services/enhanced-progressive-overload-v2';
 import { 
   ExerciseHistory, 
   ProgressionRecommendation, 
