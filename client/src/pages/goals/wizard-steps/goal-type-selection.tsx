@@ -1,10 +1,20 @@
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
-import { TrendingDown, Dumbbell, Activity, Heart } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import type { WizardData } from "../goal-wizard";
+import {
+  TrendingDown,
+  Dumbbell,
+  Activity,
+  Heart,
+  Target,
+  Trophy,
+  Timer,
+  Zap
+} from "lucide-react";
 
 interface GoalTypeSelectionProps {
   data: WizardData;
@@ -18,85 +28,124 @@ const GOAL_TYPES = [
     title: 'Weight Loss',
     description: 'Lose weight and improve body composition',
     icon: TrendingDown,
-    color: 'text-red-600',
-    bgColor: 'bg-red-50',
-    examples: ['Lose 20 pounds', 'Reduce body fat to 15%', 'Fit into size 32 jeans']
+    color: 'bg-red-100 text-red-800 border-red-200',
+    features: ['Track weight progress', 'Body fat monitoring', 'Calorie targets', 'Progress photos'],
+    timeframe: '3-12 months typically'
   },
   {
     id: 'strength_gain',
     title: 'Strength Gain',
-    description: 'Build muscle and increase strength',
+    description: 'Build muscle and increase lifting capacity',
     icon: Dumbbell,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    examples: ['Bench press 225 lbs', 'Deadlift 400 lbs', 'Do 10 pull-ups']
-  },
-  {
-    id: 'endurance',
-    title: 'Endurance',
-    description: 'Improve cardiovascular fitness',
-    icon: Activity,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
-    examples: ['Run a 5K in under 25 minutes', 'Complete a marathon', 'Bike 50 miles']
+    color: 'bg-blue-100 text-blue-800 border-blue-200',
+    features: ['Exercise progression', 'Rep and weight tracking', 'Personal records', 'Volume monitoring'],
+    timeframe: '6-24 weeks per goal'
   },
   {
     id: 'body_composition',
     title: 'Body Composition',
-    description: 'Change body fat percentage and muscle mass',
-    icon: Heart,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    examples: ['Gain 10 lbs of muscle', 'Reduce body fat to 12%', 'Achieve lean physique']
+    description: 'Improve muscle-to-fat ratio and physique',
+    icon: Activity,
+    color: 'bg-green-100 text-green-800 border-green-200',
+    features: ['Body measurements', 'Muscle mass tracking', 'Fat percentage', 'Visual progress'],
+    timeframe: '3-6 months typically'
   }
-] as const;
+];
 
-export function GoalTypeSelection({ data, updateData, errors }: GoalTypeSelectionProps) {
-  const selectedType = GOAL_TYPES.find(type => type.id === data.goalType);
+const PRIORITY_LEVELS = [
+  { value: 'high', label: 'High Priority', description: 'Primary focus goal', color: 'bg-red-100 text-red-800' },
+  { value: 'medium', label: 'Medium Priority', description: 'Important but flexible', color: 'bg-yellow-100 text-yellow-800' },
+  { value: 'low', label: 'Low Priority', description: 'Nice to have goal', color: 'bg-gray-100 text-gray-800' }
+];
+
+export function GoalTypeSelection({ data, updateData }: GoalTypeSelectionProps) {
+  const handleGoalTypeSelect = (goalTypeId: string) => {
+    const goalType = GOAL_TYPES.find(type => type.id === goalTypeId);
+    if (goalType) {
+      updateData({
+        goalType: goalTypeId as any,
+        goalTitle: data.goalTitle || goalType.title // Set default title if empty
+      });
+    }
+  };
+
+  const generateGoalTitle = (type: string, customText?: string) => {
+    if (customText?.trim()) return customText;
+    
+    const templates = {
+      weight_loss: 'Lose Weight and Get Fit',
+      strength_gain: 'Build Strength and Muscle',
+      body_composition: 'Improve Body Composition'
+    };
+    
+    return templates[type as keyof typeof templates] || 'My Fitness Goal';
+  };
 
   return (
     <div className="space-y-6">
       {/* Goal Type Selection */}
       <div>
-        <Label className="text-base font-medium mb-4 block">
+        <Label className="text-base font-semibold mb-4 block">
           What type of fitness goal do you want to achieve?
         </Label>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid gap-4">
           {GOAL_TYPES.map((goalType) => {
             const Icon = goalType.icon;
             const isSelected = data.goalType === goalType.id;
             
             return (
-              <Card 
+              <Card
                 key={goalType.id}
-                className={`
-                  cursor-pointer transition-all duration-200 hover:shadow-md
-                  ${isSelected ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}
-                `}
-                onClick={() => updateData({ goalType: goalType.id })}
+                className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+                  isSelected 
+                    ? 'ring-2 ring-primary border-primary bg-primary/5' 
+                    : 'hover:border-primary/50'
+                }`}
+                onClick={() => handleGoalTypeSelect(goalType.id)}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-lg ${goalType.bgColor} flex items-center justify-center`}>
-                      <Icon className={`h-5 w-5 ${goalType.color}`} />
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${goalType.color}`}>
+                      <Icon className="h-6 w-6" />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sm">{goalType.title}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {goalType.description}
-                      </p>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-semibold text-lg">{goalType.title}</h3>
+                        {isSelected && (
+                          <Badge className="bg-primary text-primary-foreground">
+                            <Target className="h-3 w-3 mr-1" />
+                            Selected
+                          </Badge>
+                        )}
+                      </div>
                       
-                      {isSelected && (
-                        <div className="mt-3 pt-3 border-t">
-                          <p className="text-xs font-medium text-muted-foreground mb-2">Examples:</p>
-                          <ul className="text-xs text-muted-foreground space-y-1">
-                            {goalType.examples.map((example, index) => (
-                              <li key={index}>• {example}</li>
+                      <p className="text-muted-foreground mb-3">{goalType.description}</p>
+                      
+                      <div className="grid md:grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                            <Trophy className="h-3 w-3" />
+                            <span className="font-medium">Features</span>
+                          </div>
+                          <ul className="text-muted-foreground space-y-1">
+                            {goalType.features.map((feature, index) => (
+                              <li key={index} className="flex items-center gap-1">
+                                <span className="w-1 h-1 bg-current rounded-full" />
+                                {feature}
+                              </li>
                             ))}
                           </ul>
                         </div>
-                      )}
+                        
+                        <div>
+                          <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                            <Timer className="h-3 w-3" />
+                            <span className="font-medium">Typical Timeline</span>
+                          </div>
+                          <p className="text-muted-foreground">{goalType.timeframe}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -106,86 +155,82 @@ export function GoalTypeSelection({ data, updateData, errors }: GoalTypeSelectio
         </div>
       </div>
 
-      {/* Goal Title */}
-      <div>
-        <Label htmlFor="goalTitle" className="text-base font-medium">
-          Give your goal a specific title
-        </Label>
-        <p className="text-sm text-muted-foreground mb-3">
-          Be specific and motivating. This will help you stay focused.
-        </p>
-        <Input
-          id="goalTitle"
-          placeholder={selectedType ? `e.g., ${selectedType.examples[0]}` : "e.g., Lose 20 pounds in 6 months"}
-          value={data.goalTitle}
-          onChange={(e) => updateData({ goalTitle: e.target.value })}
-          className="text-base"
-        />
-      </div>
-
-      {/* Goal Description */}
-      <div>
-        <Label htmlFor="goalDescription" className="text-base font-medium">
-          Describe your goal in detail (optional)
-        </Label>
-        <p className="text-sm text-muted-foreground mb-3">
-          Add context about why this goal matters to you and what success looks like.
-        </p>
-        <Textarea
-          id="goalDescription"
-          placeholder="I want to achieve this goal because..."
-          value={data.goalDescription}
-          onChange={(e) => updateData({ goalDescription: e.target.value })}
-          rows={3}
-          className="text-base resize-none"
-        />
-      </div>
-
-      {/* Priority Level */}
-      <div>
-        <Label className="text-base font-medium mb-3 block">
-          How important is this goal to you?
-        </Label>
-        <Select 
-          value={data.priorityLevel} 
-          onValueChange={(value: 'high' | 'medium' | 'low') => updateData({ priorityLevel: value })}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="high">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span>High Priority - Top focus</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="medium">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <span>Medium Priority - Important but flexible</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="low">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span>Low Priority - Nice to have</span>
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* SMART Goal Tips */}
+      {/* Goal Title and Description */}
       {data.goalType && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="font-medium text-blue-900 mb-2">💡 SMART Goal Tips</h4>
-          <div className="text-sm text-blue-800 space-y-1">
-            <p><strong>S</strong>pecific: You've chosen {selectedType?.title.toLowerCase()}</p>
-            <p><strong>M</strong>easurable: We'll set target numbers in the next step</p>
-            <p><strong>A</strong>chievable: Make sure your target is realistic</p>
-            <p><strong>R</strong>elevant: This should align with your fitness priorities</p>
-            <p><strong>T</strong>ime-bound: We'll set a deadline in step 3</p>
+        <div className="space-y-4 pt-4 border-t">
+          <div>
+            <Label htmlFor="goalTitle" className="text-base font-semibold">
+              Goal Title
+            </Label>
+            <p className="text-sm text-muted-foreground mb-2">
+              Give your goal a motivating name that inspires you
+            </p>
+            <Input
+              id="goalTitle"
+              placeholder={generateGoalTitle(data.goalType)}
+              value={data.goalTitle}
+              onChange={(e) => updateData({ goalTitle: e.target.value })}
+              className="text-lg font-medium"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="goalDescription" className="text-base font-semibold">
+              Goal Description (Optional)
+            </Label>
+            <p className="text-sm text-muted-foreground mb-2">
+              Describe why this goal matters to you and what success looks like
+            </p>
+            <Textarea
+              id="goalDescription"
+              placeholder="I want to achieve this goal because..."
+              value={data.goalDescription}
+              onChange={(e) => updateData({ goalDescription: e.target.value })}
+              rows={3}
+            />
+          </div>
+
+          <div>
+            <Label className="text-base font-semibold mb-3 block">
+              Goal Priority Level
+            </Label>
+            <p className="text-sm text-muted-foreground mb-3">
+              How important is this goal compared to your other fitness objectives?
+            </p>
+            <div className="grid gap-3">
+              {PRIORITY_LEVELS.map((priority) => (
+                <Card
+                  key={priority.value}
+                  className={`cursor-pointer transition-all duration-200 ${
+                    data.priorityLevel === priority.value
+                      ? 'ring-2 ring-primary border-primary bg-primary/5'
+                      : 'hover:border-primary/50'
+                  }`}
+                  onClick={() => updateData({ priorityLevel: priority.value as any })}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Badge className={priority.color}>
+                          {priority.value === 'high' && <Zap className="h-3 w-3 mr-1" />}
+                          {priority.value === 'medium' && <Heart className="h-3 w-3 mr-1" />}
+                          {priority.value === 'low' && <Target className="h-3 w-3 mr-1" />}
+                          {priority.label}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {priority.description}
+                        </span>
+                      </div>
+                      {data.priorityLevel === priority.value && (
+                        <Badge variant="outline" className="bg-primary text-primary-foreground">
+                          Selected
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       )}
