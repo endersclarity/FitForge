@@ -17,6 +17,7 @@ import progressAnalyticsRoutes from "./progressAnalyticsRoutes";
 import userPreferencesRoutes from "./userPreferencesRoutes";
 import exerciseRoutes from "./routes/exercises";
 import goalRoutes from "./goalRoutes";
+import notificationRoutes from "./notificationRoutes";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fitforge-secret-key";
 
@@ -749,6 +750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/users", userPreferencesRoutes);
   app.use("/api/exercises", exerciseRoutes);
   app.use("/api/goals", goalRoutes);
+  app.use("/api/notifications", notificationRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

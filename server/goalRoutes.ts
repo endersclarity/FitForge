@@ -3,12 +3,15 @@ import { authenticateToken } from "./auth-middleware";
 import { UnifiedFileStorage } from "./unifiedFileStorage";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
+import { NotificationService } from "./notificationService";
 
 const router = Router();
 
-// Initialize unified file storage for goals
+// Initialize unified file storage for goals and notification service
 const unifiedStorage = new UnifiedFileStorage();
 unifiedStorage.initialize().catch(console.error);
+
+const notificationService = new NotificationService();
 
 // ============================================================================
 // GOAL DATA TYPES & VALIDATION SCHEMAS
@@ -357,6 +360,52 @@ router.get("/", authenticateToken, async (req: any, res) => {
           achieved_date: goal.achieved_date,
           current_progress_percentage: goal.current_progress_percentage
         });
+        
+        // AGENT B INTEGRATION: Trigger goal achievement notification
+        try {
+          await notificationService.createGoalMilestoneNotification(parseInt(userId), {
+            goalId: goal.id,
+            milestoneType: 'goal_achieved',
+            currentValue: goal.target_weight_lbs || goal.target_weight_for_exercise_lbs || 100,
+            targetValue: goal.target_weight_lbs || goal.target_weight_for_exercise_lbs || 100,
+            progressPercentage: 100,
+            goalTitle: goal.goal_title,
+            category: goal.goal_type === 'weight_loss' ? 'weight_loss' : 
+                      goal.goal_type === 'strength_gain' ? 'strength' : 'consistency'
+          });
+        } catch (notificationError) {
+          console.error('Failed to create goal achievement notification:', notificationError);
+        }
+      } else {
+        // Check for milestone notifications (25%, 50%, 75%)
+        const previousProgress = goal.current_progress_percentage;
+        const newProgress = Math.round(currentProgress);
+        
+        // Only trigger milestone notifications when crossing thresholds
+        const milestones = [
+          { threshold: 25, type: 'progress_25' as const },
+          { threshold: 50, type: 'progress_50' as const },
+          { threshold: 75, type: 'progress_75' as const }
+        ];
+        
+        for (const milestone of milestones) {
+          if (previousProgress < milestone.threshold && newProgress >= milestone.threshold) {
+            try {
+              await notificationService.createGoalMilestoneNotification(parseInt(userId), {
+                goalId: goal.id,
+                milestoneType: milestone.type,
+                currentValue: Math.round((newProgress / 100) * (goal.target_weight_lbs || goal.target_weight_for_exercise_lbs || 100)),
+                targetValue: goal.target_weight_lbs || goal.target_weight_for_exercise_lbs || 100,
+                progressPercentage: newProgress,
+                goalTitle: goal.goal_title,
+                category: goal.goal_type === 'weight_loss' ? 'weight_loss' : 
+                          goal.goal_type === 'strength_gain' ? 'strength' : 'consistency'
+              });
+            } catch (notificationError) {
+              console.error(`Failed to create ${milestone.type} notification:`, notificationError);
+            }
+          }
+        }
       }
     }
     
@@ -403,6 +452,23 @@ router.post("/", authenticateToken, async (req: any, res) => {
     const goalData = CreateGoalSchema.parse(req.body);
     
     const newGoal = await goalStorage.createGoal(userId, goalData);
+    
+    // AGENT B INTEGRATION: Trigger goal creation notification
+    try {
+      await notificationService.createGoalMilestoneNotification(parseInt(userId), {
+        goalId: newGoal.id,
+        milestoneType: 'goal_created',
+        currentValue: 0,
+        targetValue: newGoal.target_weight_lbs || newGoal.target_weight_for_exercise_lbs || 100,
+        progressPercentage: 0,
+        goalTitle: newGoal.goal_title,
+        category: newGoal.goal_type === 'weight_loss' ? 'weight_loss' : 
+                  newGoal.goal_type === 'strength_gain' ? 'strength' : 'consistency'
+      });
+    } catch (notificationError) {
+      console.error('Failed to create goal creation notification:', notificationError);
+      // Don't fail the goal creation if notification fails
+    }
     
     res.status(201).json({
       message: "Goal created successfully",
@@ -480,6 +546,9 @@ router.post("/:id/progress", authenticateToken, async (req: any, res) => {
       current_progress_percentage: progress_percentage
     };
     
+    // Track previous progress for milestone notifications
+    const previousProgress = goal.current_progress_percentage;
+    
     if (progress_percentage >= 100 && !goal.is_achieved) {
       updates.is_achieved = true;
       updates.achieved_date = new Date().toISOString().split('T')[0];
@@ -490,6 +559,48 @@ router.post("/:id/progress", authenticateToken, async (req: any, res) => {
     }
     
     const updatedGoal = await goalStorage.updateGoal(userId, id, updates);
+    
+    // AGENT B INTEGRATION: Trigger milestone notifications on manual progress updates
+    try {
+      if (progress_percentage >= 100 && !goal.is_achieved) {
+        // Goal achievement notification
+        await notificationService.createGoalMilestoneNotification(parseInt(userId), {
+          goalId: goal.id,
+          milestoneType: 'goal_achieved',
+          currentValue: goal.target_weight_lbs || goal.target_weight_for_exercise_lbs || 100,
+          targetValue: goal.target_weight_lbs || goal.target_weight_for_exercise_lbs || 100,
+          progressPercentage: 100,
+          goalTitle: goal.goal_title,
+          category: goal.goal_type === 'weight_loss' ? 'weight_loss' : 
+                    goal.goal_type === 'strength_gain' ? 'strength' : 'consistency'
+        });
+      } else {
+        // Check for milestone notifications (25%, 50%, 75%)
+        const milestones = [
+          { threshold: 25, type: 'progress_25' as const },
+          { threshold: 50, type: 'progress_50' as const },
+          { threshold: 75, type: 'progress_75' as const }
+        ];
+        
+        for (const milestone of milestones) {
+          if (previousProgress < milestone.threshold && progress_percentage >= milestone.threshold) {
+            await notificationService.createGoalMilestoneNotification(parseInt(userId), {
+              goalId: goal.id,
+              milestoneType: milestone.type,
+              currentValue: Math.round((progress_percentage / 100) * (goal.target_weight_lbs || goal.target_weight_for_exercise_lbs || 100)),
+              targetValue: goal.target_weight_lbs || goal.target_weight_for_exercise_lbs || 100,
+              progressPercentage: progress_percentage,
+              goalTitle: goal.goal_title,
+              category: goal.goal_type === 'weight_loss' ? 'weight_loss' : 
+                        goal.goal_type === 'strength_gain' ? 'strength' : 'consistency'
+            });
+          }
+        }
+      }
+    } catch (notificationError) {
+      console.error('Failed to create progress milestone notification:', notificationError);
+      // Don't fail the progress update if notification fails
+    }
     
     res.json({
       message: "Goal progress updated successfully",

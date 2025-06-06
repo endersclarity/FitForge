@@ -12,6 +12,9 @@
 import { z } from "zod";
 import fs from "fs/promises";
 import path from "path";
+import crypto from "crypto";
+import { FileStorage } from "./fileStorage";
+import type { UserPreferences } from "../shared/user-profile";
 
 // ============================================================================
 // NOTIFICATION SCHEMAS & TYPES
@@ -207,6 +210,9 @@ export class NotificationService {
   private preferencesFile: string;
   private templatesFile: string;
   private scheduledNotificationsFile: string;
+  
+  // AGENT C INTEGRATION: File storage for user preferences
+  private fileStorage: FileStorage;
 
   constructor(dataDir = 'data/notifications') {
     this.dataDir = dataDir;
@@ -214,6 +220,7 @@ export class NotificationService {
     this.preferencesFile = path.join(dataDir, 'preferences.json');
     this.templatesFile = path.join(dataDir, 'templates.json');
     this.scheduledNotificationsFile = path.join(dataDir, 'scheduled.json');
+    this.fileStorage = new FileStorage();
     this.initializeStorage();
   }
 
@@ -248,6 +255,34 @@ export class NotificationService {
   async createNotification(notificationData: Partial<Notification>): Promise<Notification> {
     const now = new Date().toISOString();
     
+    // AGENT C INTEGRATION: Check user preferences before creating notification
+    const userPreferences = await this.getUserPreferences(notificationData.userId!);
+    
+    // Skip notification creation if user has disabled this category
+    if (!userPreferences.enabled || !userPreferences.categories[notificationData.category!]?.enabled) {
+      console.log(`Notification skipped for user ${notificationData.userId} - category ${notificationData.category} disabled`);
+      // Return a minimal notification object to indicate it was skipped
+      return {
+        id: crypto.randomUUID(),
+        userId: notificationData.userId!,
+        type: notificationData.type!,
+        title: notificationData.title!,
+        message: notificationData.message!,
+        category: notificationData.category!,
+        priority: 'low' as const,
+        channels: [],
+        isRead: true, // Mark as read since it's skipped
+        isClicked: false,
+        deliveryStatus: 'sent' as const, // Mark as sent to prevent reprocessing
+        deliveryChannels: [],
+        createdAt: now,
+        updatedAt: now
+      } as Notification;
+    }
+
+    // Apply user's preferred channels from Agent C integration
+    const preferredChannels = userPreferences.categories[notificationData.category!]?.channels || ['in_app'];
+    
     const notification: Notification = {
       id: crypto.randomUUID(),
       userId: notificationData.userId!,
@@ -256,7 +291,7 @@ export class NotificationService {
       message: notificationData.message!,
       category: notificationData.category!,
       priority: notificationData.priority || 'medium',
-      channels: notificationData.channels || ['in_app'],
+      channels: preferredChannels, // Use Agent C's preferred channels
       data: notificationData.data,
       actionUrl: notificationData.actionUrl,
       imageUrl: notificationData.imageUrl,
@@ -265,7 +300,7 @@ export class NotificationService {
       isRead: false,
       isClicked: false,
       deliveryStatus: 'pending',
-      deliveryChannels: (notificationData.channels || ['in_app']).map(channel => ({
+      deliveryChannels: preferredChannels.map(channel => ({
         channel,
         status: 'pending' as const
       })),
@@ -281,12 +316,37 @@ export class NotificationService {
     // Save to storage
     await this.saveNotification(validatedNotification);
     
-    // Process delivery if not scheduled
-    if (!notification.scheduledFor) {
+    // Process delivery if not scheduled and preferences allow
+    if (!notification.scheduledFor && this.shouldDeliverNow(userPreferences, notification)) {
       await this.processDelivery(validatedNotification);
     }
     
     return validatedNotification;
+  }
+
+  // AGENT C INTEGRATION: Check if notification should be delivered immediately
+  private shouldDeliverNow(preferences: NotificationPreferences, notification: Notification): boolean {
+    const categoryPrefs = preferences.categories[notification.category];
+    
+    // Check quiet hours if enabled
+    if (preferences.quietHours?.enabled) {
+      const now = new Date();
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      const startTime = preferences.quietHours.startTime;
+      const endTime = preferences.quietHours.endTime;
+      
+      // Simple time comparison - doesn't handle overnight quiet hours
+      if (currentTime >= startTime && currentTime <= endTime) {
+        return false; // Don't deliver during quiet hours
+      }
+    }
+    
+    // Check frequency preferences
+    if (categoryPrefs?.frequency === 'batched_daily' || categoryPrefs?.frequency === 'batched_hourly') {
+      return false; // Will be processed in batch later
+    }
+    
+    return true; // Deliver immediately
   }
 
   async getNotifications(userId: number, options: {
@@ -360,20 +420,6 @@ export class NotificationService {
     return true;
   }
 
-  async markAllAsRead(userId: number): Promise<number> {
-    const notifications = await this.loadNotifications();
-    const userNotifications = notifications.filter(n => n.userId === userId && !n.isRead);
-    
-    const now = new Date().toISOString();
-    userNotifications.forEach(notification => {
-      notification.isRead = true;
-      notification.readAt = now;
-      notification.updatedAt = now;
-    });
-    
-    await this.saveNotifications(notifications);
-    return userNotifications.length;
-  }
 
   async deleteNotification(userId: number, notificationId: string): Promise<boolean> {
     const notifications = await this.loadNotifications();
@@ -392,7 +438,46 @@ export class NotificationService {
 
   async getUserPreferences(userId: number): Promise<NotificationPreferences> {
     const preferences = await this.loadPreferences();
-    return preferences[userId] || this.getDefaultPreferences(userId);
+    const basePreferences = preferences[userId] || this.getDefaultPreferences(userId);
+    
+    // AGENT C INTEGRATION: Merge with Agent C's user preferences
+    return await this.mergeWithAgentCPreferences(userId, basePreferences);
+  }
+
+  // AGENT C INTEGRATION: Merge notification preferences with Agent C's user preferences
+  private async mergeWithAgentCPreferences(userId: number, basePreferences: NotificationPreferences): Promise<NotificationPreferences> {
+    try {
+      // Get Agent C's user preferences
+      const agentCPreferences = await this.fileStorage.getUserPreferences(userId.toString());
+      
+      if (!agentCPreferences) {
+        return basePreferences;
+      }
+
+      // Merge Agent C preferences with notification preferences
+      const mergedPreferences: NotificationPreferences = {
+        ...basePreferences,
+        // Update achievement-specific settings based on Agent C preferences
+        achievementAlerts: agentCPreferences.achievementNotifications ?? true,
+        // Merge categories with Agent C preferences
+        categories: {
+          ...basePreferences.categories,
+          achievement: {
+            ...basePreferences.categories.achievement,
+            enabled: agentCPreferences.achievementNotifications ?? true
+          },
+          fitness: {
+            ...basePreferences.categories.fitness,
+            frequency: agentCPreferences.coachingEnabled ? 'immediate' : 'batched_daily'
+          }
+        }
+      };
+
+      return mergedPreferences;
+    } catch (error) {
+      console.error('Failed to merge with Agent C preferences:', error);
+      return basePreferences;
+    }
   }
 
   async updateUserPreferences(userId: number, updates: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
@@ -497,6 +582,242 @@ export class NotificationService {
       channels: ['in_app', 'push', 'email'],
       data: achievement
     });
+  }
+
+  // ============================================================================
+  // AGENT B INTEGRATION: GOAL MILESTONE NOTIFICATIONS
+  // ============================================================================
+
+  async createGoalMilestoneNotification(userId: number, milestoneData: {
+    goalId: string;
+    milestoneType: 'goal_created' | 'progress_25' | 'progress_50' | 'progress_75' | 'goal_achieved' | 'streak_milestone';
+    currentValue: number;
+    targetValue: number;
+    progressPercentage: number;
+    goalTitle: string;
+    category?: 'weight_loss' | 'muscle_gain' | 'strength' | 'endurance' | 'consistency';
+  }): Promise<Notification> {
+    const milestoneMessages = {
+      goal_created: {
+        title: `🎯 New Goal Set: ${milestoneData.goalTitle}`,
+        message: `You're on your way! Target: ${milestoneData.targetValue}. Let's make it happen!`,
+        emoji: '🎯'
+      },
+      progress_25: {
+        title: `🚀 25% Progress: ${milestoneData.goalTitle}`,
+        message: `Great start! You've reached ${milestoneData.currentValue}/${milestoneData.targetValue}. Keep going!`,
+        emoji: '🚀'
+      },
+      progress_50: {
+        title: `🔥 Halfway There: ${milestoneData.goalTitle}`,
+        message: `Amazing! You're 50% complete at ${milestoneData.currentValue}/${milestoneData.targetValue}. You've got this!`,
+        emoji: '🔥'
+      },
+      progress_75: {
+        title: `⚡ Almost There: ${milestoneData.goalTitle}`,
+        message: `So close! 75% complete at ${milestoneData.currentValue}/${milestoneData.targetValue}. Final push!`,
+        emoji: '⚡'
+      },
+      goal_achieved: {
+        title: `🏆 Goal Achieved: ${milestoneData.goalTitle}`,
+        message: `Incredible! You reached ${milestoneData.currentValue}/${milestoneData.targetValue}. Time to celebrate! 🎉`,
+        emoji: '🏆'
+      },
+      streak_milestone: {
+        title: `🔥 Streak Milestone: ${milestoneData.goalTitle}`,
+        message: `Amazing consistency! ${milestoneData.currentValue} days strong. You're building incredible habits!`,
+        emoji: '🔥'
+      }
+    };
+
+    const milestone = milestoneMessages[milestoneData.milestoneType];
+    
+    return this.createNotification({
+      userId,
+      type: 'goal_milestone',
+      title: milestone.title,
+      message: milestone.message,
+      category: 'achievement',
+      priority: milestoneData.milestoneType === 'goal_achieved' ? 'high' : 'medium',
+      channels: milestoneData.milestoneType === 'goal_achieved' 
+        ? ['in_app', 'push', 'email'] 
+        : ['in_app', 'push'],
+      data: {
+        ...milestoneData,
+        emoji: milestone.emoji
+      },
+      actionUrl: `/goals/${milestoneData.goalId}`
+    });
+  }
+
+  async scheduleWorkoutReminder(userId: number, reminderData: {
+    goalId?: string;
+    workoutType: string;
+    scheduledFor: string;
+    reminderType: 'pre_workout' | 'missed_workout' | 'streak_maintenance';
+    customMessage?: string;
+  }): Promise<Notification> {
+    const reminderMessages = {
+      pre_workout: {
+        title: `💪 Workout Reminder: ${reminderData.workoutType}`,
+        message: reminderData.customMessage || `Time for your ${reminderData.workoutType} workout! You've got this!`
+      },
+      missed_workout: {
+        title: `🤔 Missed Workout Check-in`,
+        message: reminderData.customMessage || `Haven't seen your ${reminderData.workoutType} workout yet. Everything okay?`
+      },
+      streak_maintenance: {
+        title: `🔥 Keep Your Streak Alive`,
+        message: reminderData.customMessage || `Don't break the chain! Your ${reminderData.workoutType} workout is waiting.`
+      }
+    };
+
+    const message = reminderMessages[reminderData.reminderType];
+
+    return this.createNotification({
+      userId,
+      type: 'workout_reminder',
+      title: message.title,
+      message: message.message,
+      category: 'fitness',
+      priority: reminderData.reminderType === 'streak_maintenance' ? 'medium' : 'low',
+      channels: ['in_app', 'push'],
+      scheduledFor: reminderData.scheduledFor,
+      data: {
+        ...reminderData,
+        isScheduled: true
+      },
+      actionUrl: reminderData.goalId ? `/goals/${reminderData.goalId}` : '/workouts'
+    });
+  }
+
+  async createAchievementNotification(userId: number, achievementData: {
+    achievementId: string;
+    achievementTitle: string;
+    achievementDescription: string;
+    category: 'first_workout' | 'streak_milestone' | 'weight_milestone' | 'strength_milestone' | 'consistency';
+    badgeImageUrl?: string;
+    celebrationLevel: 'bronze' | 'silver' | 'gold' | 'platinum';
+  }): Promise<Notification> {
+    const celebrationEmojis = {
+      bronze: '🥉',
+      silver: '🥈', 
+      gold: '🥇',
+      platinum: '💎'
+    };
+
+    const emoji = celebrationEmojis[achievementData.celebrationLevel];
+
+    return this.createNotification({
+      userId,
+      type: 'achievement_unlocked',
+      title: `${emoji} ${achievementData.achievementTitle}`,
+      message: achievementData.achievementDescription,
+      category: 'achievement',
+      priority: achievementData.celebrationLevel === 'platinum' ? 'urgent' : 'high',
+      channels: ['in_app', 'push', 'email'],
+      data: {
+        ...achievementData,
+        emoji
+      },
+      imageUrl: achievementData.badgeImageUrl,
+      actionUrl: `/achievements/${achievementData.achievementId}`
+    });
+  }
+
+  async getGoalProgressNotifications(userId: number, goalId?: string): Promise<Notification[]> {
+    const result = await this.getNotifications(userId, {
+      category: 'achievement'
+    });
+
+    return result.notifications.filter(notification => 
+      (notification.type === 'goal_milestone' || notification.type === 'achievement_unlocked') &&
+      (!goalId || notification.data?.goalId === goalId)
+    );
+  }
+
+  async getUnreadCount(userId: number): Promise<number> {
+    const result = await this.getNotifications(userId, {
+      unreadOnly: true
+    });
+    
+    return result.unreadCount;
+  }
+
+
+  async markAllAsRead(userId: number, category?: string): Promise<number> {
+    try {
+      const notifications = await this.loadNotifications();
+      let markedCount = 0;
+
+      for (const notification of notifications) {
+        if (notification.userId === userId && 
+            !notification.isRead && 
+            (!category || notification.category === category)) {
+          notification.isRead = true;
+          notification.readAt = new Date().toISOString();
+          notification.updatedAt = new Date().toISOString();
+          markedCount++;
+        }
+      }
+
+      if (markedCount > 0) {
+        await this.saveNotifications(notifications);
+      }
+
+      return markedCount;
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      return 0;
+    }
+  }
+
+  async getScheduledNotifications(userId: number, options?: {
+    upcomingOnly?: boolean;
+    limit?: number;
+  }): Promise<Partial<Notification>[]> {
+    try {
+      const scheduledNotifications = await this.loadScheduledNotifications();
+      
+      let userScheduled = scheduledNotifications.filter(n => n.userId === userId);
+
+      if (options?.upcomingOnly) {
+        const now = new Date();
+        userScheduled = userScheduled.filter(n => 
+          n.scheduledFor && new Date(n.scheduledFor) > now
+        );
+      }
+
+      if (options?.limit) {
+        userScheduled = userScheduled.slice(0, options.limit);
+      }
+
+      return userScheduled.sort((a, b) => {
+        if (!a.scheduledFor || !b.scheduledFor) return 0;
+        return new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime();
+      });
+    } catch (error) {
+      console.error('Error getting scheduled notifications:', error);
+      return [];
+    }
+  }
+
+  async cancelScheduledNotification(notificationId: string, userId: number): Promise<boolean> {
+    try {
+      const scheduledNotifications = await this.loadScheduledNotifications();
+      
+      const index = scheduledNotifications.findIndex(n => n.id === notificationId && n.userId === userId);
+      if (index === -1) {
+        return false;
+      }
+
+      scheduledNotifications.splice(index, 1);
+      await this.saveScheduledNotifications(scheduledNotifications);
+      return true;
+    } catch (error) {
+      console.error('Error cancelling scheduled notification:', error);
+      return false;
+    }
   }
 
   async triggerPersonalRecord(userId: number, exercise: string, newRecord: {
@@ -667,7 +988,8 @@ export class NotificationService {
       }
     } catch (error) {
       console.error(`Error delivering notification via ${channel}:`, error);
-      await this.updateDeliveryStatus(notification.id, channel, 'failed', error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      await this.updateDeliveryStatus(notification.id, channel, 'failed', errorMessage);
     }
   }
 
