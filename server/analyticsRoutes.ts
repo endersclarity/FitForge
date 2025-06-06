@@ -909,38 +909,251 @@ function calculateRestDayPatterns(sessions: UnifiedWorkoutSession[]) {
 }
 
 function calculateOverallProgression(sessions: UnifiedWorkoutSession[]) {
-  // Implementation for overall progression metrics
-  return {};
+  if (sessions.length < 2) return { trend: 'insufficient_data', growth: 0, confidence: 0 };
+
+  const sortedSessions = sessions.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  
+  // Calculate volume progression
+  const volumes = sortedSessions.map(s => s.totalVolume || 0);
+  const volumeTrend = calculateTrend(volumes);
+  const volumeGrowth = volumes.length > 1 ? ((volumes[volumes.length - 1] - volumes[0]) / volumes[0]) * 100 : 0;
+  
+  // Calculate strength progression (max weights)
+  const maxWeights = sortedSessions.map(session => {
+    const allSets = session.exercises.flatMap(ex => ex.sets);
+    return allSets.length > 0 ? Math.max(...allSets.map(set => set.weight)) : 0;
+  });
+  const strengthTrend = calculateTrend(maxWeights);
+  const strengthGrowth = maxWeights.length > 1 ? ((maxWeights[maxWeights.length - 1] - maxWeights[0]) / maxWeights[0]) * 100 : 0;
+
+  return {
+    volumeProgression: {
+      trend: volumeTrend > 0.1 ? 'increasing' : volumeTrend < -0.1 ? 'decreasing' : 'stable',
+      growth: Math.round(volumeGrowth * 10) / 10,
+      confidence: Math.min(95, sessions.length * 5) // Higher confidence with more sessions
+    },
+    strengthProgression: {
+      trend: strengthTrend > 0.1 ? 'increasing' : strengthTrend < -0.1 ? 'decreasing' : 'stable',
+      growth: Math.round(strengthGrowth * 10) / 10,
+      confidence: Math.min(95, sessions.length * 5)
+    },
+    overallScore: calculateProgressionScore(volumeTrend, strengthTrend, sessions.length)
+  };
 }
 
 function calculateExerciseProgression(sessions: UnifiedWorkoutSession[], exerciseName?: string) {
-  // Implementation for exercise-specific progression
-  return {};
+  const exerciseData = new Map<string, Array<{ date: string; maxWeight: number; maxVolume: number; maxReps: number }>>();
+  
+  sessions.forEach(session => {
+    session.exercises.forEach(exercise => {
+      if (exerciseName && !exercise.exerciseName.toLowerCase().includes(exerciseName.toLowerCase())) {
+        return;
+      }
+      
+      if (!exerciseData.has(exercise.exerciseName)) {
+        exerciseData.set(exercise.exerciseName, []);
+      }
+      
+      const maxWeight = Math.max(...exercise.sets.map(set => set.weight));
+      const maxVolume = Math.max(...exercise.sets.map(set => set.volume));
+      const maxReps = Math.max(...exercise.sets.map(set => set.reps));
+      
+      exerciseData.get(exercise.exerciseName)!.push({
+        date: session.startTime,
+        maxWeight,
+        maxVolume,
+        maxReps
+      });
+    });
+  });
+
+  return Array.from(exerciseData.entries()).map(([exerciseName, progressionData]) => {
+    const sortedData = progressionData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    if (sortedData.length < 2) {
+      return {
+        exerciseName,
+        progression: 'insufficient_data',
+        weightGrowth: 0,
+        volumeGrowth: 0,
+        sessions: sortedData.length
+      };
+    }
+
+    const firstSession = sortedData[0];
+    const lastSession = sortedData[sortedData.length - 1];
+    
+    const weightGrowth = firstSession.maxWeight > 0 
+      ? ((lastSession.maxWeight - firstSession.maxWeight) / firstSession.maxWeight) * 100 
+      : 0;
+    
+    const volumeGrowth = firstSession.maxVolume > 0 
+      ? ((lastSession.maxVolume - firstSession.maxVolume) / firstSession.maxVolume) * 100 
+      : 0;
+
+    return {
+      exerciseName,
+      progression: weightGrowth > 5 ? 'strong' : weightGrowth > 0 ? 'moderate' : 'stagnant',
+      weightGrowth: Math.round(weightGrowth * 10) / 10,
+      volumeGrowth: Math.round(volumeGrowth * 10) / 10,
+      sessions: sortedData.length,
+      data: sortedData
+    };
+  }).sort((a, b) => b.weightGrowth - a.weightGrowth);
 }
 
 function calculateStrengthGains(sessions: UnifiedWorkoutSession[]) {
-  // Implementation for strength gain calculations
-  return {};
+  const exerciseStrengthGains = new Map<string, { initial: number; current: number; peak: number }>();
+  
+  sessions.forEach(session => {
+    session.exercises.forEach(exercise => {
+      const maxWeight = Math.max(...exercise.sets.map(set => set.weight));
+      const current = exerciseStrengthGains.get(exercise.exerciseName);
+      
+      if (!current) {
+        exerciseStrengthGains.set(exercise.exerciseName, {
+          initial: maxWeight,
+          current: maxWeight,
+          peak: maxWeight
+        });
+      } else {
+        exerciseStrengthGains.set(exercise.exerciseName, {
+          ...current,
+          current: maxWeight,
+          peak: Math.max(current.peak, maxWeight)
+        });
+      }
+    });
+  });
+
+  const gains = Array.from(exerciseStrengthGains.entries()).map(([exerciseName, data]) => ({
+    exerciseName,
+    initialWeight: data.initial,
+    currentWeight: data.current,
+    peakWeight: data.peak,
+    totalGain: data.current - data.initial,
+    gainPercentage: data.initial > 0 ? ((data.current - data.initial) / data.initial) * 100 : 0
+  })).filter(gain => gain.totalGain > 0).sort((a, b) => b.gainPercentage - a.gainPercentage);
+
+  return {
+    exercises: gains,
+    averageGainPercentage: gains.length > 0 ? gains.reduce((sum, g) => sum + g.gainPercentage, 0) / gains.length : 0,
+    totalExercisesImproved: gains.length
+  };
 }
 
 function extractPersonalRecords(sessions: UnifiedWorkoutSession[]) {
-  // Implementation for personal record extraction
-  return [];
+  const allPRs = sessions.flatMap(session => 
+    (session.personalRecords || []).map(pr => ({
+      ...pr,
+      date: session.startTime,
+      sessionId: session.id
+    }))
+  );
+
+  return allPRs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
 function detectProgressionPlateaus(sessions: UnifiedWorkoutSession[]) {
-  // Implementation for plateau detection
-  return [];
+  const exerciseProgression = calculateExerciseProgression(sessions);
+  const plateauThreshold = 5; // Less than 5% improvement in last 5 sessions
+  
+  return exerciseProgression.filter(exercise => {
+    if (exercise.sessions < 5) return false;
+    
+    const recentSessions = exercise.data?.slice(-5) || [];
+    if (recentSessions.length < 5) return false;
+    
+    const firstRecent = recentSessions[0];
+    const lastRecent = recentSessions[recentSessions.length - 1];
+    
+    const recentGrowth = firstRecent.maxWeight > 0 
+      ? ((lastRecent.maxWeight - firstRecent.maxWeight) / firstRecent.maxWeight) * 100 
+      : 0;
+    
+    return Math.abs(recentGrowth) < plateauThreshold;
+  }).map(exercise => ({
+    exerciseName: exercise.exerciseName,
+    plateauDuration: 5, // Simplified - could be more sophisticated
+    lastImprovement: exercise.data?.[exercise.data.length - 1]?.date || '',
+    recommendedAction: generatePlateauRecommendation(exercise.exerciseName)
+  }));
 }
 
 function generateProgressionRecommendations(sessions: UnifiedWorkoutSession[]) {
-  // Implementation for progression recommendations
-  return [];
+  const plateaus = detectProgressionPlateaus(sessions);
+  const strongProgressors = calculateExerciseProgression(sessions).filter(ex => ex.progression === 'strong');
+  
+  const recommendations = [];
+  
+  // Plateau recommendations
+  plateaus.forEach(plateau => {
+    recommendations.push({
+      type: 'plateau_break',
+      exercise: plateau.exerciseName,
+      priority: 'high',
+      recommendation: `Consider deload week or technique modification for ${plateau.exerciseName}`,
+      reason: 'Detected strength plateau in recent sessions'
+    });
+  });
+  
+  // Volume recommendations
+  const avgVolume = sessions.reduce((sum, s) => sum + (s.totalVolume || 0), 0) / sessions.length;
+  if (avgVolume < 5000) {
+    recommendations.push({
+      type: 'volume_increase',
+      exercise: 'overall',
+      priority: 'medium',
+      recommendation: 'Consider gradually increasing training volume',
+      reason: 'Current volume may be insufficient for optimal progress'
+    });
+  }
+  
+  return recommendations.slice(0, 10); // Limit to top 10 recommendations
 }
 
 function calculateOneRepMaxEstimates(sessions: UnifiedWorkoutSession[]) {
-  // Implementation for 1RM estimates
-  return {};
+  const exerciseMaxes = new Map<string, Array<{ weight: number; reps: number; date: string }>>();
+  
+  sessions.forEach(session => {
+    session.exercises.forEach(exercise => {
+      if (!exerciseMaxes.has(exercise.exerciseName)) {
+        exerciseMaxes.set(exercise.exerciseName, []);
+      }
+      
+      exercise.sets.forEach(set => {
+        // Only include sets with significant weight and reasonable rep ranges for 1RM calculation
+        if (set.weight > 0 && set.reps >= 1 && set.reps <= 15) {
+          exerciseMaxes.get(exercise.exerciseName)!.push({
+            weight: set.weight,
+            reps: set.reps,
+            date: session.startTime
+          });
+        }
+      });
+    });
+  });
+
+  return Array.from(exerciseMaxes.entries()).map(([exerciseName, sets]) => {
+    if (sets.length === 0) return { exerciseName, estimatedMax: 0, confidence: 0 };
+    
+    // Calculate 1RM estimates using Brzycki formula: Weight / (1.0278 - (0.0278 * Reps))
+    const estimatedMaxes = sets.map(set => {
+      if (set.reps === 1) return set.weight;
+      return set.weight / (1.0278 - (0.0278 * set.reps));
+    });
+    
+    const maxEstimate = Math.max(...estimatedMaxes);
+    const confidence = Math.min(95, sets.length * 2); // Higher confidence with more data points
+    
+    return {
+      exerciseName,
+      estimatedMax: Math.round(maxEstimate * 10) / 10,
+      confidence,
+      dataPoints: sets.length,
+      lastTested: sets.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]?.date
+    };
+  }).filter(estimate => estimate.estimatedMax > 0).sort((a, b) => b.estimatedMax - a.estimatedMax);
 }
 
 function calculateMuscleBalance(sessions: UnifiedWorkoutSession[]) {
@@ -1039,8 +1252,54 @@ function calculateCurrentStreak(sessions: UnifiedWorkoutSession[]) {
 }
 
 function calculateFrequencyTrend(sessions: UnifiedWorkoutSession[]) {
-  // Implementation for frequency trend analysis
-  return 'stable';
+  if (sessions.length < 4) return 'stable';
+  
+  const recent = sessions.slice(-4);
+  const earlier = sessions.slice(-8, -4);
+  
+  if (earlier.length === 0) return 'stable';
+  
+  const recentFreq = recent.length / 4;
+  const earlierFreq = earlier.length / 4;
+  
+  const change = (recentFreq - earlierFreq) / earlierFreq;
+  
+  return change > 0.2 ? 'increasing' : change < -0.2 ? 'decreasing' : 'stable';
+}
+
+// Additional helper functions for comprehensive analytics
+function calculateProgressionScore(volumeTrend: number, strengthTrend: number, sessionCount: number): number {
+  let score = 50; // Base score
+  
+  // Volume contribution (40% of score)
+  if (volumeTrend > 0.2) score += 20;
+  else if (volumeTrend > 0.1) score += 10;
+  else if (volumeTrend < -0.1) score -= 10;
+  
+  // Strength contribution (40% of score)
+  if (strengthTrend > 0.2) score += 20;
+  else if (strengthTrend > 0.1) score += 10;
+  else if (strengthTrend < -0.1) score -= 10;
+  
+  // Consistency bonus (20% of score)
+  if (sessionCount > 20) score += 10;
+  else if (sessionCount > 10) score += 5;
+  
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function generatePlateauRecommendation(exerciseName: string): string {
+  const recommendations = [
+    'Try deload week (reduce weight by 10-20%)',
+    'Focus on form and time under tension',
+    'Add variation with different rep ranges',
+    'Consider changing exercise angle or grip',
+    'Increase frequency or reduce volume temporarily'
+  ];
+  
+  // Simple hash to get consistent recommendation for same exercise
+  const hash = exerciseName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return recommendations[hash % recommendations.length];
 }
 
 export default router;
