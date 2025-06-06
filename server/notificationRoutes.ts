@@ -1,507 +1,397 @@
-/**
- * FitForge Notification Routes
- * 
- * RESTful API endpoints for notification system integration with:
- * - Agent C: User preferences and settings
- * - Agent B: Goal milestones and progress celebrations
- * - Agent A: Mobile-optimized response formats
- */
+import express from 'express';
+import { 
+  notificationService, 
+  NotificationType, 
+  NotificationPriority, 
+  NotificationChannel,
+  NotificationPreferences 
+} from './notificationService';
 
-import { Router } from "express";
-import { z } from "zod";
-import { NotificationService } from "./notificationService";
+const router = express.Router();
 
-const router = Router();
-const notificationService = new NotificationService();
-
-// Middleware to auto-assign user ID (bypasses authentication for testing)
-const authenticateToken = (req: any, res: any, next: any) => {
-  // Use user-id header if provided (for testing), otherwise default to 1
-  const userIdHeader = req.headers['user-id'];
-  req.userId = userIdHeader ? parseInt(userIdHeader) : 1;
+// Middleware for user authentication (placeholder)
+const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // In a real app, verify JWT token or session
+  const userId = req.headers['x-user-id'] as string;
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  (req as any).userId = userId;
   next();
 };
 
-// ============================================================================
-// NOTIFICATION MANAGEMENT ENDPOINTS
-// ============================================================================
-
-/**
- * GET /api/notifications
- * Get user notifications with pagination and filtering
- * Mobile-optimized: Efficient payload, touch-friendly actions
- */
-router.get("/", authenticateToken, async (req: any, res) => {
+// Get user notifications
+router.get('/notifications', requireAuth, async (req, res) => {
   try {
-    const userId = req.userId;
-    const {
-      page = 1,
-      limit = 20,
-      category,
-      unreadOnly = false,
-      includeExpired = false
-    } = req.query;
-
-    const result = await notificationService.getNotifications(
-      userId,
-      {
-        offset: (parseInt(page) - 1) * parseInt(limit),
-        limit: parseInt(limit),
-        category: category as string,
-        unreadOnly: unreadOnly === 'true'
-      }
-    );
+    const userId = (req as any).userId;
+    const { limit, offset, unreadOnly, type } = req.query;
     
-    const notifications = result.notifications;
+    const notifications = await notificationService.getUserNotifications(userId, {
+      limit: limit ? parseInt(limit as string) : undefined,
+      offset: offset ? parseInt(offset as string) : undefined,
+      unreadOnly: unreadOnly === 'true',
+      type: type as NotificationType
+    });
 
-    res.json({
-      success: true,
-      data: notifications,
-      meta: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        hasMore: notifications.length === parseInt(limit)
-      }
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: "Failed to fetch notifications",
-      message: error.message
-    });
+    res.json({ notifications });
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
   }
 });
 
-/**
- * GET /api/notifications/unread-count
- * Get unread notification count for badge display
- * Mobile-optimized: Minimal payload for quick updates
- */
-router.get("/unread-count", authenticateToken, async (req: any, res) => {
+// Get notification statistics
+router.get('/notifications/stats', requireAuth, async (req, res) => {
   try {
-    const userId = req.userId;
-    const count = await notificationService.getUnreadCount(userId);
-
-    res.json({
-      success: true,
-      data: { count },
-      timestamp: new Date().toISOString()
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: "Failed to get unread count",
-      message: error.message
-    });
+    const userId = (req as any).userId;
+    const stats = await notificationService.getStats(userId);
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching notification stats:', error);
+    res.status(500).json({ error: 'Failed to fetch notification statistics' });
   }
 });
 
-/**
- * PUT /api/notifications/:id/read
- * Mark notification as read
- * Mobile-optimized: Simple success response
- */
-router.put("/:id/read", authenticateToken, async (req: any, res) => {
+// Mark notification as read
+router.patch('/notifications/:id/read', requireAuth, async (req, res) => {
   try {
-    const notificationId = req.params.id;
-    const userId = req.userId;
+    const { id } = req.params;
+    await notificationService.markAsRead(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    res.status(500).json({ error: 'Failed to mark notification as read' });
+  }
+});
 
-    const success = await notificationService.markAsRead(notificationId, userId);
+// Delete notification
+router.delete('/notifications/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await notificationService.deleteNotification(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting notification:', error);
+    res.status(500).json({ error: 'Failed to delete notification' });
+  }
+});
 
-    if (!success) {
-      return res.status(404).json({
-        success: false,
-        error: "Notification not found or access denied"
-      });
+// Create manual notification (admin/testing)
+router.post('/notifications', requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const { 
+      type, 
+      priority, 
+      data, 
+      scheduledAt, 
+      customTitle, 
+      customBody, 
+      channels 
+    } = req.body;
+
+    if (!type || !Object.values(NotificationType).includes(type)) {
+      return res.status(400).json({ error: 'Invalid notification type' });
     }
 
-    res.json({
-      success: true,
-      message: "Notification marked as read"
+    const notificationId = await notificationService.createNotification({
+      userId,
+      type,
+      priority: priority || NotificationPriority.MEDIUM,
+      data,
+      scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
+      customTitle,
+      customBody,
+      channels
     });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: "Failed to mark notification as read",
-      message: error.message
-    });
+
+    res.json({ notificationId, success: true });
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    res.status(500).json({ error: 'Failed to create notification' });
   }
 });
 
-/**
- * PUT /api/notifications/mark-all-read
- * Mark all notifications as read for user
- * Mobile-optimized: Batch operation for efficiency
- */
-router.put("/mark-all-read", authenticateToken, async (req: any, res) => {
+// Get user notification preferences
+router.get('/notifications/preferences', requireAuth, async (req, res) => {
   try {
-    const userId = req.userId;
-    const { category } = req.body;
-
-    const count = await notificationService.markAllAsRead(userId, category);
-
-    res.json({
-      success: true,
-      data: { markedCount: count },
-      message: `${count} notifications marked as read`
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: "Failed to mark notifications as read",
-      message: error.message
-    });
-  }
-});
-
-// ============================================================================
-// AGENT C INTEGRATION: USER PREFERENCE ENDPOINTS
-// ============================================================================
-
-/**
- * GET /api/notifications/preferences
- * Get user notification preferences
- * Integrates with Agent C's user preferences service
- */
-router.get("/preferences", authenticateToken, async (req: any, res) => {
-  try {
-    const userId = req.userId;
+    const userId = (req as any).userId;
     const preferences = await notificationService.getUserPreferences(userId);
-
-    res.json({
-      success: true,
-      data: preferences,
-      categories: ['fitness', 'social', 'achievement', 'system', 'health'],
-      channels: ['in_app', 'push', 'email', 'sms']
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: "Failed to fetch notification preferences",
-      message: error.message
-    });
+    res.json(preferences);
+  } catch (error) {
+    console.error('Error fetching preferences:', error);
+    res.status(500).json({ error: 'Failed to fetch notification preferences' });
   }
 });
 
-/**
- * PUT /api/notifications/preferences
- * Update user notification preferences
- * Integrates with Agent C's standardized preference format
- */
-const updatePreferencesSchema = z.object({
-  enabled: z.boolean().optional(),
-  quietHours: z.object({
-    enabled: z.boolean(),
-    startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
-    endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
-  }).optional(),
-  channels: z.object({
-    in_app: z.boolean(),
-    push: z.boolean(),
-    email: z.boolean(),
-    sms: z.boolean()
-  }).optional(),
-  categories: z.object({
-    fitness: z.object({
-      enabled: z.boolean(),
-      channels: z.array(z.enum(['in_app', 'push', 'email', 'sms'])),
-      frequency: z.enum(['immediate', 'batched_hourly', 'batched_daily'])
-    }),
-    social: z.object({
-      enabled: z.boolean(),
-      channels: z.array(z.enum(['in_app', 'push', 'email', 'sms'])),
-      frequency: z.enum(['immediate', 'batched_hourly', 'batched_daily'])
-    }),
-    achievement: z.object({
-      enabled: z.boolean(),
-      channels: z.array(z.enum(['in_app', 'push', 'email', 'sms'])),
-      frequency: z.enum(['immediate', 'batched_hourly', 'batched_daily'])
-    }),
-    system: z.object({
-      enabled: z.boolean(),
-      channels: z.array(z.enum(['in_app', 'push', 'email', 'sms'])),
-      frequency: z.enum(['immediate', 'batched_hourly', 'batched_daily'])
-    }),
-    health: z.object({
-      enabled: z.boolean(),
-      channels: z.array(z.enum(['in_app', 'push', 'email', 'sms'])),
-      frequency: z.enum(['immediate', 'batched_hourly', 'batched_daily'])
-    })
-  }).optional()
-});
-
-router.put("/preferences", authenticateToken, async (req: any, res) => {
+// Update user notification preferences
+router.put('/notifications/preferences', requireAuth, async (req, res) => {
   try {
-    const userId = req.userId;
-    const preferences = updatePreferencesSchema.parse(req.body);
-
-    const updated = await notificationService.updateUserPreferences(userId, preferences);
-
-    res.json({
-      success: true,
-      data: updated,
-      message: "Notification preferences updated successfully"
-    });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid preference data",
-        details: error.errors
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to update notification preferences",
-      message: error.message
-    });
+    const userId = (req as any).userId;
+    const preferences = req.body as Partial<NotificationPreferences>;
+    
+    await notificationService.updateUserPreferences(userId, preferences);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating preferences:', error);
+    res.status(500).json({ error: 'Failed to update notification preferences' });
   }
 });
 
-// ============================================================================
-// AGENT B INTEGRATION: GOAL MILESTONE ENDPOINTS
-// ============================================================================
-
-/**
- * POST /api/notifications/goal-milestone
- * Trigger goal milestone achievement notification
- * Integrates with Agent B's goal progress system
- */
-const goalMilestoneSchema = z.object({
-  goalId: z.string(),
-  milestoneType: z.enum(['goal_created', 'progress_25', 'progress_50', 'progress_75', 'goal_achieved', 'streak_milestone']),
-  currentValue: z.number(),
-  targetValue: z.number(),
-  progressPercentage: z.number().min(0).max(100),
-  goalTitle: z.string(),
-  category: z.enum(['weight_loss', 'muscle_gain', 'strength', 'endurance', 'consistency']).optional()
-});
-
-router.post("/goal-milestone", authenticateToken, async (req: any, res) => {
+// Workout reminder endpoints
+router.post('/notifications/workout-reminder', requireAuth, async (req, res) => {
   try {
-    const userId = req.userId;
-    const milestoneData = goalMilestoneSchema.parse(req.body);
+    const userId = (req as any).userId;
+    const { workoutType, scheduledAt, workoutId } = req.body;
 
-    const notification = await notificationService.createGoalMilestoneNotification(
+    const notificationId = await notificationService.createNotification({
       userId,
-      milestoneData
-    );
-
-    res.json({
-      success: true,
-      data: notification,
-      message: "Goal milestone notification created"
+      type: NotificationType.WORKOUT_REMINDER,
+      priority: NotificationPriority.HIGH,
+      data: { workoutType, workoutId },
+      scheduledAt: new Date(scheduledAt)
     });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid milestone data",
-        details: error.errors
-      });
-    }
 
-    res.status(500).json({
-      success: false,
-      error: "Failed to create goal milestone notification",
-      message: error.message
-    });
+    res.json({ notificationId, success: true });
+  } catch (error) {
+    console.error('Error creating workout reminder:', error);
+    res.status(500).json({ error: 'Failed to create workout reminder' });
   }
 });
 
-/**
- * POST /api/notifications/workout-reminder
- * Schedule workout reminder notification
- * Integrates with Agent B's goal-driven workout planning
- */
-const workoutReminderSchema = z.object({
-  goalId: z.string().optional(),
-  workoutType: z.string(),
-  scheduledFor: z.string().datetime(),
-  reminderType: z.enum(['pre_workout', 'missed_workout', 'streak_maintenance']),
-  customMessage: z.string().optional()
-});
-
-router.post("/workout-reminder", authenticateToken, async (req: any, res) => {
+// Achievement unlock notification
+router.post('/notifications/achievement', requireAuth, async (req, res) => {
   try {
-    const userId = req.userId;
-    const reminderData = workoutReminderSchema.parse(req.body);
+    const userId = (req as any).userId;
+    const { achievementId, achievementTitle, achievementDescription } = req.body;
 
-    const notification = await notificationService.scheduleWorkoutReminder(
+    const notificationId = await notificationService.createNotification({
       userId,
-      reminderData
-    );
-
-    res.json({
-      success: true,
-      data: notification,
-      message: "Workout reminder scheduled"
-    });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid reminder data",
-        details: error.errors
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to schedule workout reminder",
-      message: error.message
-    });
-  }
-});
-
-/**
- * GET /api/notifications/goal-progress
- * Get goal-related notifications for Agent B's goal pages
- * Mobile-optimized: Efficient goal progress summary
- */
-router.get("/goal-progress", authenticateToken, async (req: any, res) => {
-  try {
-    const userId = req.userId;
-    const { goalId } = req.query;
-
-    const notifications = await notificationService.getGoalProgressNotifications(
-      userId,
-      goalId as string
-    );
-
-    res.json({
-      success: true,
-      data: notifications,
-      meta: {
-        totalNotifications: notifications.length,
-        categories: [...new Set(notifications.map(n => n.type))]
+      type: NotificationType.ACHIEVEMENT_UNLOCK,
+      priority: NotificationPriority.HIGH,
+      data: { 
+        achievementId, 
+        achievementTitle, 
+        achievementDescription 
       }
     });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: "Failed to fetch goal progress notifications",
-      message: error.message
-    });
+
+    res.json({ notificationId, success: true });
+  } catch (error) {
+    console.error('Error creating achievement notification:', error);
+    res.status(500).json({ error: 'Failed to create achievement notification' });
   }
 });
 
-/**
- * POST /api/notifications/achievement-unlock
- * Create achievement unlock notification
- * Integrates with Agent B's achievement system
- */
-const achievementSchema = z.object({
-  achievementId: z.string(),
-  achievementTitle: z.string(),
-  achievementDescription: z.string(),
-  category: z.enum(['first_workout', 'streak_milestone', 'weight_milestone', 'strength_milestone', 'consistency']),
-  badgeImageUrl: z.string().url().optional(),
-  celebrationLevel: z.enum(['bronze', 'silver', 'gold', 'platinum']).default('bronze')
-});
-
-router.post("/achievement-unlock", authenticateToken, async (req: any, res) => {
+// Goal progress notification
+router.post('/notifications/goal-progress', requireAuth, async (req, res) => {
   try {
-    const userId = req.userId;
-    const achievementData = achievementSchema.parse(req.body);
+    const userId = (req as any).userId;
+    const { goalId, goalTitle, progressPercentage, milestone } = req.body;
 
-    const notification = await notificationService.createAchievementNotification(
+    const notificationId = await notificationService.createNotification({
       userId,
-      achievementData
-    );
-
-    res.json({
-      success: true,
-      data: notification,
-      message: "Achievement notification created"
-    });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid achievement data",
-        details: error.errors
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to create achievement notification",
-      message: error.message
-    });
-  }
-});
-
-// ============================================================================
-// SCHEDULED NOTIFICATION MANAGEMENT
-// ============================================================================
-
-/**
- * GET /api/notifications/scheduled
- * Get user's scheduled notifications
- * Mobile-optimized: Upcoming reminders and schedule management
- */
-router.get("/scheduled", authenticateToken, async (req: any, res) => {
-  try {
-    const userId = req.userId;
-    const { upcoming = true, limit = 10 } = req.query;
-
-    const scheduled = await notificationService.getScheduledNotifications(
-      userId,
-      {
-        upcomingOnly: upcoming === 'true',
-        limit: parseInt(limit as string)
-      }
-    );
-
-    res.json({
-      success: true,
-      data: scheduled,
-      meta: {
-        count: scheduled.length,
-        upcomingOnly: upcoming === 'true'
+      type: NotificationType.GOAL_PROGRESS,
+      priority: NotificationPriority.MEDIUM,
+      data: { 
+        goalId, 
+        goalTitle, 
+        progressPercentage, 
+        milestone 
       }
     });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: "Failed to fetch scheduled notifications",
-      message: error.message
-    });
+
+    res.json({ notificationId, success: true });
+  } catch (error) {
+    console.error('Error creating goal progress notification:', error);
+    res.status(500).json({ error: 'Failed to create goal progress notification' });
   }
 });
 
-/**
- * DELETE /api/notifications/scheduled/:id
- * Cancel a scheduled notification
- * Mobile-optimized: Simple cancellation for reminder management
- */
-router.delete("/scheduled/:id", authenticateToken, async (req: any, res) => {
+// Social interaction notification
+router.post('/notifications/social', requireAuth, async (req, res) => {
   try {
-    const notificationId = req.params.id;
-    const userId = req.userId;
+    const userId = (req as any).userId;
+    const { fromUserId, fromUserName, actionType, details, targetId } = req.body;
 
-    const success = await notificationService.cancelScheduledNotification(notificationId, userId);
+    const notificationId = await notificationService.createNotification({
+      userId,
+      type: NotificationType.SOCIAL_INTERACTION,
+      priority: NotificationPriority.LOW,
+      data: { 
+        fromUserId, 
+        fromUserName, 
+        actionType, 
+        details, 
+        targetId 
+      }
+    });
 
-    if (!success) {
-      return res.status(404).json({
-        success: false,
-        error: "Scheduled notification not found or access denied"
-      });
+    res.json({ notificationId, success: true });
+  } catch (error) {
+    console.error('Error creating social notification:', error);
+    res.status(500).json({ error: 'Failed to create social notification' });
+  }
+});
+
+// Streak milestone notification
+router.post('/notifications/streak', requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const { streakDays, streakType } = req.body;
+
+    const notificationId = await notificationService.createNotification({
+      userId,
+      type: NotificationType.STREAK_MILESTONE,
+      priority: NotificationPriority.HIGH,
+      data: { streakDays, streakType }
+    });
+
+    res.json({ notificationId, success: true });
+  } catch (error) {
+    console.error('Error creating streak notification:', error);
+    res.status(500).json({ error: 'Failed to create streak notification' });
+  }
+});
+
+// Recovery reminder notification
+router.post('/notifications/recovery', requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const { muscleGroup, lastWorkoutDate, recoveryHours } = req.body;
+
+    const notificationId = await notificationService.createNotification({
+      userId,
+      type: NotificationType.RECOVERY_REMINDER,
+      priority: NotificationPriority.MEDIUM,
+      data: { muscleGroup, lastWorkoutDate, recoveryHours }
+    });
+
+    res.json({ notificationId, success: true });
+  } catch (error) {
+    console.error('Error creating recovery reminder:', error);
+    res.status(500).json({ error: 'Failed to create recovery reminder' });
+  }
+});
+
+// Nutrition reminder notification
+router.post('/notifications/nutrition', requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const { mealType, scheduledAt } = req.body;
+
+    const notificationId = await notificationService.createNotification({
+      userId,
+      type: NotificationType.NUTRITION_REMINDER,
+      priority: NotificationPriority.MEDIUM,
+      data: { mealType },
+      scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined
+    });
+
+    res.json({ notificationId, success: true });
+  } catch (error) {
+    console.error('Error creating nutrition reminder:', error);
+    res.status(500).json({ error: 'Failed to create nutrition reminder' });
+  }
+});
+
+// Weight log reminder notification
+router.post('/notifications/weight-reminder', requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const { scheduledAt, frequency } = req.body;
+
+    const notificationId = await notificationService.createNotification({
+      userId,
+      type: NotificationType.WEIGHT_LOG_REMINDER,
+      priority: NotificationPriority.MEDIUM,
+      data: { frequency },
+      scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined
+    });
+
+    res.json({ notificationId, success: true });
+  } catch (error) {
+    console.error('Error creating weight reminder:', error);
+    res.status(500).json({ error: 'Failed to create weight reminder' });
+  }
+});
+
+// Test endpoint for sending sample notifications
+router.post('/notifications/test', requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const { type } = req.body;
+
+    if (!type || !Object.values(NotificationType).includes(type)) {
+      return res.status(400).json({ error: 'Invalid notification type for testing' });
     }
 
-    res.json({
-      success: true,
-      message: "Scheduled notification cancelled"
+    // Sample data for different notification types
+    const testData: Record<NotificationType, any> = {
+      [NotificationType.WORKOUT_REMINDER]: { workoutType: 'Push Day' },
+      [NotificationType.ACHIEVEMENT_UNLOCK]: { achievementTitle: 'First Workout Complete' },
+      [NotificationType.GOAL_PROGRESS]: { goalTitle: 'Lose 10 lbs', progressPercentage: 75 },
+      [NotificationType.SOCIAL_INTERACTION]: { userName: 'TestUser', actionType: 'liked your workout' },
+      [NotificationType.STREAK_MILESTONE]: { streakDays: 7 },
+      [NotificationType.RECOVERY_REMINDER]: { muscleGroup: 'Chest' },
+      [NotificationType.NUTRITION_REMINDER]: { mealType: 'breakfast' },
+      [NotificationType.WEIGHT_LOG_REMINDER]: { frequency: 'weekly' }
+    };
+
+    const notificationId = await notificationService.createNotification({
+      userId,
+      type,
+      priority: NotificationPriority.MEDIUM,
+      data: testData[type as keyof typeof testData]
     });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: "Failed to cancel scheduled notification",
-      message: error.message
-    });
+
+    res.json({ notificationId, success: true, message: 'Test notification sent' });
+  } catch (error) {
+    console.error('Error sending test notification:', error);
+    res.status(500).json({ error: 'Failed to send test notification' });
   }
+});
+
+// Bulk operations
+router.post('/notifications/mark-all-read', requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const notifications = await notificationService.getUserNotifications(userId, { unreadOnly: true });
+    
+    await Promise.all(notifications.map(n => notificationService.markAsRead(n.id)));
+    
+    res.json({ success: true, marked: notifications.length });
+  } catch (error) {
+    console.error('Error marking all as read:', error);
+    res.status(500).json({ error: 'Failed to mark all notifications as read' });
+  }
+});
+
+router.delete('/notifications/clear-all', requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const notifications = await notificationService.getUserNotifications(userId);
+    
+    await Promise.all(notifications.map(n => notificationService.deleteNotification(n.id)));
+    
+    res.json({ success: true, deleted: notifications.length });
+  } catch (error) {
+    console.error('Error clearing all notifications:', error);
+    res.status(500).json({ error: 'Failed to clear all notifications' });
+  }
+});
+
+// WebSocket endpoint info for real-time notifications
+router.get('/notifications/websocket-info', requireAuth, (req, res) => {
+  res.json({
+    endpoint: '/ws/notifications',
+    events: [
+      'notification:new',
+      'notification:read',
+      'notification:deleted'
+    ],
+    description: 'Connect to WebSocket for real-time notification updates'
+  });
 });
 
 export default router;

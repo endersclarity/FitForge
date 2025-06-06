@@ -1,1180 +1,588 @@
-/**
- * FitForge Notification Service
- * 
- * Comprehensive notification infrastructure supporting:
- * - In-app notifications
- * - Push notifications (mobile/web)
- * - Email notifications
- * - Scheduled reminders
- * - Real-time activity notifications
- */
+import { EventEmitter } from 'events';
 
-import { z } from "zod";
-import fs from "fs/promises";
-import path from "path";
-import crypto from "crypto";
-import { FileStorage } from "./fileStorage";
-import type { UserPreferences } from "../shared/user-profile";
+// Core notification types
+export enum NotificationType {
+  WORKOUT_REMINDER = 'workout_reminder',
+  ACHIEVEMENT_UNLOCK = 'achievement_unlock',
+  GOAL_PROGRESS = 'goal_progress',
+  SOCIAL_INTERACTION = 'social_interaction',
+  STREAK_MILESTONE = 'streak_milestone',
+  RECOVERY_REMINDER = 'recovery_reminder',
+  NUTRITION_REMINDER = 'nutrition_reminder',
+  WEIGHT_LOG_REMINDER = 'weight_log_reminder'
+}
 
-// ============================================================================
-// NOTIFICATION SCHEMAS & TYPES
-// ============================================================================
+export enum NotificationPriority {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  URGENT = 'urgent'
+}
 
-export const NotificationSchema = z.object({
-  id: z.string().uuid(),
-  userId: z.number(),
-  type: z.enum([
-    // Workout & Fitness Notifications
-    'workout_reminder',
-    'workout_completed',
-    'workout_streak',
-    'rest_day_reminder',
-    'form_feedback',
-    
-    // Achievement & Progress Notifications
-    'achievement_unlocked',
-    'personal_record',
-    'goal_milestone',
-    'progress_update',
-    'level_up',
-    
-    // Social Notifications
-    'follower_new',
-    'post_liked',
-    'post_commented',
-    'challenge_invitation',
-    'challenge_completed',
-    'challenge_reminder',
-    
-    // System Notifications
-    'account_security',
-    'feature_announcement',
-    'maintenance_notice',
-    'subscription_update',
-    
-    // Health & Wellness
-    'hydration_reminder',
-    'sleep_reminder',
-    'nutrition_log',
-    'recovery_suggestion'
-  ]),
-  title: z.string().min(1).max(100),
-  message: z.string().min(1).max(500),
-  category: z.enum(['fitness', 'social', 'achievement', 'system', 'health']),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']),
-  
-  // Delivery channels
-  channels: z.array(z.enum(['in_app', 'push', 'email', 'sms'])).default(['in_app']),
-  
-  // Notification data and context
-  data: z.record(z.any()).optional(), // Additional context data
-  actionUrl: z.string().optional(), // Deep link or action URL
-  imageUrl: z.string().url().optional(), // Notification image
-  
-  // Scheduling and timing
-  scheduledFor: z.string().datetime().optional(), // When to send (for scheduled notifications)
-  expiresAt: z.string().datetime().optional(), // When notification expires
-  
-  // User interaction tracking
-  isRead: z.boolean().default(false),
-  isClicked: z.boolean().default(false),
-  readAt: z.string().datetime().optional(),
-  clickedAt: z.string().datetime().optional(),
-  
-  // Delivery tracking
-  deliveryStatus: z.enum(['pending', 'sent', 'delivered', 'failed']).default('pending'),
-  deliveryChannels: z.array(z.object({
-    channel: z.enum(['in_app', 'push', 'email', 'sms']),
-    status: z.enum(['pending', 'sent', 'delivered', 'failed']),
-    sentAt: z.string().datetime().optional(),
-    deliveredAt: z.string().datetime().optional(),
-    error: z.string().optional()
-  })).default([]),
-  
-  // Metadata
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
-  source: z.string().optional(), // What triggered this notification
-  templateId: z.string().optional() // Template used for generation
-});
+export enum NotificationChannel {
+  PUSH = 'push',
+  IN_APP = 'in_app',
+  EMAIL = 'email',
+  SMS = 'sms'
+}
 
-export const NotificationPreferencesSchema = z.object({
-  userId: z.number(),
-  
-  // Global notification settings
-  enabled: z.boolean().default(true),
-  quietHours: z.object({
-    enabled: z.boolean().default(false),
-    startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/), // HH:MM format
-    endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
-  }).optional(),
-  
-  // Channel preferences
-  channels: z.object({
-    in_app: z.boolean().default(true),
-    push: z.boolean().default(true),
-    email: z.boolean().default(true),
-    sms: z.boolean().default(false)
-  }),
-  
-  // Category-specific preferences
-  categories: z.object({
-    fitness: z.object({
-      enabled: z.boolean().default(true),
-      channels: z.array(z.enum(['in_app', 'push', 'email', 'sms'])).default(['in_app', 'push']),
-      frequency: z.enum(['immediate', 'batched_hourly', 'batched_daily']).default('immediate')
-    }),
-    social: z.object({
-      enabled: z.boolean().default(true),
-      channels: z.array(z.enum(['in_app', 'push', 'email', 'sms'])).default(['in_app', 'push']),
-      frequency: z.enum(['immediate', 'batched_hourly', 'batched_daily']).default('immediate')
-    }),
-    achievement: z.object({
-      enabled: z.boolean().default(true),
-      channels: z.array(z.enum(['in_app', 'push', 'email', 'sms'])).default(['in_app', 'push', 'email']),
-      frequency: z.enum(['immediate', 'batched_hourly', 'batched_daily']).default('immediate')
-    }),
-    system: z.object({
-      enabled: z.boolean().default(true),
-      channels: z.array(z.enum(['in_app', 'push', 'email', 'sms'])).default(['in_app', 'email']),
-      frequency: z.enum(['immediate', 'batched_hourly', 'batched_daily']).default('immediate')
-    }),
-    health: z.object({
-      enabled: z.boolean().default(true),
-      channels: z.array(z.enum(['in_app', 'push', 'email', 'sms'])).default(['in_app', 'push']),
-      frequency: z.enum(['immediate', 'batched_hourly', 'batched_daily']).default('immediate')
-    })
-  }),
-  
-  // Specific notification type preferences
-  workoutReminders: z.boolean().default(true),
-  achievementAlerts: z.boolean().default(true),
-  socialUpdates: z.boolean().default(true),
-  progressReports: z.boolean().default(true),
-  challengeUpdates: z.boolean().default(true),
-  
-  updatedAt: z.string().datetime()
-});
+export interface NotificationTemplate {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  iconUrl?: string;
+  actionUrl?: string;
+  variables?: Record<string, any>;
+}
 
-export const NotificationTemplateSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  category: z.enum(['fitness', 'social', 'achievement', 'system', 'health']),
-  
-  // Template content
-  titleTemplate: z.string(),
-  messageTemplate: z.string(),
-  
-  // Template variables
-  variables: z.array(z.string()).default([]),
-  
-  // Channel-specific templates
-  channelTemplates: z.object({
-    email: z.object({
-      subject: z.string().optional(),
-      htmlBody: z.string().optional(),
-      textBody: z.string().optional()
-    }).optional(),
-    push: z.object({
-      title: z.string().optional(),
-      body: z.string().optional(),
-      icon: z.string().optional(),
-      badge: z.string().optional()
-    }).optional(),
-    sms: z.object({
-      body: z.string().optional()
-    }).optional()
-  }).optional(),
-  
-  // Template configuration
-  defaultChannels: z.array(z.enum(['in_app', 'push', 'email', 'sms'])),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']),
-  expirationHours: z.number().optional(),
-  
-  isActive: z.boolean().default(true),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime()
-});
+export interface NotificationPreferences {
+  userId: string;
+  channels: {
+    [key in NotificationType]: NotificationChannel[];
+  };
+  quietHours?: {
+    start: string; // HH:MM format
+    end: string;   // HH:MM format
+    timezone: string;
+  };
+  frequency?: {
+    [key in NotificationType]: 'immediate' | 'daily' | 'weekly' | 'disabled';
+  };
+}
 
-export type Notification = z.infer<typeof NotificationSchema>;
-export type NotificationPreferences = z.infer<typeof NotificationPreferencesSchema>;
-export type NotificationTemplate = z.infer<typeof NotificationTemplateSchema>;
+export interface NotificationData {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  priority: NotificationPriority;
+  title: string;
+  body: string;
+  data?: Record<string, any>;
+  channels: NotificationChannel[];
+  scheduledAt?: Date;
+  sentAt?: Date;
+  readAt?: Date;
+  actionUrl?: string;
+  iconUrl?: string;
+  expiresAt?: Date;
+  retryCount: number;
+  maxRetries: number;
+  status: 'pending' | 'sent' | 'delivered' | 'failed' | 'expired';
+}
 
-// ============================================================================
-// NOTIFICATION SERVICE CLASS
-// ============================================================================
+export interface PushNotificationPayload {
+  title: string;
+  body: string;
+  icon?: string;
+  badge?: string;
+  data?: Record<string, any>;
+  actions?: Array<{
+    action: string;
+    title: string;
+    icon?: string;
+  }>;
+  requireInteraction?: boolean;
+  silent?: boolean;
+  timestamp?: number;
+  vibrate?: number[];
+}
 
-export class NotificationService {
-  private dataDir: string;
-  private notificationsFile: string;
-  private preferencesFile: string;
-  private templatesFile: string;
-  private scheduledNotificationsFile: string;
+export interface EmailNotificationPayload {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  templateId?: string;
+  templateData?: Record<string, any>;
+}
+
+// Notification templates for different types
+export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTemplate> = {
+  [NotificationType.WORKOUT_REMINDER]: {
+    id: 'workout_reminder',
+    type: NotificationType.WORKOUT_REMINDER,
+    title: "Time to workout! 💪",
+    body: "Your {{workoutType}} session is scheduled. Let's crush those goals!",
+    iconUrl: "/icons/workout.png",
+    actionUrl: "/start-workout"
+  },
   
-  // AGENT C INTEGRATION: File storage for user preferences
-  private fileStorage: FileStorage;
+  [NotificationType.ACHIEVEMENT_UNLOCK]: {
+    id: 'achievement_unlock',
+    type: NotificationType.ACHIEVEMENT_UNLOCK,
+    title: "🎉 Achievement Unlocked!",
+    body: "Congratulations! You've earned '{{achievementTitle}}'",
+    iconUrl: "/icons/trophy.png",
+    actionUrl: "/achievements"
+  },
+  
+  [NotificationType.GOAL_PROGRESS]: {
+    id: 'goal_progress',
+    type: NotificationType.GOAL_PROGRESS,
+    title: "Goal Progress Update 📈",
+    body: "You're {{progressPercentage}}% towards your {{goalTitle}} goal!",
+    iconUrl: "/icons/target.png",
+    actionUrl: "/goals"
+  },
+  
+  [NotificationType.SOCIAL_INTERACTION]: {
+    id: 'social_interaction',
+    type: NotificationType.SOCIAL_INTERACTION,
+    title: "{{userName}} {{actionType}}",
+    body: "{{details}}",
+    iconUrl: "/icons/social.png",
+    actionUrl: "/community"
+  },
+  
+  [NotificationType.STREAK_MILESTONE]: {
+    id: 'streak_milestone',
+    type: NotificationType.STREAK_MILESTONE,
+    title: "🔥 {{streakDays}} Day Streak!",
+    body: "Amazing consistency! Keep the momentum going.",
+    iconUrl: "/icons/fire.png",
+    actionUrl: "/progress"
+  },
+  
+  [NotificationType.RECOVERY_REMINDER]: {
+    id: 'recovery_reminder',
+    type: NotificationType.RECOVERY_REMINDER,
+    title: "Recovery Day Reminder 😴",
+    body: "Your {{muscleGroup}} needs rest. Consider light activity or stretching.",
+    iconUrl: "/icons/rest.png",
+    actionUrl: "/recovery"
+  },
+  
+  [NotificationType.NUTRITION_REMINDER]: {
+    id: 'nutrition_reminder',
+    type: NotificationType.NUTRITION_REMINDER,
+    title: "Nutrition Check-in 🥗",
+    body: "Don't forget to log your meals and stay hydrated!",
+    iconUrl: "/icons/nutrition.png",
+    actionUrl: "/nutrition"
+  },
+  
+  [NotificationType.WEIGHT_LOG_REMINDER]: {
+    id: 'weight_log_reminder',
+    type: NotificationType.WEIGHT_LOG_REMINDER,
+    title: "Weekly Weigh-in ⚖️",
+    body: "Time for your weekly progress check-in!",
+    iconUrl: "/icons/scale.png",
+    actionUrl: "/progress"
+  }
+};
 
-  constructor(dataDir = 'data/notifications') {
-    this.dataDir = dataDir;
-    this.notificationsFile = path.join(dataDir, 'notifications.json');
-    this.preferencesFile = path.join(dataDir, 'preferences.json');
-    this.templatesFile = path.join(dataDir, 'templates.json');
-    this.scheduledNotificationsFile = path.join(dataDir, 'scheduled.json');
-    this.fileStorage = new FileStorage();
-    this.initializeStorage();
+// Notification service class
+export class NotificationService extends EventEmitter {
+  private notifications: Map<string, NotificationData> = new Map();
+  private userPreferences: Map<string, NotificationPreferences> = new Map();
+  private scheduledNotifications: Map<string, NodeJS.Timeout> = new Map();
+
+  constructor() {
+    super();
+    this.setupCleanupInterval();
   }
 
-  private async initializeStorage(): Promise<void> {
-    try {
-      await fs.mkdir(this.dataDir, { recursive: true });
-      
-      // Initialize files if they don't exist
-      const files = [
-        { path: this.notificationsFile, data: [] },
-        { path: this.preferencesFile, data: {} },
-        { path: this.templatesFile, data: this.getDefaultTemplates() },
-        { path: this.scheduledNotificationsFile, data: [] }
-      ];
+  // Template rendering utility
+  private renderTemplate(template: NotificationTemplate, variables: Record<string, any> = {}): { title: string; body: string } {
+    let title = template.title;
+    let body = template.body;
 
-      for (const file of files) {
-        try {
-          await fs.access(file.path);
-        } catch {
-          await fs.writeFile(file.path, JSON.stringify(file.data, null, 2));
-        }
-      }
-    } catch (error) {
-      console.error('Error initializing notification storage:', error);
-    }
+    // Replace variables in title and body
+    Object.entries(variables).forEach(([key, value]) => {
+      const placeholder = new RegExp(`{{${key}}}`, 'g');
+      title = title.replace(placeholder, String(value));
+      body = body.replace(placeholder, String(value));
+    });
+
+    return { title, body };
   }
 
-  // ============================================================================
-  // CORE NOTIFICATION METHODS
-  // ============================================================================
+  // Create notification
+  async createNotification(params: {
+    userId: string;
+    type: NotificationType;
+    priority?: NotificationPriority;
+    data?: Record<string, any>;
+    scheduledAt?: Date;
+    customTitle?: string;
+    customBody?: string;
+    channels?: NotificationChannel[];
+  }): Promise<string> {
+    const template = NOTIFICATION_TEMPLATES[params.type];
+    const { title, body } = params.customTitle && params.customBody 
+      ? { title: params.customTitle, body: params.customBody }
+      : this.renderTemplate(template, params.data);
 
-  async createNotification(notificationData: Partial<Notification>): Promise<Notification> {
-    const now = new Date().toISOString();
-    
-    // AGENT C INTEGRATION: Check user preferences before creating notification
-    const userPreferences = await this.getUserPreferences(notificationData.userId!);
-    
-    // Skip notification creation if user has disabled this category
-    if (!userPreferences.enabled || !userPreferences.categories[notificationData.category!]?.enabled) {
-      console.log(`Notification skipped for user ${notificationData.userId} - category ${notificationData.category} disabled`);
-      // Return a minimal notification object to indicate it was skipped
-      return {
-        id: crypto.randomUUID(),
-        userId: notificationData.userId!,
-        type: notificationData.type!,
-        title: notificationData.title!,
-        message: notificationData.message!,
-        category: notificationData.category!,
-        priority: 'low' as const,
-        channels: [],
-        isRead: true, // Mark as read since it's skipped
-        isClicked: false,
-        deliveryStatus: 'sent' as const, // Mark as sent to prevent reprocessing
-        deliveryChannels: [],
-        createdAt: now,
-        updatedAt: now
-      } as Notification;
-    }
-
-    // Apply user's preferred channels from Agent C integration
-    const preferredChannels = userPreferences.categories[notificationData.category!]?.channels || ['in_app'];
-    
-    const notification: Notification = {
-      id: crypto.randomUUID(),
-      userId: notificationData.userId!,
-      type: notificationData.type!,
-      title: notificationData.title!,
-      message: notificationData.message!,
-      category: notificationData.category!,
-      priority: notificationData.priority || 'medium',
-      channels: preferredChannels, // Use Agent C's preferred channels
-      data: notificationData.data,
-      actionUrl: notificationData.actionUrl,
-      imageUrl: notificationData.imageUrl,
-      scheduledFor: notificationData.scheduledFor,
-      expiresAt: notificationData.expiresAt,
-      isRead: false,
-      isClicked: false,
-      deliveryStatus: 'pending',
-      deliveryChannels: preferredChannels.map(channel => ({
-        channel,
-        status: 'pending' as const
-      })),
-      createdAt: now,
-      updatedAt: now,
-      source: notificationData.source,
-      templateId: notificationData.templateId
+    const notification: NotificationData = {
+      id: this.generateId(),
+      userId: params.userId,
+      type: params.type,
+      priority: params.priority || NotificationPriority.MEDIUM,
+      title,
+      body,
+      data: params.data,
+      channels: params.channels || await this.getPreferredChannels(params.userId, params.type),
+      scheduledAt: params.scheduledAt,
+      actionUrl: template.actionUrl,
+      iconUrl: template.iconUrl,
+      retryCount: 0,
+      maxRetries: 3,
+      status: 'pending'
     };
 
-    // Validate notification
-    const validatedNotification = NotificationSchema.parse(notification);
-    
-    // Save to storage
-    await this.saveNotification(validatedNotification);
-    
-    // Process delivery if not scheduled and preferences allow
-    if (!notification.scheduledFor && this.shouldDeliverNow(userPreferences, notification)) {
-      await this.processDelivery(validatedNotification);
+    this.notifications.set(notification.id, notification);
+
+    if (params.scheduledAt && params.scheduledAt > new Date()) {
+      // Schedule for later
+      this.scheduleNotification(notification);
+    } else {
+      // Send immediately
+      await this.sendNotification(notification.id);
     }
-    
-    return validatedNotification;
+
+    return notification.id;
   }
 
-  // AGENT C INTEGRATION: Check if notification should be delivered immediately
-  private shouldDeliverNow(preferences: NotificationPreferences, notification: Notification): boolean {
-    const categoryPrefs = preferences.categories[notification.category];
-    
-    // Check quiet hours if enabled
-    if (preferences.quietHours?.enabled) {
-      const now = new Date();
-      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-      const startTime = preferences.quietHours.startTime;
-      const endTime = preferences.quietHours.endTime;
+  // Send notification through appropriate channels
+  private async sendNotification(notificationId: string): Promise<void> {
+    const notification = this.notifications.get(notificationId);
+    if (!notification) {
+      throw new Error(`Notification ${notificationId} not found`);
+    }
+
+    // Check quiet hours
+    if (await this.isInQuietHours(notification.userId)) {
+      // Reschedule for after quiet hours
+      const nextAvailableTime = await this.getNextAvailableTime(notification.userId);
+      this.scheduleNotification({ ...notification, scheduledAt: nextAvailableTime });
+      return;
+    }
+
+    try {
+      notification.sentAt = new Date();
+      notification.status = 'sent';
+
+      // Send through each preferred channel
+      const sendPromises = notification.channels.map(channel => {
+        switch (channel) {
+          case NotificationChannel.PUSH:
+            return this.sendPushNotification(notification);
+          case NotificationChannel.IN_APP:
+            return this.sendInAppNotification(notification);
+          case NotificationChannel.EMAIL:
+            return this.sendEmailNotification(notification);
+          case NotificationChannel.SMS:
+            return this.sendSMSNotification(notification);
+          default:
+            return Promise.resolve();
+        }
+      });
+
+      await Promise.allSettled(sendPromises);
+      notification.status = 'delivered';
       
-      // Simple time comparison - doesn't handle overnight quiet hours
-      if (currentTime >= startTime && currentTime <= endTime) {
-        return false; // Don't deliver during quiet hours
+      this.emit('notification:sent', notification);
+    } catch (error) {
+      notification.retryCount++;
+      if (notification.retryCount < notification.maxRetries) {
+        // Retry with exponential backoff
+        const delay = Math.pow(2, notification.retryCount) * 1000;
+        setTimeout(() => this.sendNotification(notificationId), delay);
+      } else {
+        notification.status = 'failed';
+        this.emit('notification:failed', notification, error);
       }
     }
-    
-    // Check frequency preferences
-    if (categoryPrefs?.frequency === 'batched_daily' || categoryPrefs?.frequency === 'batched_hourly') {
-      return false; // Will be processed in batch later
-    }
-    
-    return true; // Deliver immediately
   }
 
-  async getNotifications(userId: number, options: {
+  // Push notification implementation
+  private async sendPushNotification(notification: NotificationData): Promise<void> {
+    const payload: PushNotificationPayload = {
+      title: notification.title,
+      body: notification.body,
+      icon: notification.iconUrl,
+      badge: '/icons/badge.png',
+      data: {
+        notificationId: notification.id,
+        actionUrl: notification.actionUrl,
+        type: notification.type,
+        ...notification.data
+      },
+      actions: notification.actionUrl ? [{
+        action: 'open',
+        title: 'View',
+        icon: '/icons/view.png'
+      }] : undefined,
+      requireInteraction: notification.priority === NotificationPriority.HIGH || notification.priority === NotificationPriority.URGENT,
+      timestamp: Date.now()
+    };
+
+    // Here you would integrate with your push notification service
+    // For example: Firebase Cloud Messaging, OneSignal, etc.
+    console.log('Sending push notification:', payload);
+    
+    // Emit event for real-time updates
+    this.emit('push:send', notification.userId, payload);
+  }
+
+  // In-app notification
+  private async sendInAppNotification(notification: NotificationData): Promise<void> {
+    // Store in-app notification for user
+    this.emit('in_app:new', notification.userId, {
+      id: notification.id,
+      type: notification.type,
+      title: notification.title,
+      body: notification.body,
+      priority: notification.priority,
+      timestamp: new Date(),
+      actionUrl: notification.actionUrl,
+      iconUrl: notification.iconUrl,
+      data: notification.data
+    });
+  }
+
+  // Email notification
+  private async sendEmailNotification(notification: NotificationData): Promise<void> {
+    // Get user email
+    const userEmail = await this.getUserEmail(notification.userId);
+    if (!userEmail) return;
+
+    const emailPayload: EmailNotificationPayload = {
+      to: userEmail,
+      subject: notification.title,
+      html: this.generateEmailHTML(notification),
+      text: notification.body
+    };
+
+    // Here you would integrate with your email service
+    // For example: SendGrid, Mailgun, AWS SES, etc.
+    console.log('Sending email notification:', emailPayload);
+    
+    this.emit('email:send', emailPayload);
+  }
+
+  // SMS notification
+  private async sendSMSNotification(notification: NotificationData): Promise<void> {
+    // Get user phone number
+    const userPhone = await this.getUserPhone(notification.userId);
+    if (!userPhone) return;
+
+    const smsPayload = {
+      to: userPhone,
+      body: `${notification.title}\n${notification.body}`
+    };
+
+    // Here you would integrate with your SMS service
+    // For example: Twilio, AWS SNS, etc.
+    console.log('Sending SMS notification:', smsPayload);
+    
+    this.emit('sms:send', smsPayload);
+  }
+
+  // Schedule notification
+  private scheduleNotification(notification: NotificationData): void {
+    if (!notification.scheduledAt) return;
+
+    const delay = notification.scheduledAt.getTime() - Date.now();
+    if (delay <= 0) {
+      this.sendNotification(notification.id);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      this.sendNotification(notification.id);
+      this.scheduledNotifications.delete(notification.id);
+    }, delay);
+
+    this.scheduledNotifications.set(notification.id, timeout);
+  }
+
+  // User preference management
+  async updateUserPreferences(userId: string, preferences: Partial<NotificationPreferences>): Promise<void> {
+    const existing = this.userPreferences.get(userId) || {
+      userId,
+      channels: this.getDefaultChannelPreferences(),
+      frequency: this.getDefaultFrequencyPreferences()
+    };
+
+    const updated = { ...existing, ...preferences, userId };
+    this.userPreferences.set(userId, updated);
+    
+    // Here you would persist to database
+    this.emit('preferences:updated', userId, updated);
+  }
+
+  async getUserPreferences(userId: string): Promise<NotificationPreferences> {
+    return this.userPreferences.get(userId) || {
+      userId,
+      channels: this.getDefaultChannelPreferences(),
+      frequency: this.getDefaultFrequencyPreferences()
+    };
+  }
+
+  // Get preferred channels for notification type
+  private async getPreferredChannels(userId: string, type: NotificationType): Promise<NotificationChannel[]> {
+    const preferences = await this.getUserPreferences(userId);
+    return preferences.channels[type] || [NotificationChannel.IN_APP];
+  }
+
+  // Check if in quiet hours
+  private async isInQuietHours(userId: string): Promise<boolean> {
+    const preferences = await this.getUserPreferences(userId);
+    if (!preferences.quietHours) return false;
+
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+    
+    // Simple time comparison (would need proper timezone handling in production)
+    return currentTime >= preferences.quietHours.start && currentTime <= preferences.quietHours.end;
+  }
+
+  // Get next available time after quiet hours
+  private async getNextAvailableTime(userId: string): Promise<Date> {
+    const preferences = await this.getUserPreferences(userId);
+    if (!preferences.quietHours) return new Date();
+
+    // Calculate next available time (simplified)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(parseInt(preferences.quietHours.end.split(':')[0]));
+    tomorrow.setMinutes(parseInt(preferences.quietHours.end.split(':')[1]));
+    
+    return tomorrow;
+  }
+
+  // Utility methods
+  private generateId(): string {
+    return `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  private async getUserEmail(userId: string): Promise<string | null> {
+    // This would query your user database
+    return `user${userId}@example.com`; // Placeholder
+  }
+
+  private async getUserPhone(userId: string): Promise<string | null> {
+    // This would query your user database
+    return null; // Placeholder
+  }
+
+  private generateEmailHTML(notification: NotificationData): string {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>${notification.title}</h2>
+        <p>${notification.body}</p>
+        ${notification.actionUrl ? `<a href="${notification.actionUrl}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View in App</a>` : ''}
+      </div>
+    `;
+  }
+
+  private getDefaultChannelPreferences(): Record<NotificationType, NotificationChannel[]> {
+    return {
+      [NotificationType.WORKOUT_REMINDER]: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+      [NotificationType.ACHIEVEMENT_UNLOCK]: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+      [NotificationType.GOAL_PROGRESS]: [NotificationChannel.IN_APP],
+      [NotificationType.SOCIAL_INTERACTION]: [NotificationChannel.IN_APP],
+      [NotificationType.STREAK_MILESTONE]: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+      [NotificationType.RECOVERY_REMINDER]: [NotificationChannel.IN_APP],
+      [NotificationType.NUTRITION_REMINDER]: [NotificationChannel.IN_APP],
+      [NotificationType.WEIGHT_LOG_REMINDER]: [NotificationChannel.IN_APP]
+    };
+  }
+
+  private getDefaultFrequencyPreferences(): Record<NotificationType, 'immediate' | 'daily' | 'weekly' | 'disabled'> {
+    return {
+      [NotificationType.WORKOUT_REMINDER]: 'immediate',
+      [NotificationType.ACHIEVEMENT_UNLOCK]: 'immediate',
+      [NotificationType.GOAL_PROGRESS]: 'daily',
+      [NotificationType.SOCIAL_INTERACTION]: 'immediate',
+      [NotificationType.STREAK_MILESTONE]: 'immediate',
+      [NotificationType.RECOVERY_REMINDER]: 'daily',
+      [NotificationType.NUTRITION_REMINDER]: 'daily',
+      [NotificationType.WEIGHT_LOG_REMINDER]: 'weekly'
+    };
+  }
+
+  // Cleanup expired notifications
+  private setupCleanupInterval(): void {
+    setInterval(() => {
+      const now = new Date();
+      for (const [id, notification] of this.notifications.entries()) {
+        if (notification.expiresAt && notification.expiresAt < now) {
+          this.notifications.delete(id);
+          const scheduledTimeout = this.scheduledNotifications.get(id);
+          if (scheduledTimeout) {
+            clearTimeout(scheduledTimeout);
+            this.scheduledNotifications.delete(id);
+          }
+        }
+      }
+    }, 60000); // Clean up every minute
+  }
+
+  // Get user notifications
+  async getUserNotifications(userId: string, options: {
     limit?: number;
     offset?: number;
     unreadOnly?: boolean;
-    category?: string;
-    type?: string;
-  } = {}): Promise<{ notifications: Notification[]; total: number; unreadCount: number }> {
-    const notifications = await this.loadNotifications();
-    let userNotifications = notifications.filter(n => n.userId === userId);
-    
-    // Apply filters
-    if (options.unreadOnly) {
-      userNotifications = userNotifications.filter(n => !n.isRead);
+    type?: NotificationType;
+  } = {}): Promise<NotificationData[]> {
+    const notifications = Array.from(this.notifications.values())
+      .filter(n => n.userId === userId)
+      .filter(n => !options.unreadOnly || !n.readAt)
+      .filter(n => !options.type || n.type === options.type)
+      .sort((a, b) => (b.sentAt || b.scheduledAt || new Date()).getTime() - (a.sentAt || a.scheduledAt || new Date()).getTime())
+      .slice(options.offset || 0, (options.offset || 0) + (options.limit || 50));
+
+    return notifications;
+  }
+
+  // Mark notification as read
+  async markAsRead(notificationId: string): Promise<void> {
+    const notification = this.notifications.get(notificationId);
+    if (notification) {
+      notification.readAt = new Date();
+      this.emit('notification:read', notification);
     }
-    
-    if (options.category) {
-      userNotifications = userNotifications.filter(n => n.category === options.category);
+  }
+
+  // Delete notification
+  async deleteNotification(notificationId: string): Promise<void> {
+    this.notifications.delete(notificationId);
+    const scheduledTimeout = this.scheduledNotifications.get(notificationId);
+    if (scheduledTimeout) {
+      clearTimeout(scheduledTimeout);
+      this.scheduledNotifications.delete(notificationId);
     }
-    
-    if (options.type) {
-      userNotifications = userNotifications.filter(n => n.type === options.type);
-    }
-    
-    // Sort by creation date (newest first)
-    userNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-    // Apply pagination
-    const total = userNotifications.length;
-    const unreadCount = notifications.filter(n => n.userId === userId && !n.isRead).length;
-    
-    if (options.limit || options.offset) {
-      const offset = options.offset || 0;
-      const limit = options.limit || 20;
-      userNotifications = userNotifications.slice(offset, offset + limit);
-    }
-    
+  }
+
+  // Get notification statistics
+  async getStats(userId: string): Promise<{
+    total: number;
+    unread: number;
+    byType: Record<NotificationType, number>;
+    byChannel: Record<NotificationChannel, number>;
+  }> {
+    const userNotifications = Array.from(this.notifications.values())
+      .filter(n => n.userId === userId);
+
+    const byType = {} as Record<NotificationType, number>;
+    const byChannel = {} as Record<NotificationChannel, number>;
+
+    userNotifications.forEach(n => {
+      byType[n.type] = (byType[n.type] || 0) + 1;
+      n.channels.forEach(channel => {
+        byChannel[channel] = (byChannel[channel] || 0) + 1;
+      });
+    });
+
     return {
-      notifications: userNotifications,
-      total,
-      unreadCount
+      total: userNotifications.length,
+      unread: userNotifications.filter(n => !n.readAt).length,
+      byType,
+      byChannel
     };
-  }
-
-  async markAsRead(userId: number, notificationId: string): Promise<boolean> {
-    const notifications = await this.loadNotifications();
-    const notification = notifications.find(n => n.id === notificationId && n.userId === userId);
-    
-    if (!notification) return false;
-    
-    notification.isRead = true;
-    notification.readAt = new Date().toISOString();
-    notification.updatedAt = new Date().toISOString();
-    
-    await this.saveNotifications(notifications);
-    return true;
-  }
-
-  async markAsClicked(userId: number, notificationId: string): Promise<boolean> {
-    const notifications = await this.loadNotifications();
-    const notification = notifications.find(n => n.id === notificationId && n.userId === userId);
-    
-    if (!notification) return false;
-    
-    notification.isClicked = true;
-    notification.clickedAt = new Date().toISOString();
-    notification.updatedAt = new Date().toISOString();
-    
-    await this.saveNotifications(notifications);
-    return true;
-  }
-
-
-  async deleteNotification(userId: number, notificationId: string): Promise<boolean> {
-    const notifications = await this.loadNotifications();
-    const index = notifications.findIndex(n => n.id === notificationId && n.userId === userId);
-    
-    if (index === -1) return false;
-    
-    notifications.splice(index, 1);
-    await this.saveNotifications(notifications);
-    return true;
-  }
-
-  // ============================================================================
-  // NOTIFICATION PREFERENCES
-  // ============================================================================
-
-  async getUserPreferences(userId: number): Promise<NotificationPreferences> {
-    const preferences = await this.loadPreferences();
-    const basePreferences = preferences[userId] || this.getDefaultPreferences(userId);
-    
-    // AGENT C INTEGRATION: Merge with Agent C's user preferences
-    return await this.mergeWithAgentCPreferences(userId, basePreferences);
-  }
-
-  // AGENT C INTEGRATION: Merge notification preferences with Agent C's user preferences
-  private async mergeWithAgentCPreferences(userId: number, basePreferences: NotificationPreferences): Promise<NotificationPreferences> {
-    try {
-      // Get Agent C's user preferences
-      const agentCPreferences = await this.fileStorage.getUserPreferences(userId.toString());
-      
-      if (!agentCPreferences) {
-        return basePreferences;
-      }
-
-      // Merge Agent C preferences with notification preferences
-      const mergedPreferences: NotificationPreferences = {
-        ...basePreferences,
-        // Update achievement-specific settings based on Agent C preferences
-        achievementAlerts: agentCPreferences.achievementNotifications ?? true,
-        // Merge categories with Agent C preferences
-        categories: {
-          ...basePreferences.categories,
-          achievement: {
-            ...basePreferences.categories.achievement,
-            enabled: agentCPreferences.achievementNotifications ?? true
-          },
-          fitness: {
-            ...basePreferences.categories.fitness,
-            frequency: agentCPreferences.coachingEnabled ? 'immediate' : 'batched_daily'
-          }
-        }
-      };
-
-      return mergedPreferences;
-    } catch (error) {
-      console.error('Failed to merge with Agent C preferences:', error);
-      return basePreferences;
-    }
-  }
-
-  async updateUserPreferences(userId: number, updates: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
-    const preferences = await this.loadPreferences();
-    const currentPrefs = preferences[userId] || this.getDefaultPreferences(userId);
-    
-    const updatedPrefs = {
-      ...currentPrefs,
-      ...updates,
-      userId,
-      updatedAt: new Date().toISOString()
-    };
-    
-    const validatedPrefs = NotificationPreferencesSchema.parse(updatedPrefs);
-    preferences[userId] = validatedPrefs;
-    
-    await this.savePreferences(preferences);
-    return validatedPrefs;
-  }
-
-  private getDefaultPreferences(userId: number): NotificationPreferences {
-    return {
-      userId,
-      enabled: true,
-      channels: {
-        in_app: true,
-        push: true,
-        email: true,
-        sms: false
-      },
-      categories: {
-        fitness: {
-          enabled: true,
-          channels: ['in_app', 'push'],
-          frequency: 'immediate'
-        },
-        social: {
-          enabled: true,
-          channels: ['in_app', 'push'],
-          frequency: 'immediate'
-        },
-        achievement: {
-          enabled: true,
-          channels: ['in_app', 'push', 'email'],
-          frequency: 'immediate'
-        },
-        system: {
-          enabled: true,
-          channels: ['in_app', 'email'],
-          frequency: 'immediate'
-        },
-        health: {
-          enabled: true,
-          channels: ['in_app', 'push'],
-          frequency: 'immediate'
-        }
-      },
-      workoutReminders: true,
-      achievementAlerts: true,
-      socialUpdates: true,
-      progressReports: true,
-      challengeUpdates: true,
-      updatedAt: new Date().toISOString()
-    };
-  }
-
-  // ============================================================================
-  // NOTIFICATION TRIGGERS & AUTOMATIONS
-  // ============================================================================
-
-  async triggerWorkoutReminder(userId: number, workoutType?: string): Promise<Notification> {
-    const template = await this.getTemplate('workout_reminder');
-    
-    return this.createNotification({
-      userId,
-      type: 'workout_reminder',
-      title: 'Time for your workout! 💪',
-      message: workoutType 
-        ? `Your ${workoutType} workout is scheduled for now. Ready to crush it?`
-        : 'Your workout is scheduled for now. Ready to get started?',
-      category: 'fitness',
-      priority: 'medium',
-      channels: ['in_app', 'push'],
-      data: { workoutType },
-      templateId: template?.id
-    });
-  }
-
-  async triggerAchievementUnlock(userId: number, achievement: {
-    title: string;
-    description: string;
-    iconType: string;
-    value?: string;
-  }): Promise<Notification> {
-    return this.createNotification({
-      userId,
-      type: 'achievement_unlocked',
-      title: `🏆 Achievement Unlocked: ${achievement.title}`,
-      message: achievement.description,
-      category: 'achievement',
-      priority: 'high',
-      channels: ['in_app', 'push', 'email'],
-      data: achievement
-    });
-  }
-
-  // ============================================================================
-  // AGENT B INTEGRATION: GOAL MILESTONE NOTIFICATIONS
-  // ============================================================================
-
-  async createGoalMilestoneNotification(userId: number, milestoneData: {
-    goalId: string;
-    milestoneType: 'goal_created' | 'progress_25' | 'progress_50' | 'progress_75' | 'goal_achieved' | 'streak_milestone';
-    currentValue: number;
-    targetValue: number;
-    progressPercentage: number;
-    goalTitle: string;
-    category?: 'weight_loss' | 'muscle_gain' | 'strength' | 'endurance' | 'consistency';
-  }): Promise<Notification> {
-    const milestoneMessages = {
-      goal_created: {
-        title: `🎯 New Goal Set: ${milestoneData.goalTitle}`,
-        message: `You're on your way! Target: ${milestoneData.targetValue}. Let's make it happen!`,
-        emoji: '🎯'
-      },
-      progress_25: {
-        title: `🚀 25% Progress: ${milestoneData.goalTitle}`,
-        message: `Great start! You've reached ${milestoneData.currentValue}/${milestoneData.targetValue}. Keep going!`,
-        emoji: '🚀'
-      },
-      progress_50: {
-        title: `🔥 Halfway There: ${milestoneData.goalTitle}`,
-        message: `Amazing! You're 50% complete at ${milestoneData.currentValue}/${milestoneData.targetValue}. You've got this!`,
-        emoji: '🔥'
-      },
-      progress_75: {
-        title: `⚡ Almost There: ${milestoneData.goalTitle}`,
-        message: `So close! 75% complete at ${milestoneData.currentValue}/${milestoneData.targetValue}. Final push!`,
-        emoji: '⚡'
-      },
-      goal_achieved: {
-        title: `🏆 Goal Achieved: ${milestoneData.goalTitle}`,
-        message: `Incredible! You reached ${milestoneData.currentValue}/${milestoneData.targetValue}. Time to celebrate! 🎉`,
-        emoji: '🏆'
-      },
-      streak_milestone: {
-        title: `🔥 Streak Milestone: ${milestoneData.goalTitle}`,
-        message: `Amazing consistency! ${milestoneData.currentValue} days strong. You're building incredible habits!`,
-        emoji: '🔥'
-      }
-    };
-
-    const milestone = milestoneMessages[milestoneData.milestoneType];
-    
-    return this.createNotification({
-      userId,
-      type: 'goal_milestone',
-      title: milestone.title,
-      message: milestone.message,
-      category: 'achievement',
-      priority: milestoneData.milestoneType === 'goal_achieved' ? 'high' : 'medium',
-      channels: milestoneData.milestoneType === 'goal_achieved' 
-        ? ['in_app', 'push', 'email'] 
-        : ['in_app', 'push'],
-      data: {
-        ...milestoneData,
-        emoji: milestone.emoji
-      },
-      actionUrl: `/goals/${milestoneData.goalId}`
-    });
-  }
-
-  async scheduleWorkoutReminder(userId: number, reminderData: {
-    goalId?: string;
-    workoutType: string;
-    scheduledFor: string;
-    reminderType: 'pre_workout' | 'missed_workout' | 'streak_maintenance';
-    customMessage?: string;
-  }): Promise<Notification> {
-    const reminderMessages = {
-      pre_workout: {
-        title: `💪 Workout Reminder: ${reminderData.workoutType}`,
-        message: reminderData.customMessage || `Time for your ${reminderData.workoutType} workout! You've got this!`
-      },
-      missed_workout: {
-        title: `🤔 Missed Workout Check-in`,
-        message: reminderData.customMessage || `Haven't seen your ${reminderData.workoutType} workout yet. Everything okay?`
-      },
-      streak_maintenance: {
-        title: `🔥 Keep Your Streak Alive`,
-        message: reminderData.customMessage || `Don't break the chain! Your ${reminderData.workoutType} workout is waiting.`
-      }
-    };
-
-    const message = reminderMessages[reminderData.reminderType];
-
-    return this.createNotification({
-      userId,
-      type: 'workout_reminder',
-      title: message.title,
-      message: message.message,
-      category: 'fitness',
-      priority: reminderData.reminderType === 'streak_maintenance' ? 'medium' : 'low',
-      channels: ['in_app', 'push'],
-      scheduledFor: reminderData.scheduledFor,
-      data: {
-        ...reminderData,
-        isScheduled: true
-      },
-      actionUrl: reminderData.goalId ? `/goals/${reminderData.goalId}` : '/workouts'
-    });
-  }
-
-  async createAchievementNotification(userId: number, achievementData: {
-    achievementId: string;
-    achievementTitle: string;
-    achievementDescription: string;
-    category: 'first_workout' | 'streak_milestone' | 'weight_milestone' | 'strength_milestone' | 'consistency';
-    badgeImageUrl?: string;
-    celebrationLevel: 'bronze' | 'silver' | 'gold' | 'platinum';
-  }): Promise<Notification> {
-    const celebrationEmojis = {
-      bronze: '🥉',
-      silver: '🥈', 
-      gold: '🥇',
-      platinum: '💎'
-    };
-
-    const emoji = celebrationEmojis[achievementData.celebrationLevel];
-
-    return this.createNotification({
-      userId,
-      type: 'achievement_unlocked',
-      title: `${emoji} ${achievementData.achievementTitle}`,
-      message: achievementData.achievementDescription,
-      category: 'achievement',
-      priority: achievementData.celebrationLevel === 'platinum' ? 'urgent' : 'high',
-      channels: ['in_app', 'push', 'email'],
-      data: {
-        ...achievementData,
-        emoji
-      },
-      imageUrl: achievementData.badgeImageUrl,
-      actionUrl: `/achievements/${achievementData.achievementId}`
-    });
-  }
-
-  async getGoalProgressNotifications(userId: number, goalId?: string): Promise<Notification[]> {
-    const result = await this.getNotifications(userId, {
-      category: 'achievement'
-    });
-
-    return result.notifications.filter(notification => 
-      (notification.type === 'goal_milestone' || notification.type === 'achievement_unlocked') &&
-      (!goalId || notification.data?.goalId === goalId)
-    );
-  }
-
-  async getUnreadCount(userId: number): Promise<number> {
-    const result = await this.getNotifications(userId, {
-      unreadOnly: true
-    });
-    
-    return result.unreadCount;
-  }
-
-
-  async markAllAsRead(userId: number, category?: string): Promise<number> {
-    try {
-      const notifications = await this.loadNotifications();
-      let markedCount = 0;
-
-      for (const notification of notifications) {
-        if (notification.userId === userId && 
-            !notification.isRead && 
-            (!category || notification.category === category)) {
-          notification.isRead = true;
-          notification.readAt = new Date().toISOString();
-          notification.updatedAt = new Date().toISOString();
-          markedCount++;
-        }
-      }
-
-      if (markedCount > 0) {
-        await this.saveNotifications(notifications);
-      }
-
-      return markedCount;
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error);
-      return 0;
-    }
-  }
-
-  async getScheduledNotifications(userId: number, options?: {
-    upcomingOnly?: boolean;
-    limit?: number;
-  }): Promise<Partial<Notification>[]> {
-    try {
-      const scheduledNotifications = await this.loadScheduledNotifications();
-      
-      let userScheduled = scheduledNotifications.filter(n => n.userId === userId);
-
-      if (options?.upcomingOnly) {
-        const now = new Date();
-        userScheduled = userScheduled.filter(n => 
-          n.scheduledFor && new Date(n.scheduledFor) > now
-        );
-      }
-
-      if (options?.limit) {
-        userScheduled = userScheduled.slice(0, options.limit);
-      }
-
-      return userScheduled.sort((a, b) => {
-        if (!a.scheduledFor || !b.scheduledFor) return 0;
-        return new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime();
-      });
-    } catch (error) {
-      console.error('Error getting scheduled notifications:', error);
-      return [];
-    }
-  }
-
-  async cancelScheduledNotification(notificationId: string, userId: number): Promise<boolean> {
-    try {
-      const scheduledNotifications = await this.loadScheduledNotifications();
-      
-      const index = scheduledNotifications.findIndex(n => n.id === notificationId && n.userId === userId);
-      if (index === -1) {
-        return false;
-      }
-
-      scheduledNotifications.splice(index, 1);
-      await this.saveScheduledNotifications(scheduledNotifications);
-      return true;
-    } catch (error) {
-      console.error('Error cancelling scheduled notification:', error);
-      return false;
-    }
-  }
-
-  async triggerPersonalRecord(userId: number, exercise: string, newRecord: {
-    type: 'weight' | 'reps' | 'volume';
-    value: number;
-    previousValue?: number;
-  }): Promise<Notification> {
-    const improvement = newRecord.previousValue 
-      ? `+${newRecord.value - newRecord.previousValue}`
-      : '';
-    
-    return this.createNotification({
-      userId,
-      type: 'personal_record',
-      title: `🔥 New Personal Record!`,
-      message: `You just hit a new ${newRecord.type} PR on ${exercise}: ${newRecord.value} ${improvement}`,
-      category: 'achievement',
-      priority: 'high',
-      channels: ['in_app', 'push', 'email'],
-      data: { exercise, record: newRecord }
-    });
-  }
-
-  async triggerSocialNotification(userId: number, type: 'follower_new' | 'post_liked' | 'post_commented', data: any): Promise<Notification> {
-    const messages = {
-      follower_new: `${data.followerName} started following you!`,
-      post_liked: `${data.likerName} liked your post`,
-      post_commented: `${data.commenterName} commented on your post: "${data.comment}"`
-    };
-
-    return this.createNotification({
-      userId,
-      type,
-      title: 'Social Update',
-      message: messages[type],
-      category: 'social',
-      priority: 'medium',
-      channels: ['in_app', 'push'],
-      data
-    });
-  }
-
-  async triggerChallengeUpdate(userId: number, challenge: {
-    name: string;
-    progress: number;
-    target: number;
-    completed?: boolean;
-  }): Promise<Notification> {
-    if (challenge.completed) {
-      return this.createNotification({
-        userId,
-        type: 'challenge_completed',
-        title: `🎉 Challenge Completed!`,
-        message: `Congratulations! You've completed the ${challenge.name} challenge!`,
-        category: 'achievement',
-        priority: 'high',
-        channels: ['in_app', 'push', 'email'],
-        data: challenge
-      });
-    } else {
-      const progressPercentage = Math.round((challenge.progress / challenge.target) * 100);
-      return this.createNotification({
-        userId,
-        type: 'challenge_reminder',
-        title: `Challenge Progress Update`,
-        message: `You're ${progressPercentage}% complete with ${challenge.name}. Keep going!`,
-        category: 'fitness',
-        priority: 'medium',
-        channels: ['in_app', 'push'],
-        data: challenge
-      });
-    }
-  }
-
-  // ============================================================================
-  // SCHEDULED NOTIFICATIONS
-  // ============================================================================
-
-  async scheduleNotification(notificationData: Partial<Notification>, scheduledFor: Date): Promise<string> {
-    const scheduledNotification = {
-      ...notificationData,
-      id: crypto.randomUUID(),
-      scheduledFor: scheduledFor.toISOString(),
-      createdAt: new Date().toISOString()
-    };
-
-    const scheduledNotifications = await this.loadScheduledNotifications();
-    scheduledNotifications.push(scheduledNotification);
-    await this.saveScheduledNotifications(scheduledNotifications);
-
-    return scheduledNotification.id!;
-  }
-
-  async processScheduledNotifications(): Promise<number> {
-    const now = new Date();
-    const scheduledNotifications = await this.loadScheduledNotifications();
-    const dueNotifications = scheduledNotifications.filter(n => 
-      n.scheduledFor && new Date(n.scheduledFor) <= now
-    );
-
-    let processedCount = 0;
-    for (const notification of dueNotifications) {
-      try {
-        await this.createNotification(notification);
-        processedCount++;
-      } catch (error) {
-        console.error('Error processing scheduled notification:', error);
-      }
-    }
-
-    // Remove processed notifications
-    const remainingNotifications = scheduledNotifications.filter(n => 
-      !n.scheduledFor || new Date(n.scheduledFor) > now
-    );
-    await this.saveScheduledNotifications(remainingNotifications);
-
-    return processedCount;
-  }
-
-  // ============================================================================
-  // DELIVERY PROCESSING
-  // ============================================================================
-
-  private async processDelivery(notification: Notification): Promise<void> {
-    const userPrefs = await this.getUserPreferences(notification.userId);
-    
-    // Check if notifications are enabled and not in quiet hours
-    if (!userPrefs.enabled || this.isInQuietHours(userPrefs)) {
-      return;
-    }
-
-    // Check category preferences
-    const categoryPrefs = userPrefs.categories[notification.category];
-    if (!categoryPrefs.enabled) {
-      return;
-    }
-
-    // Filter channels based on user preferences
-    const allowedChannels = notification.channels.filter(channel => 
-      userPrefs.channels[channel] && categoryPrefs.channels.includes(channel)
-    );
-
-    // Process delivery for each allowed channel
-    for (const channel of allowedChannels) {
-      await this.deliverToChannel(notification, channel);
-    }
-  }
-
-  private async deliverToChannel(notification: Notification, channel: string): Promise<void> {
-    try {
-      switch (channel) {
-        case 'in_app':
-          // In-app notifications are stored and delivered via API
-          await this.updateDeliveryStatus(notification.id, channel, 'delivered');
-          break;
-          
-        case 'push':
-          await this.sendPushNotification(notification);
-          break;
-          
-        case 'email':
-          await this.sendEmailNotification(notification);
-          break;
-          
-        case 'sms':
-          await this.sendSMSNotification(notification);
-          break;
-      }
-    } catch (error) {
-      console.error(`Error delivering notification via ${channel}:`, error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.updateDeliveryStatus(notification.id, channel, 'failed', errorMessage);
-    }
-  }
-
-  private async sendPushNotification(notification: Notification): Promise<void> {
-    // Integration point for push notification services (Firebase, OneSignal, etc.)
-    console.log('Sending push notification:', {
-      userId: notification.userId,
-      title: notification.title,
-      message: notification.message,
-      data: notification.data
-    });
-    
-    // Simulate successful delivery
-    await this.updateDeliveryStatus(notification.id, 'push', 'sent');
-  }
-
-  private async sendEmailNotification(notification: Notification): Promise<void> {
-    // Integration point for email services (SendGrid, SES, etc.)
-    console.log('Sending email notification:', {
-      userId: notification.userId,
-      subject: notification.title,
-      body: notification.message,
-      data: notification.data
-    });
-    
-    // Simulate successful delivery
-    await this.updateDeliveryStatus(notification.id, 'email', 'sent');
-  }
-
-  private async sendSMSNotification(notification: Notification): Promise<void> {
-    // Integration point for SMS services (Twilio, etc.)
-    console.log('Sending SMS notification:', {
-      userId: notification.userId,
-      message: `${notification.title}: ${notification.message}`,
-      data: notification.data
-    });
-    
-    // Simulate successful delivery
-    await this.updateDeliveryStatus(notification.id, 'sms', 'sent');
-  }
-
-  private async updateDeliveryStatus(notificationId: string, channel: string, status: string, error?: string): Promise<void> {
-    const notifications = await this.loadNotifications();
-    const notification = notifications.find(n => n.id === notificationId);
-    
-    if (!notification) return;
-    
-    const deliveryChannel = notification.deliveryChannels.find(dc => dc.channel === channel);
-    if (deliveryChannel) {
-      deliveryChannel.status = status as any;
-      deliveryChannel.sentAt = new Date().toISOString();
-      if (error) deliveryChannel.error = error;
-    }
-    
-    // Update overall delivery status
-    const allDelivered = notification.deliveryChannels.every(dc => 
-      dc.status === 'delivered' || dc.status === 'sent'
-    );
-    const anyFailed = notification.deliveryChannels.some(dc => dc.status === 'failed');
-    
-    if (allDelivered) {
-      notification.deliveryStatus = 'delivered';
-    } else if (anyFailed) {
-      notification.deliveryStatus = 'failed';
-    } else {
-      notification.deliveryStatus = 'sent';
-    }
-    
-    notification.updatedAt = new Date().toISOString();
-    await this.saveNotifications(notifications);
-  }
-
-  private isInQuietHours(userPrefs: NotificationPreferences): boolean {
-    if (!userPrefs.quietHours?.enabled) return false;
-    
-    const now = new Date();
-    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    
-    const { startTime, endTime } = userPrefs.quietHours;
-    
-    // Handle quiet hours that span midnight
-    if (startTime > endTime) {
-      return currentTime >= startTime || currentTime <= endTime;
-    } else {
-      return currentTime >= startTime && currentTime <= endTime;
-    }
-  }
-
-  // ============================================================================
-  // TEMPLATE MANAGEMENT
-  // ============================================================================
-
-  private getDefaultTemplates(): NotificationTemplate[] {
-    return [
-      {
-        id: 'workout_reminder',
-        type: 'workout_reminder',
-        category: 'fitness',
-        titleTemplate: 'Time for your workout! 💪',
-        messageTemplate: 'Your {{workoutType}} workout is scheduled for now. Ready to crush it?',
-        variables: ['workoutType'],
-        defaultChannels: ['in_app', 'push'],
-        priority: 'medium',
-        expirationHours: 2,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: 'achievement_unlocked',
-        type: 'achievement_unlocked',
-        category: 'achievement',
-        titleTemplate: '🏆 Achievement Unlocked: {{title}}',
-        messageTemplate: '{{description}}',
-        variables: ['title', 'description'],
-        defaultChannels: ['in_app', 'push', 'email'],
-        priority: 'high',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ];
-  }
-
-  private async getTemplate(templateId: string): Promise<NotificationTemplate | null> {
-    const templates = await this.loadTemplates();
-    return templates.find(t => t.id === templateId) || null;
-  }
-
-  // ============================================================================
-  // STORAGE METHODS
-  // ============================================================================
-
-  private async loadNotifications(): Promise<Notification[]> {
-    try {
-      const data = await fs.readFile(this.notificationsFile, 'utf-8');
-      return JSON.parse(data);
-    } catch {
-      return [];
-    }
-  }
-
-  private async saveNotifications(notifications: Notification[]): Promise<void> {
-    await fs.writeFile(this.notificationsFile, JSON.stringify(notifications, null, 2));
-  }
-
-  private async saveNotification(notification: Notification): Promise<void> {
-    const notifications = await this.loadNotifications();
-    notifications.push(notification);
-    await this.saveNotifications(notifications);
-  }
-
-  private async loadPreferences(): Promise<Record<number, NotificationPreferences>> {
-    try {
-      const data = await fs.readFile(this.preferencesFile, 'utf-8');
-      return JSON.parse(data);
-    } catch {
-      return {};
-    }
-  }
-
-  private async savePreferences(preferences: Record<number, NotificationPreferences>): Promise<void> {
-    await fs.writeFile(this.preferencesFile, JSON.stringify(preferences, null, 2));
-  }
-
-  private async loadTemplates(): Promise<NotificationTemplate[]> {
-    try {
-      const data = await fs.readFile(this.templatesFile, 'utf-8');
-      return JSON.parse(data);
-    } catch {
-      return this.getDefaultTemplates();
-    }
-  }
-
-  private async loadScheduledNotifications(): Promise<Partial<Notification>[]> {
-    try {
-      const data = await fs.readFile(this.scheduledNotificationsFile, 'utf-8');
-      return JSON.parse(data);
-    } catch {
-      return [];
-    }
-  }
-
-  private async saveScheduledNotifications(notifications: Partial<Notification>[]): Promise<void> {
-    await fs.writeFile(this.scheduledNotificationsFile, JSON.stringify(notifications, null, 2));
   }
 }
 

@@ -121,7 +121,7 @@ export type BodyStats = {
 }
 
 // Goal System Types
-export type GoalType = 'weight_loss' | 'strength_gain' | 'body_composition'
+export type GoalType = 'weight_loss' | 'strength_gain' | 'body_composition' | 'endurance'
 
 export type Goal = {
   id: string

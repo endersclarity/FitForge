@@ -201,14 +201,14 @@ export default function Exercises() {
 
       {/* Filters */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-wrap gap-4 items-center">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-center">
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-muted-foreground" />
             <span className="text-sm font-medium">Filters:</span>
           </div>
 
           <Select value={selectedWorkoutType} onValueChange={setSelectedWorkoutType}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px] h-11">
               <SelectValue placeholder="Workout Type" />
             </SelectTrigger>
             <SelectContent>
@@ -222,7 +222,7 @@ export default function Exercises() {
           </Select>
 
           <Select value={selectedEquipment} onValueChange={setSelectedEquipment}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px] h-11">
               <SelectValue placeholder="Equipment" />
             </SelectTrigger>
             <SelectContent>
@@ -234,7 +234,7 @@ export default function Exercises() {
           </Select>
 
           <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px] h-11">
               <SelectValue placeholder="Difficulty" />
             </SelectTrigger>
             <SelectContent>
@@ -302,7 +302,7 @@ export default function Exercises() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {filteredExercises.map((exercise) => (
               <Card
                 key={exercise.id}

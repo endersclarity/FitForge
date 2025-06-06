@@ -28,6 +28,9 @@
   --dark: 240 6% 4%; /* #0A0A0B */
   --dark-card: 240 6% 11%; /* #1A1B1E */
   --light-gray: 210 11% 98%; /* #F8F9FA */
+  
+  /* Mobile viewport fixes */
+  --ios-vh: 1vh;
   --dark-gray: 213 12% 16%; /* #212529 */
   --gradient-primary: linear-gradient(135deg, hsl(15 90% 60%) 0%, hsl(207 100% 28%) 100%);
   --glass-bg: rgba(255, 255, 255, 0.1);
@@ -151,6 +154,39 @@
   
   .animate-float {
     animation: float 6s ease-in-out infinite;
+  }
+  
+  /* Mobile-specific utilities */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+  
+  .touch-scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+  }
+  
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .ios-vh {
+    height: calc(var(--ios-vh, 1vh) * 100);
+  }
+  
+  /* Prevent text selection on touch */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
   }
 }
 

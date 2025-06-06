@@ -7,13 +7,14 @@
  */
 
 import { 
-  IStorage,
   type User, type InsertUser, type Workout, type InsertWorkout,
   type WorkoutSession, type InsertWorkoutSession, type UserStats, type InsertUserStats,
   type Achievement, type InsertAchievement, type Challenge, type InsertChallenge,
   type ChallengeParticipation, type InsertChallengeParticipation,
   type SocialPost, type InsertSocialPost
-} from "./storage";
+} from "../shared/schema";
+
+import { type IStorage } from "./storage";
 import { UnifiedFileStorage } from "./unifiedFileStorage";
 import { UnifiedWorkoutSession } from "../shared/unified-storage-schema";
 
@@ -93,7 +94,7 @@ export class StorageAdapter implements IStorage {
     const unifiedSession = await this.unifiedStorage.createUnifiedWorkoutSession(
       userId,
       session.workoutType || "custom",
-      exercises.map((ex: any) => ex.exerciseName || ex.name || "Unknown Exercise")
+      exercises.map((ex: any) => ex.exerciseId || ex.id || "unknown")
     );
 
     // Map the UUID to a numeric ID for compatibility
@@ -119,7 +120,7 @@ export class StorageAdapter implements IStorage {
       const completionSummary = await this.unifiedStorage.completeUnifiedWorkoutSession(
         userId,
         activeSession.id,
-        4, // Default rating since not in WorkoutSession type
+        4, // Default rating since rating property doesn't exist in the type
         updates.notes || undefined
       );
       
@@ -337,15 +338,18 @@ export class StorageAdapter implements IStorage {
 
   // Missing methods required by IStorage interface
   async getChallengeParticipations(userId: number): Promise<(ChallengeParticipation & { challenge: Challenge })[]> {
+    // Stub implementation - would query challenge participations with user data
     return [];
   }
 
   async updateChallengeProgress(userId: number, challengeId: number, progress: number): Promise<ChallengeParticipation | undefined> {
+    // Stub implementation - would update participation record
     return undefined;
   }
 
   async likeSocialPost(postId: number): Promise<boolean> {
-    return false;
+    // Stub implementation - would insert into likes table
+    return true;
   }
 }
 
