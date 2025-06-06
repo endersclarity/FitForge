@@ -6,7 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useQuery } from "@tanstack/react-query";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import type { Exercise } from "@/lib/supabase";
 import {
   Search,
@@ -96,8 +99,10 @@ const MUSCLE_GROUPS = [
 ];
 
 export default function ExerciseLibrary() {
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const isMobile = useIsMobile();
+  const [viewMode, setViewMode] = useState<"grid" | "list">(isMobile ? "list" : "grid");
   const [selectedExercise, setSelectedExercise] = useState<ExerciseWithFavorite | null>(null);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [filters, setFilters] = useState<ExerciseFilters>({
     search: "",
     category: "All Categories",
@@ -559,8 +564,11 @@ export default function ExerciseLibrary() {
           <div className="lg:col-span-3">
             {/* Results Header */}
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <h2 className="text-xl font-semibold">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <h2 className={cn(
+                  "font-semibold",
+                  isMobile ? "text-lg" : "text-xl"
+                )}>
                   {filteredExercises.length} Exercise{filteredExercises.length !== 1 ? 's' : ''}
                 </h2>
                 {favorites.size > 0 && (
@@ -570,6 +578,19 @@ export default function ExerciseLibrary() {
                   </Badge>
                 )}
               </div>
+              
+              {/* Mobile Search */}
+              {isMobile && (
+                <div className="relative flex-1 max-w-sm ml-4">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search..."
+                    value={filters.search}
+                    onChange={(e) => updateFilter('search', e.target.value)}
+                    className="pl-10 h-10 touch-manipulation"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Exercise Display */}
@@ -600,6 +621,102 @@ export default function ExerciseLibrary() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Filter Sheet */}
+      <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
+        <SheetContent side="bottom" className="h-[80vh] flex flex-col">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              Exercise Filters
+            </SheetTitle>
+            <SheetDescription>
+              Filter exercises by category, difficulty, and equipment
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="flex-1 overflow-y-auto py-4 space-y-6">
+            {/* Search */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Search</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search exercises..."
+                  value={filters.search}
+                  onChange={(e) => updateFilter('search', e.target.value)}
+                  className="pl-10 h-12 touch-manipulation"
+                />
+              </div>
+            </div>
+
+            {/* Favorites */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="favorites-mobile"
+                checked={filters.favorites}
+                onCheckedChange={(checked) => updateFilter('favorites', checked)}
+                className="touch-manipulation"
+              />
+              <label htmlFor="favorites-mobile" className="text-sm font-medium flex items-center">
+                <Heart className="w-4 h-4 mr-1 text-red-500" />
+                Favorites Only
+              </label>
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Category</label>
+              <Select value={filters.category} onValueChange={(value) => updateFilter('category', value)}>
+                <SelectTrigger className="h-12 touch-manipulation">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(category => (
+                    <SelectItem key={category} value={category} className="py-3 px-4">{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Equipment */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Equipment</label>
+              <div className="grid grid-cols-2 gap-3">
+                {EQUIPMENT_OPTIONS.map(equipment => (
+                  <div key={equipment} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`equipment-mobile-${equipment}`}
+                      checked={filters.equipment.includes(equipment)}
+                      onCheckedChange={() => toggleEquipment(equipment)}
+                      className="touch-manipulation"
+                    />
+                    <label htmlFor={`equipment-mobile-${equipment}`} className="text-sm">
+                      {equipment}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          <div className="pt-4 border-t flex gap-3">
+            <Button 
+              variant="outline" 
+              onClick={clearFilters}
+              className="flex-1 h-12 touch-manipulation"
+            >
+              Clear All
+            </Button>
+            <Button 
+              onClick={() => setIsFilterSheetOpen(false)}
+              className="flex-1 h-12 touch-manipulation"
+            >
+              Apply Filters
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Exercise Detail Modal */}
       {selectedExercise && (
