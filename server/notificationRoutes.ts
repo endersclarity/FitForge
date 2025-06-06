@@ -342,7 +342,7 @@ router.post('/notifications/test', requireAuth, async (req, res) => {
       userId,
       type,
       priority: NotificationPriority.MEDIUM,
-      data: testData[type]
+      data: testData[type as keyof typeof testData]
     });
 
     res.json({ notificationId, success: true, message: 'Test notification sent' });

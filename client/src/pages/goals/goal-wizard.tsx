@@ -27,6 +27,29 @@ import { MilestoneCreation } from "./wizard-steps/milestone-creation";
 import { MotivationSetup } from "./wizard-steps/motivation-setup";
 import { GoalReview } from "./wizard-steps/goal-review";
 
+export interface GoalFormData {
+  type: string;
+  title: string;
+  description: string;
+  currentValue?: number;
+  targetValue?: number;
+  startDate?: Date;
+  targetDate?: Date;
+  milestones?: Milestone[];
+  motivations?: string[];
+  why?: string;
+  reward?: string;
+}
+
+export interface Milestone {
+  id: string;
+  title: string;
+  description: string;
+  targetValue: number;
+  targetDate: Date;
+  completed: boolean;
+}
+
 export interface WizardData {
   // Goal basic info
   goalType: GoalType | '';
@@ -43,6 +66,7 @@ export interface WizardData {
   
   // Timeline
   targetDate: string;
+  startDate: string;
   estimatedWeeks: number;
   
   // Baseline/starting values
@@ -54,6 +78,7 @@ export interface WizardData {
   // Motivation & milestones
   motivationNotes: string;
   rewardDescription: string;
+  motivations: string[];
   milestones: Array<{
     percentage: number;
     description: string;
@@ -117,9 +142,11 @@ export default function GoalWizard() {
     goalDescription: '',
     priorityLevel: 'medium',
     targetDate: '',
+    startDate: '',
     estimatedWeeks: 12,
     motivationNotes: '',
     rewardDescription: '',
+    motivations: [],
     milestones: [],
     isValid: false,
     validationErrors: []
@@ -213,7 +240,7 @@ export default function GoalWizard() {
     try {
       // Create the goal
       const goalData: Omit<Goal, 'id' | 'created_at' | 'updated_at'> = {
-        user_id: user.id,
+        user_id: user.id.toString(),
         goal_type: wizardData.goalType as GoalType,
         goal_title: wizardData.goalTitle,
         goal_description: wizardData.goalDescription,
@@ -293,41 +320,107 @@ export default function GoalWizard() {
       case 'metrics':
         return (
           <TargetMetrics 
-            data={wizardData} 
-            updateData={updateWizardData}
-            errors={wizardData.validationErrors}
+            goalData={{
+              type: wizardData.goalType,
+              title: wizardData.goalTitle,
+              description: wizardData.goalDescription,
+              currentValue: wizardData.startWeightLbs,
+              targetValue: wizardData.targetWeightLbs
+            }}
+            onUpdate={(updates) => updateWizardData(updates as Partial<WizardData>)}
+            onNext={() => setCurrentStep(currentStep + 1)}
+            onBack={() => setCurrentStep(currentStep - 1)}
           />
         );
       case 'timeline':
         return (
           <TimelineSetup 
-            data={wizardData} 
-            updateData={updateWizardData}
-            errors={wizardData.validationErrors}
+            goalData={{
+              type: wizardData.goalType,
+              title: wizardData.goalTitle,
+              description: wizardData.goalDescription,
+              startDate: wizardData.startDate ? new Date(wizardData.startDate) : new Date(),
+              targetDate: wizardData.targetDate ? new Date(wizardData.targetDate) : new Date()
+            }}
+            onUpdate={(updates) => {
+              // Map GoalFormData updates back to WizardData format
+              const wizardUpdates: Partial<WizardData> = {};
+              if (updates.startDate) wizardUpdates.startDate = updates.startDate.toISOString().split('T')[0];
+              if (updates.targetDate) wizardUpdates.targetDate = updates.targetDate.toISOString().split('T')[0];
+              updateWizardData(wizardUpdates);
+            }}
+            onNext={() => setCurrentStep(currentStep + 1)}
+            onBack={() => setCurrentStep(currentStep - 1)}
           />
         );
       case 'milestones':
         return (
           <MilestoneCreation 
-            data={wizardData} 
-            updateData={updateWizardData}
-            errors={wizardData.validationErrors}
+            goalData={{
+              type: wizardData.goalType,
+              title: wizardData.goalTitle,
+              description: wizardData.goalDescription,
+              milestones: []
+            }}
+            onUpdate={(updates) => {
+              // Map GoalFormData updates back to WizardData format
+              const wizardUpdates: Partial<WizardData> = {};
+              if (updates.milestones) {
+                // Convert Milestone[] to WizardData milestone format
+                wizardUpdates.milestones = updates.milestones.map(m => ({
+                  percentage: m.targetValue,
+                  description: m.title,
+                  reward: m.description
+                }));
+              }
+              updateWizardData(wizardUpdates);
+            }}
+            onNext={() => setCurrentStep(currentStep + 1)}
+            onBack={() => setCurrentStep(currentStep - 1)}
           />
         );
       case 'motivation':
         return (
           <MotivationSetup 
-            data={wizardData} 
-            updateData={updateWizardData}
-            errors={wizardData.validationErrors}
+            goalData={{
+              type: wizardData.goalType,
+              title: wizardData.goalTitle,
+              description: wizardData.goalDescription,
+              motivations: [],
+              why: wizardData.motivationNotes,
+              reward: wizardData.rewardDescription
+            }}
+            onUpdate={(updates) => {
+              // Map GoalFormData updates back to WizardData format
+              const wizardUpdates: Partial<WizardData> = {};
+              if (updates.motivations) wizardUpdates.motivations = updates.motivations;
+              if (updates.why) wizardUpdates.motivationNotes = updates.why;
+              if (updates.reward) wizardUpdates.rewardDescription = updates.reward;
+              updateWizardData(wizardUpdates);
+            }}
+            onNext={() => setCurrentStep(currentStep + 1)}
+            onBack={() => setCurrentStep(currentStep - 1)}
           />
         );
       case 'review':
         return (
           <GoalReview 
-            data={wizardData} 
-            updateData={updateWizardData}
-            errors={wizardData.validationErrors}
+            goalData={{
+              type: wizardData.goalType,
+              title: wizardData.goalTitle,
+              description: wizardData.goalDescription,
+              currentValue: wizardData.startWeightLbs,
+              targetValue: wizardData.targetWeightLbs,
+              startDate: wizardData.startDate ? new Date(wizardData.startDate) : new Date(),
+              targetDate: wizardData.targetDate ? new Date(wizardData.targetDate) : new Date(),
+              milestones: [],
+              motivations: wizardData.motivations,
+              why: wizardData.motivationNotes,
+              reward: wizardData.rewardDescription
+            }}
+            onUpdate={(updates) => updateWizardData(updates as Partial<WizardData>)}
+            onSubmit={submitGoal}
+            onBack={() => setCurrentStep(currentStep - 1)}
           />
         );
       default:

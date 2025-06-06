@@ -52,17 +52,17 @@ const MobileTouch = React.forwardRef<HTMLDivElement, MobileTouchProps>(
 MobileTouch.displayName = "MobileTouch"
 
 // Higher-order component for adding touch optimizations to any component
-function withMobileTouch<T extends object>(
-  Component: React.ComponentType<T>,
+function withMobileTouch(
+  Component: React.ComponentType<any>,
   options: {
     minTouchTarget?: boolean
     preventTextSelection?: boolean
     smoothScrolling?: boolean
   } = {}
 ) {
-  const MobileTouchWrapper = React.forwardRef<any, T>((props, ref) => (
+  const MobileTouchWrapper = React.forwardRef<any, any>((props, ref) => (
     <MobileTouch {...options}>
-      <Component ref={ref} {...props} />
+      <Component {...props} ref={ref} />
     </MobileTouch>
   ))
   

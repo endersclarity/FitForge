@@ -51,7 +51,7 @@ export function ExerciseSelector({ onBack }: ExerciseSelectorProps) {
   };
 
   return (
-    <div ref={pullToRefreshRef} className="min-h-screen bg-background">
+    <div ref={pullToRefreshRef as React.LegacyRef<HTMLDivElement>} className="min-h-screen bg-background">
       {/* Header */}
       <section className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 py-6 border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
