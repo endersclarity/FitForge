@@ -7,6 +7,15 @@ import {
   type ChallengeParticipation, type InsertChallengeParticipation,
   type SocialPost, type InsertSocialPost
 } from "../shared/schema";
+
+// Export types for use in other modules
+export {
+  type User, type InsertUser, type Workout, type InsertWorkout,
+  type WorkoutSession, type InsertWorkoutSession, type UserStats, type InsertUserStats,
+  type Achievement, type InsertAchievement, type Challenge, type InsertChallenge,
+  type ChallengeParticipation, type InsertChallengeParticipation,
+  type SocialPost, type InsertSocialPost
+};
 import { enderExerciseDatabase, enderWorkoutRoutines } from "../scripts/ender-real-exercises";
 import { generateSixMonthWorkoutHistory } from "../scripts/generate-realistic-workout-history";
 

@@ -275,7 +275,11 @@ router.post("/challenges", authenticateToken, async (req: any, res) => {
       return res.status(400).json({ message: "Start date cannot be in the past" });
     }
     
-    const challenge = await storage.createChallenge(challengeData);
+    const challenge = await storage.createChallenge({
+      ...challengeData,
+      startDate,
+      endDate
+    });
     
     // Auto-join creator to challenge
     await storage.joinChallenge({

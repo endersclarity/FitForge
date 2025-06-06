@@ -323,7 +323,7 @@ const workoutReminderSchema = z.object({
   customMessage: z.string().optional()
 });
 
-router.post("/workout-reminder", async (req: any, res) => {
+router.post("/workout-reminder", authenticateToken, async (req: any, res) => {
   try {
     const userId = req.userId;
     const reminderData = workoutReminderSchema.parse(req.body);
@@ -360,7 +360,7 @@ router.post("/workout-reminder", async (req: any, res) => {
  * Get goal-related notifications for Agent B's goal pages
  * Mobile-optimized: Efficient goal progress summary
  */
-router.get("/goal-progress", async (req: any, res) => {
+router.get("/goal-progress", authenticateToken, async (req: any, res) => {
   try {
     const userId = req.userId;
     const { goalId } = req.query;
@@ -401,7 +401,7 @@ const achievementSchema = z.object({
   celebrationLevel: z.enum(['bronze', 'silver', 'gold', 'platinum']).default('bronze')
 });
 
-router.post("/achievement-unlock", async (req: any, res) => {
+router.post("/achievement-unlock", authenticateToken, async (req: any, res) => {
   try {
     const userId = req.userId;
     const achievementData = achievementSchema.parse(req.body);
@@ -442,7 +442,7 @@ router.post("/achievement-unlock", async (req: any, res) => {
  * Get user's scheduled notifications
  * Mobile-optimized: Upcoming reminders and schedule management
  */
-router.get("/scheduled", async (req: any, res) => {
+router.get("/scheduled", authenticateToken, async (req: any, res) => {
   try {
     const userId = req.userId;
     const { upcoming = true, limit = 10 } = req.query;
@@ -477,7 +477,7 @@ router.get("/scheduled", async (req: any, res) => {
  * Cancel a scheduled notification
  * Mobile-optimized: Simple cancellation for reminder management
  */
-router.delete("/scheduled/:id", async (req: any, res) => {
+router.delete("/scheduled/:id", authenticateToken, async (req: any, res) => {
   try {
     const notificationId = req.params.id;
     const userId = req.userId;
