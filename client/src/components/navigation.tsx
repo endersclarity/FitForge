@@ -65,8 +65,8 @@ export function Navigation() {
   return (
     <>
     <nav className="bg-background/80 backdrop-blur-lg border-b border-border sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="flex justify-between items-center h-16 min-h-[56px]">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center">
@@ -77,17 +77,18 @@ export function Navigation() {
 
           {/* Desktop Navigation */}
           {user && (
-            <div className="hidden md:flex space-x-6">
+            <div className="hidden md:flex space-x-2 lg:space-x-4">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
                   href={item.path}
                   onClick={() => handleNavigation(item.path)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 min-h-[44px] flex items-center touch-manipulation ${
                     isActive(item.path)
                       ? "text-primary bg-primary/10"
                       : "text-muted-foreground hover:text-primary hover:bg-primary/5"
                   }`}
+                  aria-current={isActive(item.path) ? "page" : undefined}
                 >
                   {item.label}
                 </Link>
@@ -103,36 +104,69 @@ export function Navigation() {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="hidden md:flex relative"
+                  className="hidden md:flex relative min-h-[44px] min-w-[44px] touch-manipulation"
                   onClick={() => setShowNotificationsModal(true)}
+                  aria-label="View notifications"
                 >
                   <Bell className="h-5 w-5" />
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" aria-hidden="true"></span>
                 </Button>
 
                 {/* Mobile menu */}
                 <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                   <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon" className="md:hidden">
-                      <Menu className="h-5 w-5" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="md:hidden min-h-[48px] min-w-[48px] touch-manipulation"
+                      aria-label="Open navigation menu"
+                    >
+                      <Menu className="h-6 w-6" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-[300px]">
-                    <div className="flex flex-col space-y-4 mt-6">
+                  <SheetContent side="right" className="w-[320px] sm:w-[300px]">
+                    <div className="flex flex-col space-y-2 mt-6">
                       {navItems.map((item) => (
                         <Link
                           key={item.path}
                           href={item.path}
                           onClick={() => handleNavigation(item.path)}
-                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                          className={`px-4 py-4 rounded-lg text-base font-medium transition-colors duration-200 min-h-[48px] flex items-center touch-manipulation active:scale-[0.98] ${
                             isActive(item.path)
-                              ? "text-primary bg-primary/10"
-                              : "text-muted-foreground hover:text-primary hover:bg-primary/5"
+                              ? "text-primary bg-primary/10 border-l-4 border-primary"
+                              : "text-muted-foreground hover:text-primary hover:bg-primary/5 active:bg-primary/10"
                           }`}
+                          role="menuitem"
+                          aria-current={isActive(item.path) ? "page" : undefined}
                         >
                           {item.label}
                         </Link>
                       ))}
+                      
+                      {/* Mobile-only navigation items */}
+                      <div className="border-t border-border mt-4 pt-4">
+                        <Link
+                          href="/profile"
+                          onClick={() => handleNavigation("/profile")}
+                          className="px-4 py-4 rounded-lg text-base font-medium transition-colors duration-200 min-h-[48px] flex items-center touch-manipulation active:scale-[0.98] text-muted-foreground hover:text-primary hover:bg-primary/5"
+                          role="menuitem"
+                        >
+                          <User className="mr-3 h-5 w-5" />
+                          Profile
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setShowNotificationsModal(true);
+                            setMobileMenuOpen(false);
+                          }}
+                          className="w-full justify-start px-4 py-4 text-base font-medium min-h-[48px] touch-manipulation"
+                        >
+                          <Bell className="mr-3 h-5 w-5" />
+                          Notifications
+                          <span className="ml-auto w-3 h-3 bg-red-500 rounded-full"></span>
+                        </Button>
+                      </div>
                     </div>
                   </SheetContent>
                 </Sheet>
@@ -140,7 +174,13 @@ export function Navigation() {
             )}
 
             {/* Theme toggle */}
-            <Button variant="ghost" size="icon" onClick={toggleTheme}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleTheme}
+              className="min-h-[44px] min-w-[44px] touch-manipulation"
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+            >
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
 
@@ -148,7 +188,12 @@ export function Navigation() {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="min-h-[44px] min-w-[44px] touch-manipulation"
+                    aria-label="User menu"
+                  >
                     <UserAvatar />
                   </Button>
                 </DropdownMenuTrigger>
@@ -173,12 +218,19 @@ export function Navigation() {
             ) : (
               <div className="flex items-center space-x-2">
                 <Link href="/auth">
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="min-h-[44px] touch-manipulation"
+                  >
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/auth">
-                  <Button size="sm" className="gradient-bg">
+                  <Button 
+                    size="sm" 
+                    className="gradient-bg min-h-[44px] touch-manipulation"
+                  >
                     Get Started
                   </Button>
                 </Link>
